@@ -6,6 +6,23 @@ ARG DIST_RELEASE_VERSION=20.04
 LABEL com.canonical.dist-release=${DIST_RELEASE}
 LABEL com.canonical.dist-release=${DIST_RELEASE_VERSION}
 
+ARG DATE_CREATED
+LABEL org.opencontainers.image.created=${DATE_CREATED}
+
+ARG AUTHOR
+LABEL org.opencontainers.image.authors=${OCI_AUTHOR}
+
+LABEL org.opencontainers.image.url="https://github.com/canonical/jenkins-slave-operator"
+LABEL org.opencontainers.image.documentation="https://github.com/canonical/jenkins-slave-operator"
+LABEL org.opencontainers.image.source="https://github.com/canonical/jenkins-slave-operator"
+LABEL org.opencontainers.image.version="0.0.1"
+
+ARG REVISION
+LABEL org.opencontainers.image.revision=${REVISION}
+
+LABEL org.opencontainers.image.vendor="Canonical"
+LABEL org.opencontainers.image.licenses="Apache"
+
 
 # Ensure that the needed directory are owned by the right user
 ARG USER=jenkins
