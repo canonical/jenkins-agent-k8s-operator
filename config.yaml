@@ -1,0 +1,28 @@
+options:
+  tools:
+    type: string
+    default: git gcc make bzr
+    description: Tooling to deploy on jenkins slave node
+  labels:
+    type: string
+    description: Jenkins labels to associate with jenkins slave node
+    default: ""
+  master_url:
+    type: string
+    default: ""
+    description: |
+      Configure the slave to use an explicit jenkins master instead of using
+      the jenkins-slave relation. This allows for the slave and master to
+      be deployed in different environments.
+  nagios_context:
+    type: string
+    default: "juju"
+    description: |
+      This string is prefixed to the hostname when writing
+      exported nagios config fragments.
+  nagios_servicegroups:
+    default: ""
+    type: string
+    description: |
+      A comma-separated list of nagios servicegroups.
+      If left empty, the nagios_context will be used as the servicegroup
