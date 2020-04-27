@@ -5,10 +5,16 @@ To prepare this charm for deployment, run the following to install the
 framework in to the `lib/` directory:
 
 ```
-pip install -t lib/ https://github.com/canonical/operator
+git submodule add https://github.com/canonical/operator mod/operator
 ```
 
 Link the framework:
 ```
 ln -s ../mod/operator/ops lib/ops
+```
+
+
+Update the operator submodule:
+```
+git submodule update --init
 ```
