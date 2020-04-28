@@ -3,7 +3,6 @@
 import io
 import sys
 import logging
-from pprint import pprint
 from yaml import safe_load
 
 sys.path.append('lib')  # noqa: E402
@@ -96,7 +95,6 @@ class JenkinsSlaveCharm(CharmBase):
         }
 
         out = io.StringIO()
-        pprint(spec, out)
         logger.info("This is the Kubernetes Pod spec config (sans secrets) <<EOM\n{}\nEOM".format(out.getvalue()))
 
         secure_pod_config.update(full_pod_config)
