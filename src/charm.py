@@ -37,8 +37,6 @@ def generate_pod_config(config, secured=True):
 
     # Add secrets from charm config
     pod_config["JENKINS_PASSWORD"] = config["jenkins_password"]
-    if config.get("jenkins_api_token"):
-        pod_config["JENKINS_API_TOKEN"] = config["jenkins_api_token"]
 
     return pod_config
 

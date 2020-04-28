@@ -21,15 +21,11 @@ options:
   jenkins_user:
     type: string
     default: "admin"
-    description: "Jenkins user to download slave.jar from master"
+    description: "Jenkins user to download agent.jar from master"
   jenkins_password:
     type: string
     default: "admin"
-    description: "Jenkins password to download slave.jar from master"
-  jenkins_api_token:
-    type: string
-    default: ""
-    description: "Jenkins jenkins_api_token to download slave.jar from master"
+    description: "Jenkins password to download agent.jar from master"
   nagios_context:
     type: string
     default: "juju"
