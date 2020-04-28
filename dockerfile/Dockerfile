@@ -1,13 +1,12 @@
 ARG DIST_RELEASE=focal
 FROM ubuntu:${DIST_RELEASE}
 
+ENTRYPOINT /entrypoint.sh
+
 ARG DIST_RELEASE_VERSION=20.04
 
 LABEL com.canonical.dist-release=${DIST_RELEASE}
 LABEL com.canonical.dist-release=${DIST_RELEASE_VERSION}
-
-ARG DATE_CREATED
-LABEL org.opencontainers.image.created=${DATE_CREATED}
 
 ARG AUTHOR
 LABEL org.opencontainers.image.authors=${OCI_AUTHOR}
@@ -16,13 +15,8 @@ LABEL org.opencontainers.image.url="https://github.com/canonical/jenkins-slave-o
 LABEL org.opencontainers.image.documentation="https://github.com/canonical/jenkins-slave-operator"
 LABEL org.opencontainers.image.source="https://github.com/canonical/jenkins-slave-operator"
 LABEL org.opencontainers.image.version="0.0.1"
-
-ARG REVISION
-LABEL org.opencontainers.image.revision=${REVISION}
-
 LABEL org.opencontainers.image.vendor="Canonical"
 LABEL org.opencontainers.image.licenses="Apache"
-
 
 # Ensure that the needed directory are owned by the right user
 ARG USER=jenkins
@@ -47,8 +41,18 @@ VOLUME /var/log/jenkins
 # Install runtime requirements
 RUN apt-get update -y \
 	&& apt-get install -y \
-		default-jre-headless \
-		wget
+		curl \
+		default-jre-headless
+
 
 WORKDIR /var/lib/jenkins
+
 USER ${USER}
+
+COPY files/entrypoint.sh /
+
+ARG DATE_CREATED=devel
+LABEL org.opencontainers.image.created=${DATE_CREATED}
+
+ARG REVISION=devel
+LABEL org.opencontainers.image.revision=${REVISION}
