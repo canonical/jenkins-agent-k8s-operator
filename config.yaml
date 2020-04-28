@@ -1,4 +1,8 @@
 options:
+  image:
+    type: string
+    default: "jenkins-slave-operator"
+    description: "The docker image to install. Required. Defaults to jenkins-slave-operator from rocks.canonical.com"
   tools:
     type: string
     default: git gcc make bzr
@@ -14,6 +18,18 @@ options:
       Configure the slave to use an explicit jenkins master instead of using
       the jenkins-slave relation. This allows for the slave and master to
       be deployed in different environments.
+  jenkins_user:
+    type: string
+    default: "admin"
+    description: "Jenkins user to download slave.jar from master"
+  jenkins_password:
+    type: string
+    default: "admin"
+    description: "Jenkins password to download slave.jar from master"
+  jenkins_api_token:
+    type: string
+    default: ""
+    description: "Jenkins jenkins_api_token to download slave.jar from master"
   nagios_context:
     type: string
     default: "juju"
