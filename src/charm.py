@@ -27,7 +27,7 @@ def generate_pod_config(config, secured=True):
     if config["container_config"].strip():
         pod_config = safe_load(config["container_config"])
 
-    pod_config["JENKINS_USER"] = config["jenkins_user"]
+    pod_config["JENKINS_API_USER"] = config["jenkins_user"]
     if config.get("master_url"):
         pod_config["JENKINS_URL"] = config["master_url"]
 
