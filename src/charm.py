@@ -24,18 +24,18 @@ def generate_pod_config(config, secured=True):
     without exposing secrets.
     """
     pod_config = {}
-    if config["container_config"].strip():
-        pod_config = safe_load(config["container_config"])
 
     pod_config["JENKINS_API_USER"] = config["jenkins_user"]
-    if config.get("master_url"):
-        pod_config["JENKINS_URL"] = config["master_url"]
+    if config.get("jenkins_master_url", None):
+        pod_config["JENKINS_URL"] = config["jenkins_master_url"]
+    if config.get("jenkins_agent_name", None):
+        pod_config["JENKINS_HOSTNAME"] = config["jenkins_agent_name"]
 
     if secured:
         return pod_config
 
     # Add secrets from charm config
-    pod_config["JENKINS_PASSWORD"] = config["jenkins_password"]
+    pod_config["JENKINS_API_TOKEN"] = config["jenkins_api_token"]
 
     return pod_config
 
@@ -50,6 +50,8 @@ class JenkinsSlaveCharm(CharmBase):
         framework.observe(self.on.config_changed, self.configure_pod)
         framework.observe(self.on.upgrade_charm, self.configure_pod)
 
+        self.state.set_default(_spec=None)
+
     def on_upgrade_charm(self, event):
         pass
 
@@ -57,6 +59,10 @@ class JenkinsSlaveCharm(CharmBase):
         pass
 
     def configure_pod(self, event):
+        is_valid = self.is_valid_config()
+        if not is_valid:
+            return
+
         spec = self.make_pod_spec()
         if spec != self.state._spec:
             self.state._spec = spec
@@ -83,18 +89,26 @@ class JenkinsSlaveCharm(CharmBase):
         full_pod_config = generate_pod_config(config, secured=False)
         secure_pod_config = generate_pod_config(config, secured=True)
 
+        ports = [
+            {"name": name, "containerPort": int(port), "protocol": "TCP"}
+            for name, port in [addr.split(":", 1) for addr in config["ports"].split()]
+        ]
+
         spec = {
             "containers": [
                 {
-                    "name": self.app.name,
-                    "imageDetails": {"imagePath": config["image"]},
                     "config": secure_pod_config,
+                    "imageDetails": {"imagePath": config["image"]},
+                    "name": self.app.name,
+                    "ports": ports,
                     "readinessProbe": {"exec": {"command": ["/bin/cat", "/var/lib/jenkins/slaves/.ready"]}},
                 }
             ]
         }
 
         out = io.StringIO()
+        import pprint
+        pprint.pprint(spec, out)
         logger.info("This is the Kubernetes Pod spec config (sans secrets) <<EOM\n{}\nEOM".format(out.getvalue()))
 
         secure_pod_config.update(full_pod_config)
@@ -105,7 +119,7 @@ class JenkinsSlaveCharm(CharmBase):
         is_valid = True
         config = self.model.config
 
-        want = ("image", "jenkins_user", "jenkins_password")
+        want = ("image", "jenkins_user", "jenkins_api_token")
         missing = [k for k in want if config[k].rstrip() == ""]
         if missing:
             message = "Missing required config: {}".format(" ".join(missing))

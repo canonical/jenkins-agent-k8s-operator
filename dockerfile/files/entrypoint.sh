@@ -29,7 +29,7 @@ typeset JENKINS_HOSTNAME="${JENKINS_HOSTNAME:-$(hostname)}"
 typeset -a JENKINS_ARGS
 
 JENKINS_ARGS+=(-jnlpUrl "${JENKINS_URL}"/computer/"${JENKINS_HOSTNAME}"/slave-agent.jnlp)
-JENKINS_ARGS+=(-jnlpCredentials "${JENKINS_API_USER}:${JENKINS_API_TOKEN}")
+JENKINS_ARGS+=(-jnlpCredentials "${JENKINS_API_USER:?Please specify JENKINS_API_USER}:${JENKINS_API_TOKEN:?Please specify JENKINS_API_TOKEN}")
 
 # Path of the agent.jar
 typeset AGENT_JAR=/var/lib/jenkins/agent.jar
@@ -51,6 +51,9 @@ download_agent() {
 }
 
 download_agent
+
+# Specify the pod as ready
+touch /var/lib/jenkins/slaves/.ready
 
 #shellcheck disable=SC2086
 "${JAVA}" ${JAVA_ARGS} -jar "${AGENT_JAR}"  "${JENKINS_ARGS[@]}"
