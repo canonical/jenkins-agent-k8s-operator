@@ -5,6 +5,8 @@
 
 import io
 import pprint
+import os
+import sys
 import logging
 
 from ops.charm import CharmBase
@@ -49,6 +51,7 @@ class JenkinsAgentCharm(CharmBase):
         framework.observe(self.on.start, self.configure_pod)
         framework.observe(self.on.config_changed, self.configure_pod)
         framework.observe(self.on.upgrade_charm, self.configure_pod)
+        framework.observe(self.on.slave_relation_configured, self.configure_pod)
 
         self.state.set_default(_spec=None)
 
@@ -121,6 +124,41 @@ class JenkinsAgentCharm(CharmBase):
             is_valid = False
 
         return is_valid
+
+
+     def on_jenkins_relation_joined(self, event: ops.charm.RelationJoinedEvent):
+        self.log.info("Jenkins relation joined")
+        self.configure_slave_through_relation(event.relation)
+
+    def configure_slave_through_relation(self, rel: ops.model.Relation):
+        self.log.info("Setting up jenkins via slave relation")
+        self.model.unit.status = MaintenanceStatus("Configuring jenkins slave")
+
+        if config.get("master_url"):
+            self.log.info("Config option 'master_url' is set. Can't use slave relation.")
+            self.model.unit.status = ActiveStatus()
+            return
+
+        url = rel.data[self.model.unit]["url"]
+        if url:
+            config["master_url"] = url
+        else:
+            self.log.info("Master hasn't exported its url yet. Continuing with the configured master_url.")
+            self.model.unit.status = ActiveStatus()
+            return
+
+        noexecutors = os.cpu_count()
+        config_labels = config.get('labels')
+
+        if config_labels:
+            labels = config_labels
+        else:
+            labels = os.uname()[4]
+
+        rel.data[self.model.unit]["executors"] = noexecutors
+        rel.data[self.model.unit]["labels"] = labels
+
+        self.on.slave_relation_configured.emit()
 
 
 if __name__ == '__main__':

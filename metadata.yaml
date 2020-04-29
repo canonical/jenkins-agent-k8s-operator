@@ -9,3 +9,6 @@ series:
   - kubernetes
 deployment:
   service: omit
+provides:
+  slave:
+    interface: jenkins-slave
