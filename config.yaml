@@ -11,30 +11,30 @@ options:
     type: string
     description: Jenkins labels to associate with jenkins slave node
     default: ""
-  master_url:
+  jenkins_master_url:
     type: string
     default: ""
     description: |
       Configure the slave to use an explicit jenkins master instead of using
       the jenkins-slave relation. This allows for the slave and master to
       be deployed in different environments.
+  ports:
+    type: string
+    description: >
+       Ports to expose, space separated list in name:8000 format. Names are alphanumeric + hyphen.
+       e.g. "http:80 metrics:7127"
+    default: "http:8080"
+  jenkins_agent_name:
+    type: string
+    default: ""
+    description: |
+      Jenkins agent name that will be seen on the jenkins master.
+      Will default to the hostname of the container.
+  jenkins_api_token:
+    type: string
+    default: ""
+    description: "Jenkins API token used to join the master"
   jenkins_user:
     type: string
     default: "admin"
     description: "Jenkins user to download agent.jar from master"
-  jenkins_password:
-    type: string
-    default: "admin"
-    description: "Jenkins password to download agent.jar from master"
-  nagios_context:
-    type: string
-    default: "juju"
-    description: |
-      This string is prefixed to the hostname when writing
-      exported nagios config fragments.
-  nagios_servicegroups:
-    default: ""
-    type: string
-    description: |
-      A comma-separated list of nagios servicegroups.
-      If left empty, the nagios_context will be used as the servicegroup

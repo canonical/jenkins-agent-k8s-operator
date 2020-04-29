@@ -36,3 +36,35 @@ docker run --rm -ti --name jenkins-slave-test \
  -e JENKINS_URL="http://${JENKINS_IP}:8080" \
  -e JENKINS_HOSTNAME="jenkins-slave-test" jenkins-slave-operator:devel
 ```
+
+## Testing with microk8s
+
+### Install prerequisites
+```
+sudo snap install --channel 2.8/beta juju --classic
+sudo snap install microk8s --classic
+sudo snap install docker
+
+# Start microk8s and enable needed modules
+microk8s.start
+microk8s.enable registry dns storage
+juju bootstrap microk8s micro
+```
+
+### Build the jenkins-slave-operator image
+
+In this repository directory
+```
+make build-dev-image
+docker save jenkins-slave-operator:devel > /var/tmp/jenkins-slave-operator.tar
+microk8s.ctr image import /var/tmp/jenkins-slave-operator.tar
+juju add-model jenkins-slave-operator
+juju model-config logging-config="<root>=DEBUG"
+juju deploy . \
+  --config "jenkins_agent_name=jenkins-slave-test" \
+  --config "jenkins_api_token=${JENKINS_API_TOKEN}" \
+  --config "jenkins_master_url=http://${JENKINS_IP}:8080" \
+  --config "image=jenkins-slave-operator:devel"
+```
+
+
