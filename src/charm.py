@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import io
+import pprint
 import sys
 import logging
 from yaml import safe_load
@@ -107,7 +108,6 @@ class JenkinsSlaveCharm(CharmBase):
         }
 
         out = io.StringIO()
-        import pprint
         pprint.pprint(spec, out)
         logger.info("This is the Kubernetes Pod spec config (sans secrets) <<EOM\n{}\nEOM".format(out.getvalue()))
 
