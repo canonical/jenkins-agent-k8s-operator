@@ -90,21 +90,15 @@ class JenkinsSlaveCharm(CharmBase):
         full_pod_config = generate_pod_config(config, secured=False)
         secure_pod_config = generate_pod_config(config, secured=True)
 
-        ports = [
-            {"name": name, "containerPort": int(port), "protocol": "TCP"}
-            for name, port in [addr.split(":", 1) for addr in config["ports"].split()]
-        ]
-
         spec = {
             "containers": [
                 {
                     "config": secure_pod_config,
                     "imageDetails": {"imagePath": config["image"]},
                     "name": self.app.name,
-                    "ports": ports,
                     "readinessProbe": {"exec": {"command": ["/bin/cat", "/var/lib/jenkins/slaves/.ready"]}},
                 }
-            ]
+            ],
         }
 
         out = io.StringIO()
