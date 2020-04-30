@@ -10,7 +10,7 @@ import sys
 import logging
 
 from ops.charm import CharmBase
-from ops.framework import StoredState
+from ops.framework import StoredState, EventSource, EventBase
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
 
@@ -42,8 +42,14 @@ def generate_pod_config(config, secured=True):
     return pod_config
 
 
+class SlaveRelationConfigureEvent(EventBase):
+    pass
+
+
 class JenkinsAgentCharm(CharmBase):
     state = StoredState()
+
+    on_slave_relation_configured = EventSource(SlaveRelationConfigureEvent)
 
     def __init__(self, framework, parent):
         super().__init__(framework, parent)
@@ -51,7 +57,7 @@ class JenkinsAgentCharm(CharmBase):
         framework.observe(self.on.start, self.configure_pod)
         framework.observe(self.on.config_changed, self.configure_pod)
         framework.observe(self.on.upgrade_charm, self.configure_pod)
-        framework.observe(self.on.slave_relation_configured, self.configure_pod)
+        framework.observe(self.on_slave_relation_configured, self.configure_pod)
 
         self.state.set_default(_spec=None)
 
@@ -125,12 +131,11 @@ class JenkinsAgentCharm(CharmBase):
 
         return is_valid
 
-
-     def on_jenkins_relation_joined(self, event: ops.charm.RelationJoinedEvent):
+    def on_jenkins_relation_joined(self, event):
         self.log.info("Jenkins relation joined")
         self.configure_slave_through_relation(event.relation)
 
-    def configure_slave_through_relation(self, rel: ops.model.Relation):
+    def configure_slave_through_relation(self, rel):
         self.log.info("Setting up jenkins via slave relation")
         self.model.unit.status = MaintenanceStatus("Configuring jenkins slave")
 
