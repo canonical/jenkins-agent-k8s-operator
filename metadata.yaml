@@ -7,3 +7,5 @@ description: |
   This charm sets up a jenkins-slave in kubernetes.
 series:
   - kubernetes
+deployment:
+  service: omit
