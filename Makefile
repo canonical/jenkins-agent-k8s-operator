@@ -3,7 +3,7 @@
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 project_dir := $(dir $(realpath $(mkfile_path)))
 dockerfile_dir := $(project_dir)/dockerfile
-charm_name := jenkins-slave-k8s
+charm_name := jenkins-agent-k8s
 
 author ?= "Canonical IS team"
 date_created ?= $(shell date +'%Y%m%d%H%M')

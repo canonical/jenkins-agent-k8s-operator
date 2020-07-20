@@ -1,22 +1,22 @@
 options:
   image:
     type: string
-    default: "jenkins-slave-operator"
-    description: "The docker image to install. Required. Defaults to jenkins-slave-operator from rocks.canonical.com"
+    default: "jenkins-agent-operator"
+    description: "The docker image to install. Required. Defaults to jenkins-agent-operator from rocks.canonical.com"
   tools:
     type: string
     default: git gcc make bzr
-    description: Tooling to deploy on jenkins slave node
+    description: Tooling to deploy on jenkins agent node
   labels:
     type: string
-    description: Jenkins labels to associate with jenkins slave node
+    description: Jenkins labels to associate with jenkins agent node
     default: ""
   jenkins_master_url:
     type: string
     default: ""
     description: |
-      Configure the slave to use an explicit jenkins master instead of using
-      the jenkins-slave relation. This allows for the slave and master to
+      Configure the agent to use an explicit jenkins master instead of using
+      the jenkins-agent relation. This allows for the agent and master to
       be deployed in different environments.
   jenkins_agent_name:
     type: string
