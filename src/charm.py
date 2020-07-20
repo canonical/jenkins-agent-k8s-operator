@@ -41,7 +41,7 @@ def generate_pod_config(config, secured=True):
     return pod_config
 
 
-class JenkinsSlaveCharm(CharmBase):
+class JenkinsAgentCharm(CharmBase):
     state = StoredState()
 
     def __init__(self, framework, parent):
@@ -96,7 +96,7 @@ class JenkinsSlaveCharm(CharmBase):
                     "config": secure_pod_config,
                     "imageDetails": {"imagePath": config["image"]},
                     "name": self.app.name,
-                    "readinessProbe": {"exec": {"command": ["/bin/cat", "/var/lib/jenkins/slaves/.ready"]}},
+                    "readinessProbe": {"exec": {"command": ["/bin/cat", "/var/lib/jenkins/agents/.ready"]}},
                 }
             ],
         }
@@ -125,4 +125,4 @@ class JenkinsSlaveCharm(CharmBase):
 
 
 if __name__ == '__main__':
-    main(JenkinsSlaveCharm)
+    main(JenkinsAgentCharm)

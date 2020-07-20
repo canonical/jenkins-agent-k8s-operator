@@ -1,10 +1,10 @@
-name: jenkins-slave
-summary: jenkins-slave operator charm
+name: jenkins-agent
+summary: jenkins-agent operator charm
 maintainers:
     - Alexandre Gomes <alexandre.gomes@canonical.com>
     - Benjamin Allot <benjamin.allot@canonical.com>
 description: |
-  This charm sets up a jenkins-slave in kubernetes.
+  This charm sets up a jenkins-agent in kubernetes.
 series:
   - kubernetes
 deployment:
