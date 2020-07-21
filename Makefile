@@ -24,3 +24,27 @@ build-release-image: | $(dockerfile_dir)
 	  --build-arg AUTHOR=$(author) \
 	  --build-arg REVISION="$(revision)" \
 	  -t $(JENKINS_IMAGE) $(dockerfile_dir)
+
+blacken:
+	@echo "Normalising python layout with black."
+	@tox -e black
+
+lint: blacken
+	@echo "Running flake8"
+	@tox -e lint
+
+# We actually use the build directory created by charmcraft,
+# but the .charm file makes a much more convenient sentinel.
+unittest: jenkins-agent.charm
+	@tox -e unit
+
+test: lint unittest
+
+clean:
+	@echo "Cleaning files"
+	@git clean -fXd
+
+jenkins-agent.charm: src/*.py requirements.txt
+	charmcraft build
+
+.PHONY: lint test unittest clean

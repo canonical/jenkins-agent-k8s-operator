@@ -1,2 +1,8 @@
+*~
+*.charm
+.tox
+.coverage
+__pycache__
+build
 lib/ops
 lib/ops-*.dist-info
