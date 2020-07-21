@@ -2,7 +2,6 @@ import unittest
 
 import sys
 
-sys.path.append('lib')  # noqa: E402
 sys.path.append('src')  # noqa: E402
 
 from charm import generate_pod_config
