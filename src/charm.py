@@ -9,6 +9,8 @@ import os
 import sys
 import logging
 
+sys.path.append('lib')  # noqa: E402
+
 from ops.charm import CharmBase
 from ops.framework import StoredState, EventSource, EventBase
 from ops.main import main
@@ -18,38 +20,10 @@ from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
 logger = logging.getLogger()
 
 
-def generate_pod_config(config, secured=True):
-    """Kubernetes pod config generator.
-
-    generate_pod_config generates Kubernetes deployment config.
-    If the secured keyword is set then it will return a sanitised copy
-    without exposing secrets.
-    """
-    pod_config = {}
-
-    pod_config["JENKINS_API_USER"] = config["jenkins_user"]
-    if config.get("jenkins_master_url", None):
-        pod_config["JENKINS_URL"] = config["jenkins_master_url"]
-    if config.get("jenkins_agent_name", None):
-        pod_config["JENKINS_HOSTNAME"] = config["jenkins_agent_name"]
-
-    if secured:
-        return pod_config
-
-    # Add secrets from charm config
-    pod_config["JENKINS_API_TOKEN"] = config["jenkins_api_token"]
-
-    return pod_config
-
-
-class SlaveRelationConfigureEvent(EventBase):
-    pass
-
-
 class JenkinsAgentCharm(CharmBase):
     state = StoredState()
 
-    on_slave_relation_configured = EventSource(SlaveRelationConfigureEvent)
+    # on_slave_relation_configured = EventSource(SlaveRelationConfigureEvent)
 
     def __init__(self, framework, parent):
         super().__init__(framework, parent)
@@ -57,10 +31,10 @@ class JenkinsAgentCharm(CharmBase):
         framework.observe(self.on.start, self.configure_pod)
         framework.observe(self.on.config_changed, self.configure_pod)
         framework.observe(self.on.upgrade_charm, self.configure_pod)
-        framework.observe(self.on.slave_relation_joined, self)
-        framework.observe(self.on_slave_relation_configured, self.configure_pod)
+        framework.observe(self.on.slave_relation_joined, self.on_slave_relation_joined)
+        framework.observe(self.on.slave_relation_changed, self.on_slave_relation_joined)
 
-        self.state.set_default(_spec=None)
+        self.state.set_default(_spec=None, jenkins_url=None, agent_token=None)
 
     def on_upgrade_charm(self, event):
         pass
@@ -68,9 +42,39 @@ class JenkinsAgentCharm(CharmBase):
     def on_config_changed(self, event):
         pass
 
+    def generate_pod_config(self, config, secured=True):
+        """Kubernetes pod config generator.
+
+        generate_pod_config generates Kubernetes deployment config.
+        If the secured keyword is set then it will return a sanitised copy
+        without exposing secrets.
+        """
+        pod_config = {}
+
+        pod_config["JENKINS_API_USER"] = config["jenkins_user"]
+        pod_config["JENKINS_HOSTNAME"] = self.unit.name.replace('/', '-')
+
+        if self.state.jenkins_url:
+            pod_config["JENKINS_URL"] = self.state.jenkins_url
+        elif config.get("jenkins_master_url", None):
+            pod_config["JENKINS_URL"] = config["jenkins_master_url"]
+        # if config.get("jenkins_agent_name", None):
+        #     pod_config["JENKINS_HOSTNAME"] = config["jenkins_agent_name"]
+
+        if secured:
+            return pod_config
+
+        pod_config["JENKINS_API_TOKEN"] = self.state.agent_token or config["jenkins_api_token"]
+
+        return pod_config
+
     def configure_pod(self, event):
         is_valid = self.is_valid_config()
         if not is_valid:
+            return
+
+        if not self.unit.is_leader():
+            self.unit.status = ActiveStatus()
             return
 
         spec = self.make_pod_spec()
@@ -96,8 +100,10 @@ class JenkinsAgentCharm(CharmBase):
 
     def make_pod_spec(self):
         config = self.model.config
-        full_pod_config = generate_pod_config(config, secured=False)
-        secure_pod_config = generate_pod_config(config, secured=True)
+        logger.info("ALEJDG - config type: %s - config data: ", type(config), config)
+
+        full_pod_config = self.generate_pod_config(config, secured=False)
+        secure_pod_config = self.generate_pod_config(config, secured=True)
 
         spec = {
             "containers": [
@@ -120,9 +126,12 @@ class JenkinsAgentCharm(CharmBase):
 
     def is_valid_config(self):
         is_valid = True
-        config = self.model.config
 
-        want = ("image", "jenkins_user", "jenkins_api_token")
+        config = self.model.config
+        if self.state.agent_token:
+            want = ("image", "jenkins_user")
+        else:
+            want = ("image", "jenkins_user", "jenkins_api_token")
         missing = [k for k in want if config[k].rstrip() == ""]
         if missing:
             message = "Missing required config: {}".format(" ".join(missing))
@@ -136,35 +145,62 @@ class JenkinsAgentCharm(CharmBase):
         logger.info("Jenkins relation joined")
         noexecutors = os.cpu_count()
         config_labels = self.model.config.get('labels')
+        slave_host = self.unit.name.replace('/', '-')
 
         if config_labels:
             labels = config_labels
         else:
             labels = os.uname()[4]
 
-        event.relation.data[self.model.unit]["executors"] = noexecutors
+        # slave_address = hookenv.unit_private_ip()
+
+        logger.info("noexecutors: %s - type: %s",noexecutors, type(noexecutors))
+        logger.info("labels: %s - type: %s",labels, type(labels))
+        event.relation.data[self.model.unit]["executors"] = str(noexecutors)
         event.relation.data[self.model.unit]["labels"] = labels
+        event.relation.data[self.model.unit]["slavehost"] = slave_host
+        # event.relation.data[self.model.unit]["slaveaddress"] = slave_address
 
-        self.configure_slave_through_relation(event.relation)
+        remote_data = event.relation.data[event.app]
+        logger.info("ALEJDG - remote_data_app: %s", remote_data)
+        for i in remote_data:
+            logger.info("ALEJDG - remote_data_app['%s']: %s", i, remote_data[i])
 
-    def configure_slave_through_relation(self, rel):
+        if event.unit is not None:
+            remote_data = event.relation.data[event.unit]
+            logger.info("ALEJDG - os.environ: %s", os.environ)
+
+        logger.info("ALEJDG - remote_data_post_app: %s", remote_data)
+        for i in remote_data:
+            logger.info("ALEJDG - remote_data_post_app['%s']: %s", i, remote_data[i])
+
+        try:
+            logger.info("ALEJDG - event.relation.data[event.unit]['url']: %s", event.relation.data[event.unit]['url'])
+            logger.info("ALEJDG - event.relation.data[event.unit]['secret']: %s", event.relation.data[event.unit]['secret'])
+            self.state.jenkins_url = event.relation.data[event.unit]['url']
+            self.state.agent_token = event.relation.data[event.unit]['secret']
+        except KeyError:
+            pass
+
+        self.configure_pod(event)
+
+    def on_slave_relation_changed(self, event):
+        logger.info("Jenkins relation changed")
+        self.on_slave_relation_joined(event)
+
+    def configure_slave_through_relation(self, rel, url):
         logger.info("Setting up jenkins via slave relation")
-        self.model.unit.status = MaintenanceStatus("Configuring jenkins slave")
+        self.model.unit.status = MaintenanceStatus("Configuring jenkins agent")
 
-        if self.model.config.get("master_url"):
-            logger.info("Config option 'master_url' is set. Can't use slave relation.")
+        if self.model.config.get("url"):
+            logger.info("Config option 'url' is set. Can't use agent relation.")
             self.model.unit.status = ActiveStatus()
             return
 
-        url = rel.data[self.model.unit]["url"]
-        if url:
-            self.model.config["master_url"] = url
-        else:
-            logger.info("Master hasn't exported its url yet. Continuing with the configured master_url.")
+        if url is None:
+            logger.info("Jenkins hasn't exported its url yet. Skipping setup for now.")
             self.model.unit.status = ActiveStatus()
             return
-
-        self.on.slave_relation_configured.emit()
 
 
 if __name__ == '__main__':
