@@ -2,15 +2,12 @@
 
 import io
 import pprint
-import sys
 import logging
-
-sys.path.append('lib')  # noqa: E402
 
 from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus  # NoQA: E402
+from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
 
 
 logger = logging.getLogger()
