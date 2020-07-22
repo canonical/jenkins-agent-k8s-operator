@@ -1,23 +1,6 @@
 # Jenkins agent operator charm
 This charm sets up a jenkins-agent in kubernetes.
 
-To prepare this charm for deployment, run the following to install the
-framework in to the `lib/` directory:
-
-```
-git submodule add https://github.com/canonical/operator mod/operator
-```
-
-Link the framework:
-```
-ln -s ../mod/operator/ops lib/ops
-```
-
-Update the operator submodule:
-```
-git submodule update --init
-```
-
 ## Testing the docker image
 
 ```
@@ -54,7 +37,7 @@ juju bootstrap microk8s micro
 
 ### Build the jenkins-agent-k8s image
 
-You need to have a a jenkins charm deployed locally and have the following variables
+You need to have a jenkins charm deployed locally and have the following variables
 defined. See the "[Testing the docker image](#testing-the-docker-image)" section.
 
 * JENKINS_API_TOKEN: the token for the admin user of your jenkins charm
@@ -70,7 +53,8 @@ docker save "${JENKINS_IMAGE}" > /var/tmp/"${JENKINS_IMAGE##*/}".tar
 microk8s.ctr image import /var/tmp/"${JENKINS_IMAGE##*/}".tar
 juju add-model "${MODEL}"
 juju model-config logging-config="<root>=DEBUG"
-juju deploy . \
+charmcraft build
+juju deploy jenkins-agent.charm \
   --config "jenkins_agent_name=jenkins-agent-k8s-test" \
   --config "jenkins_api_token=${JENKINS_API_TOKEN:?}" \
   --config "jenkins_master_url=http://${JENKINS_IP:?}:8080" \
