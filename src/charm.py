@@ -49,10 +49,11 @@ class JenkinsAgentCharm(CharmBase):
         If the secured keyword is set then it will return a sanitised copy
         without exposing secrets.
         """
+        unit_name = self.unit.name.replace('/', '-')
         pod_config = {}
 
         pod_config["JENKINS_API_USER"] = config["jenkins_user"]
-        pod_config["JENKINS_HOSTNAME"] = self.unit.name.replace('/', '-')
+        pod_config["JENKINS_HOSTNAME"] = unit_name
 
         if self.state.jenkins_url:
             pod_config["JENKINS_URL"] = self.state.jenkins_url
@@ -64,7 +65,10 @@ class JenkinsAgentCharm(CharmBase):
         if secured:
             return pod_config
 
-        pod_config["JENKINS_API_TOKEN"] = self.state.agent_token or config["jenkins_api_token"]
+        for i in self.state.agent_token:
+            logger.info("ALEJDG - self.state.agent_token: %s", i)
+            logger.info("ALEJDG - self.state.agent_token[%s]: %s", i, self.state.agent_token[i])
+        pod_config["JENKINS_API_TOKEN"] = self.state.agent_token[unit_name] or config["jenkins_api_token"]
 
         return pod_config
 
@@ -73,9 +77,9 @@ class JenkinsAgentCharm(CharmBase):
         if not is_valid:
             return
 
-        if not self.unit.is_leader():
-            self.unit.status = ActiveStatus()
-            return
+        # if not self.unit.is_leader():
+        #     self.unit.status = ActiveStatus()
+        #     return
 
         spec = self.make_pod_spec()
         if spec != self.state._spec:
@@ -100,7 +104,7 @@ class JenkinsAgentCharm(CharmBase):
 
     def make_pod_spec(self):
         config = self.model.config
-        logger.info("ALEJDG - config type: %s - config data: ", type(config), config)
+        logger.info("ALEJDG - config type: %s - config data: %s", type(config), config)
 
         full_pod_config = self.generate_pod_config(config, secured=False)
         secure_pod_config = self.generate_pod_config(config, secured=True)
@@ -178,17 +182,18 @@ class JenkinsAgentCharm(CharmBase):
             logger.info("ALEJDG - event.relation.data[event.unit]['url']: %s", event.relation.data[event.unit]['url'])
             logger.info("ALEJDG - event.relation.data[event.unit]['secret']: %s", event.relation.data[event.unit]['secret'])
             self.state.jenkins_url = event.relation.data[event.unit]['url']
-            self.state.agent_token = event.relation.data[event.unit]['secret']
+            self.state.agent_token = {self.unit.name.replace('/', '-'):
+                                      event.relation.data[event.unit]['secret']}
         except KeyError:
             pass
 
-        self.configure_pod(event)
+        self.configure_slave_through_relation(event)
 
     def on_slave_relation_changed(self, event):
         logger.info("Jenkins relation changed")
         self.on_slave_relation_joined(event)
 
-    def configure_slave_through_relation(self, rel, url):
+    def configure_slave_through_relation(self, event):
         logger.info("Setting up jenkins via slave relation")
         self.model.unit.status = MaintenanceStatus("Configuring jenkins agent")
 
@@ -197,10 +202,22 @@ class JenkinsAgentCharm(CharmBase):
             self.model.unit.status = ActiveStatus()
             return
 
-        if url is None:
+        if self.state.jenkins_url is None:
             logger.info("Jenkins hasn't exported its url yet. Skipping setup for now.")
             self.model.unit.status = ActiveStatus()
             return
+
+        if self.state.agent_token is None:
+            logger.info("Jenkins hasn't exported the agent secret yet. Skipping setup for now.")
+            self.model.unit.status = ActiveStatus()
+            return
+
+        elif self.state.agent_token[self.unit.name.replace('/', '-')] is None:
+            logger.info("Jenkins hasn't exported the agent secret yet. Skipping setup for now.")
+            self.model.unit.status = ActiveStatus()
+            return
+
+        self.configure_pod(event)
 
 
 if __name__ == '__main__':
