@@ -6,7 +6,7 @@ ENTRYPOINT /entrypoint.sh
 ARG DIST_RELEASE_VERSION=20.04
 
 LABEL com.canonical.dist-release=${DIST_RELEASE}
-LABEL com.canonical.dist-release=${DIST_RELEASE_VERSION}
+LABEL com.canonical.dist-release-version=${DIST_RELEASE_VERSION}
 
 ARG AUTHOR
 LABEL org.opencontainers.image.authors=${OCI_AUTHOR}
