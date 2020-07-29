@@ -49,26 +49,22 @@ class JenkinsAgentCharm(CharmBase):
         If the secured keyword is set then it will return a sanitised copy
         without exposing secrets.
         """
-        unit_name = self.unit.name.replace('/', '-')
         pod_config = {}
 
         pod_config["JENKINS_API_USER"] = config["jenkins_user"]
-        pod_config["JENKINS_HOSTNAME"] = unit_name
 
         if self.state.jenkins_url:
             pod_config["JENKINS_URL"] = self.state.jenkins_url
         elif config.get("jenkins_master_url", None):
             pod_config["JENKINS_URL"] = config["jenkins_master_url"]
-        # if config.get("jenkins_agent_name", None):
-        #     pod_config["JENKINS_HOSTNAME"] = config["jenkins_agent_name"]
+        if config.get("jenkins_agent_name", None):
+            pod_config["JENKINS_HOSTNAME"] = config["jenkins_agent_name"]
 
         if secured:
             return pod_config
 
-        for i in self.state.agent_token:
-            logger.info("ALEJDG - self.state.agent_token: %s", i)
-            logger.info("ALEJDG - self.state.agent_token[%s]: %s", i, self.state.agent_token[i])
-        pod_config["JENKINS_API_TOKEN"] = self.state.agent_token[unit_name] or config["jenkins_api_token"]
+        logger.info("ALEJDG - self.state.agent_token: %s", self.state.agent_token)
+        pod_config["JENKINS_API_TOKEN"] = self.state.agent_token or config["jenkins_api_token"]
 
         return pod_config
 
@@ -77,9 +73,9 @@ class JenkinsAgentCharm(CharmBase):
         if not is_valid:
             return
 
-        # if not self.unit.is_leader():
-        #     self.unit.status = ActiveStatus()
-        #     return
+        if not self.unit.is_leader():
+            self.unit.status = ActiveStatus()
+            return
 
         spec = self.make_pod_spec()
         if spec != self.state._spec:
@@ -149,7 +145,8 @@ class JenkinsAgentCharm(CharmBase):
         logger.info("Jenkins relation joined")
         noexecutors = os.cpu_count()
         config_labels = self.model.config.get('labels')
-        slave_host = self.unit.name.replace('/', '-')
+        slave_host = self.model.config.get("jenkins_agent_name")
+
 
         if config_labels:
             labels = config_labels
@@ -158,7 +155,7 @@ class JenkinsAgentCharm(CharmBase):
 
         # slave_address = hookenv.unit_private_ip()
 
-        logger.info("noexecutors: %s - type: %s",noexecutors, type(noexecutors))
+        logger.info("noexecutors: %s - type: %s", noexecutors, type(noexecutors))
         logger.info("labels: %s - type: %s",labels, type(labels))
         event.relation.data[self.model.unit]["executors"] = str(noexecutors)
         event.relation.data[self.model.unit]["labels"] = labels
@@ -182,8 +179,7 @@ class JenkinsAgentCharm(CharmBase):
             logger.info("ALEJDG - event.relation.data[event.unit]['url']: %s", event.relation.data[event.unit]['url'])
             logger.info("ALEJDG - event.relation.data[event.unit]['secret']: %s", event.relation.data[event.unit]['secret'])
             self.state.jenkins_url = event.relation.data[event.unit]['url']
-            self.state.agent_token = {self.unit.name.replace('/', '-'):
-                                      event.relation.data[event.unit]['secret']}
+            self.state.agent_token = event.relation.data[event.unit]['secret']
         except KeyError:
             pass
 
@@ -208,11 +204,6 @@ class JenkinsAgentCharm(CharmBase):
             return
 
         if self.state.agent_token is None:
-            logger.info("Jenkins hasn't exported the agent secret yet. Skipping setup for now.")
-            self.model.unit.status = ActiveStatus()
-            return
-
-        elif self.state.agent_token[self.unit.name.replace('/', '-')] is None:
             logger.info("Jenkins hasn't exported the agent secret yet. Skipping setup for now.")
             self.model.unit.status = ActiveStatus()
             return
