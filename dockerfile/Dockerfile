@@ -47,7 +47,8 @@ RUN apt-get update -y \
 
 WORKDIR /var/lib/jenkins
 
-USER ${USER}
+#USER ${USER}
+USER root
 
 COPY files/entrypoint.sh /
 

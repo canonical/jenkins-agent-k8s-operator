@@ -21,7 +21,7 @@ logger = logging.getLogger()
 
 
 class JenkinsAgentCharm(CharmBase):
-    state = StoredState()
+    _stored = StoredState()
 
     # on_slave_relation_configured = EventSource(SlaveRelationConfigureEvent)
 
@@ -32,9 +32,9 @@ class JenkinsAgentCharm(CharmBase):
         framework.observe(self.on.config_changed, self.configure_pod)
         framework.observe(self.on.upgrade_charm, self.configure_pod)
         framework.observe(self.on.slave_relation_joined, self.on_slave_relation_joined)
-        framework.observe(self.on.slave_relation_changed, self.on_slave_relation_joined)
+        framework.observe(self.on.slave_relation_changed, self.on_slave_relation_changed)
 
-        self.state.set_default(_spec=None, jenkins_url=None, agent_token=None)
+        self._stored.set_default(_spec=None, jenkins_url=None, agent_tokens=None, agents=None)
 
     def on_upgrade_charm(self, event):
         pass
@@ -53,8 +53,8 @@ class JenkinsAgentCharm(CharmBase):
 
         pod_config["JENKINS_API_USER"] = config["jenkins_user"]
 
-        if self.state.jenkins_url:
-            pod_config["JENKINS_URL"] = self.state.jenkins_url
+        if self._stored.jenkins_url:
+            pod_config["JENKINS_URL"] = self._stored.jenkins_url
         elif config.get("jenkins_master_url", None):
             pod_config["JENKINS_URL"] = config["jenkins_master_url"]
         if config.get("jenkins_agent_name", None):
@@ -63,8 +63,16 @@ class JenkinsAgentCharm(CharmBase):
         if secured:
             return pod_config
 
-        logger.info("ALEJDG - self.state.agent_token: %s", self.state.agent_token)
-        pod_config["JENKINS_API_TOKEN"] = self.state.agent_token or config["jenkins_api_token"]
+        # pod_config["JENKINS_API_TOKEN"] = self._stored.agent_tokens or config["jenkins_api_token"]
+        if self._stored.agent_tokens and self._stored.agents:
+            # for agent in self._stored.agents:
+            #     logger.info("ALEJDG - generate_pod_config - self._stored.agent: %s", agent)
+            logger.info("ALEJDG - generate_pod_config - self._stored.agent: %s", self._stored.agents)
+            # pod_config["JENKINS_AGENTS"] = ":".join(self._stored.agents)
+            pod_config["JENKINS_AGENTS"] = ":".join(self._stored.agents)
+            pod_config["JENKINS_TOKENS"] = ":".join(self._stored.agent_tokens)
+        else:
+            pod_config["JENKINS_TOKENS"] = config["jenkins_api_token"]
 
         return pod_config
 
@@ -78,8 +86,8 @@ class JenkinsAgentCharm(CharmBase):
             return
 
         spec = self.make_pod_spec()
-        if spec != self.state._spec:
-            self.state._spec = spec
+        if spec != self._stored._spec:
+            self._stored._spec = spec
             # only the leader can set_spec()
             if self.model.unit.is_leader():
                 spec = self.make_pod_spec()
@@ -95,7 +103,7 @@ class JenkinsAgentCharm(CharmBase):
         else:
             logger.info("Pod spec unchanged")
 
-        self.state.is_started = True
+        self._stored.is_started = True
         self.model.unit.status = ActiveStatus()
 
     def make_pod_spec(self):
@@ -117,10 +125,11 @@ class JenkinsAgentCharm(CharmBase):
         }
 
         out = io.StringIO()
-        pprint.pprint(spec, out)
         logger.info("This is the Kubernetes Pod spec config (sans secrets) <<EOM\n{}\nEOM".format(out.getvalue()))
 
         secure_pod_config.update(full_pod_config)
+        pprint.pprint(spec, out)
+        logger.info("This is the Kubernetes Pod spec config (with secrets) <<EOM\n{}\nEOM".format(out.getvalue()))
 
         return spec
 
@@ -128,7 +137,8 @@ class JenkinsAgentCharm(CharmBase):
         is_valid = True
 
         config = self.model.config
-        if self.state.agent_token:
+        logger.info("ALEJDG SPEC: %s", self._stored._spec)
+        if self._stored.agent_tokens:
             want = ("image", "jenkins_user")
         else:
             want = ("image", "jenkins_user", "jenkins_api_token")
@@ -145,8 +155,14 @@ class JenkinsAgentCharm(CharmBase):
         logger.info("Jenkins relation joined")
         noexecutors = os.cpu_count()
         config_labels = self.model.config.get('labels')
-        slave_host = self.model.config.get("jenkins_agent_name")
-
+        agent_name = ""
+        if self._stored.agents:
+            self._stored.agents[-1]
+            name, number = self._stored.agents[-1].rsplit('-', 1)
+            agent_name = "{}-{}".format(name, int(number) + 1)
+        else:
+            self._stored.agents = []
+            agent_name = self.unit.name.replace('/', '-')
 
         if config_labels:
             labels = config_labels
@@ -159,8 +175,7 @@ class JenkinsAgentCharm(CharmBase):
         logger.info("labels: %s - type: %s",labels, type(labels))
         event.relation.data[self.model.unit]["executors"] = str(noexecutors)
         event.relation.data[self.model.unit]["labels"] = labels
-        event.relation.data[self.model.unit]["slavehost"] = slave_host
-        # event.relation.data[self.model.unit]["slaveaddress"] = slave_address
+        event.relation.data[self.model.unit]["slavehost"] = agent_name
 
         remote_data = event.relation.data[event.app]
         logger.info("ALEJDG - remote_data_app: %s", remote_data)
@@ -175,22 +190,39 @@ class JenkinsAgentCharm(CharmBase):
         for i in remote_data:
             logger.info("ALEJDG - remote_data_post_app['%s']: %s", i, remote_data[i])
 
+    def on_slave_relation_changed(self, event):
+        logger.info("Jenkins relation changed")
         try:
             logger.info("ALEJDG - event.relation.data[event.unit]['url']: %s", event.relation.data[event.unit]['url'])
+            self._stored.jenkins_url = event.relation.data[event.unit]['url']
+        except KeyError:
+            pass
+
+        try:
             logger.info("ALEJDG - event.relation.data[event.unit]['secret']: %s", event.relation.data[event.unit]['secret'])
-            self.state.jenkins_url = event.relation.data[event.unit]['url']
-            self.state.agent_token = event.relation.data[event.unit]['secret']
+            logger.info("ALEJDG - event.unit.name: %s", event.unit.name)
+            logger.info("ALEJDG - self.unit.name.: %s", self.unit.name)
+            self._stored.agent_tokens = self._stored.agent_tokens or []
+            self._stored.agent_tokens.append(event.relation.data[event.unit]['secret'])
+            agent_name = ""
+            if self._stored.agents:
+                logger.info("ALEJDG - self._stored.agents[-1]: %s", self._stored.agents[-1])
+                self._stored.agents[-1]
+                name, number = self._stored.agents[-1].rsplit('-', 1)
+                agent_name = "{}-{}".format(name, int(number) + 1)
+                self._stored.agents.append(agent_name)
+            else:
+                self._stored.agents = []
+                agent_name = self.unit.name.replace('/', '-')
+                self._stored.agents.append(agent_name)
         except KeyError:
             pass
 
         self.configure_slave_through_relation(event)
 
-    def on_slave_relation_changed(self, event):
-        logger.info("Jenkins relation changed")
-        self.on_slave_relation_joined(event)
-
     def configure_slave_through_relation(self, event):
         logger.info("Setting up jenkins via slave relation")
+        logger.info("ALEJDG - on_slave_relation_joined - self._stored.agents_setup: %s", self._stored.agents)
         self.model.unit.status = MaintenanceStatus("Configuring jenkins agent")
 
         if self.model.config.get("url"):
@@ -198,12 +230,12 @@ class JenkinsAgentCharm(CharmBase):
             self.model.unit.status = ActiveStatus()
             return
 
-        if self.state.jenkins_url is None:
+        if self._stored.jenkins_url is None:
             logger.info("Jenkins hasn't exported its url yet. Skipping setup for now.")
             self.model.unit.status = ActiveStatus()
             return
 
-        if self.state.agent_token is None:
+        if self._stored.agent_tokens is None:
             logger.info("Jenkins hasn't exported the agent secret yet. Skipping setup for now.")
             self.model.unit.status = ActiveStatus()
             return
