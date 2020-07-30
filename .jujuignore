@@ -2,7 +2,7 @@
 .coverage
 .tox
 __pycache__
-/build
-/dockerfile
-/tests
+/build/
+/dockerfile/
+/tests/
 /Makefile
