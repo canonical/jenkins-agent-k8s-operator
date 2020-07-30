@@ -1,0 +1,8 @@
+*~
+.coverage
+.tox
+__pycache__
+/build
+/dockerfile
+/tests
+/Makefile
