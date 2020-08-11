@@ -3,14 +3,6 @@ options:
     type: string
     default: "jenkins-agent-operator"
     description: "The docker image to install. Required. Defaults to jenkins-agent-operator from rocks.canonical.com"
-  tools:
-    type: string
-    default: git gcc make bzr
-    description: Tooling to deploy on jenkins agent node
-  labels:
-    type: string
-    description: Jenkins labels to associate with jenkins agent node
-    default: ""
   jenkins_master_url:
     type: string
     default: ""
