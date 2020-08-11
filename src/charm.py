@@ -5,14 +5,10 @@
 
 import io
 import pprint
-import os
-import sys
 import logging
 
-sys.path.append('lib')  # noqa: E402
-
 from ops.charm import CharmBase
-from ops.framework import StoredState, EventSource, EventBase
+from ops.framework import StoredState
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
 
@@ -115,7 +111,11 @@ class JenkinsAgentCharm(CharmBase):
         return spec
 
     def is_valid_config(self):
-        """Validate required configuration"""
+        """Validate required configuration.
+
+        When not configuring the agent through relations
+        'jenkins_master_url', 'jenkins_agent_name' and 'jenkins_agent_token'
+        are required."""
         is_valid = True
 
         config = self.model.config
