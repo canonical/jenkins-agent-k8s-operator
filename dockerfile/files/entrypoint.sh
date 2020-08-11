@@ -21,20 +21,10 @@ typeset JAVA_ARGS=${JAVA_ARGS:-""}
 # job from running.
 typeset JENKINS_URL="${JENKINS_URL:?"URL of a jenkins server must be provided"}"
 
-# Name of agent configuration to use at JENKINS_URL
-# Override if it need to be something other than the
-# hostname of the server the agent is running on.
-typeset JENKINS_HOSTNAME="${JENKINS_HOSTNAME:-$(hostname)}"
-
-
 typeset JENKINS_WORKDIR="/var/lib/jenkins"
 
 # Arguments to pass to jenkins agent on startup
 typeset -a JENKINS_ARGS
-
-# JENKINS_ARGS+=(-jnlpUrl "${JENKINS_URL}"/computer/"${JENKINS_HOSTNAME}"/slave-agent.jnlp)
-# JENKINS_ARGS+=(-jnlpCredentials "${JENKINS_API_USER:?Please specify JENKINS_API_USER}:${JENKINS_API_TOKEN:?Please specify JENKINS_API_TOKEN}")
-# JENKINS_ARGS+=(-noReconect)
 
 # Path of the agent.jar
 typeset AGENT_JAR=/var/lib/jenkins/agent.jar
