@@ -59,6 +59,7 @@ class JenkinsAgentCharm(CharmBase):
         return pod_config
 
     def configure_pod(self, event):
+        """Assemble the pod spec and apply it, if possible."""
         is_valid = self.is_valid_config()
         if not is_valid:
             return
@@ -89,6 +90,7 @@ class JenkinsAgentCharm(CharmBase):
         self.model.unit.status = ActiveStatus()
 
     def make_pod_spec(self):
+        """Prepare and return a pod spec."""
         config = self.model.config
 
         full_pod_config = self.generate_pod_config(config, secured=False)
@@ -106,12 +108,14 @@ class JenkinsAgentCharm(CharmBase):
         }
 
         out = io.StringIO()
+        pprint.pprint(spec, out)
         logger.info("This is the Kubernetes Pod spec config (sans secrets) <<EOM\n{}\nEOM".format(out.getvalue()))
 
         secure_pod_config.update(full_pod_config)
         return spec
 
     def is_valid_config(self):
+        """Validate required configuration"""
         is_valid = True
 
         config = self.model.config
