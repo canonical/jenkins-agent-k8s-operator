@@ -39,7 +39,7 @@ class JenkinsAgentCharm(CharmBase):
 
         if self._stored.jenkins_url:
             pod_config["JENKINS_URL"] = self._stored.jenkins_url
-        elif config.get("jenkins_master_url", None):
+        else:
             pod_config["JENKINS_URL"] = config["jenkins_master_url"]
 
         if secured:
@@ -58,10 +58,6 @@ class JenkinsAgentCharm(CharmBase):
         """Assemble the pod spec and apply it, if possible."""
         is_valid = self.is_valid_config()
         if not is_valid:
-            return
-
-        if not self.unit.is_leader():
-            self.unit.status = ActiveStatus()
             return
 
         spec = self.make_pod_spec()
