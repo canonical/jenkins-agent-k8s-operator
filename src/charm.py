@@ -19,12 +19,12 @@ logger = logging.getLogger()
 class JenkinsAgentCharm(CharmBase):
     _stored = StoredState()
 
-    def __init__(self, framework, parent):
-        super().__init__(framework, parent)
+    def __init__(self, *args):
+        super().__init__(*args)
 
-        framework.observe(self.on.start, self.configure_pod)
-        framework.observe(self.on.config_changed, self.configure_pod)
-        framework.observe(self.on.upgrade_charm, self.configure_pod)
+        self.framework.observe(self.on.start, self.configure_pod)
+        self.framework.observe(self.on.config_changed, self.configure_pod)
+        self.framework.observe(self.on.upgrade_charm, self.configure_pod)
 
         self._stored.set_default(_spec=None, jenkins_url=None, agent_tokens=None, agents=None)
 
