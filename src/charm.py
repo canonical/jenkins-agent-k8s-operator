@@ -4,6 +4,7 @@
 # Licensed under the GPLv3, see LICENCE file for details.
 
 import io
+import os
 import pprint
 import logging
 
@@ -25,6 +26,8 @@ class JenkinsAgentCharm(CharmBase):
         self.framework.observe(self.on.start, self.configure_pod)
         self.framework.observe(self.on.config_changed, self.configure_pod)
         self.framework.observe(self.on.upgrade_charm, self.configure_pod)
+        self.framework.observe(self.on.slave_relation_joined, self.on_slave_relation_joined)
+        self.framework.observe(self.on.slave_relation_changed, self.on_slave_relation_changed)
 
         self._stored.set_default(_spec=None, jenkins_url=None, agent_tokens=None, agents=None)
 
@@ -116,7 +119,7 @@ class JenkinsAgentCharm(CharmBase):
 
         config = self.model.config
         if self._stored.agent_tokens:
-            want = ("image")
+            want = ("image",)
         else:
             want = ("image", "jenkins_master_url", "jenkins_agent_name", "jenkins_agent_token")
         missing = [k for k in want if config[k].rstrip() == ""]
@@ -127,6 +130,75 @@ class JenkinsAgentCharm(CharmBase):
             is_valid = False
 
         return is_valid
+
+    def on_slave_relation_joined(self, event):
+        logger.info("Jenkins relation joined")
+        noexecutors = os.cpu_count()
+        config_labels = self.model.config.get('jenkins_agent_labels')
+        agent_name = ""
+        if self._stored.agents:
+            self._stored.agents[-1]
+            name, number = self._stored.agents[-1].rsplit('-', 1)
+            agent_name = "{}-{}".format(name, int(number) + 1)
+        else:
+            self._stored.agents = []
+            agent_name = self.unit.name.replace('/', '-')
+
+        if config_labels:
+            labels = config_labels
+        else:
+            labels = os.uname()[4]
+
+        event.relation.data[self.model.unit]["executors"] = str(noexecutors)
+        event.relation.data[self.model.unit]["labels"] = labels
+        event.relation.data[self.model.unit]["slavehost"] = agent_name
+
+    def on_slave_relation_changed(self, event):
+        """Populate local configuration with data from relation"""
+        logger.info("Jenkins relation changed")
+        try:
+            self._stored.jenkins_url = event.relation.data[event.unit]['url']
+        except KeyError:
+            pass
+
+        try:
+            self._stored.agent_tokens = self._stored.agent_tokens or []
+            self._stored.agent_tokens.append(event.relation.data[event.unit]['secret'])
+            agent_name = ""
+            if self._stored.agents:
+                self._stored.agents[-1]
+                name, number = self._stored.agents[-1].rsplit('-', 1)
+                agent_name = "{}-{}".format(name, int(number) + 1)
+                self._stored.agents.append(agent_name)
+            else:
+                self._stored.agents = []
+                agent_name = self.unit.name.replace('/', '-')
+                self._stored.agents.append(agent_name)
+        except KeyError:
+            pass
+
+        self.configure_through_relation(event)
+
+    def configure_through_relation(self, event):
+        logger.info("Setting up jenkins via slave relation")
+        self.model.unit.status = MaintenanceStatus("Configuring jenkins agent")
+
+        if self.model.config.get("jenkins_master_url"):
+            logger.info("Config option 'jenkins_master_url' is set. Can't use agent relation.")
+            self.model.unit.status = ActiveStatus()
+            return
+
+        if self._stored.jenkins_url is None:
+            logger.info("Jenkins hasn't exported its url yet. Skipping setup for now.")
+            self.model.unit.status = ActiveStatus()
+            return
+
+        if self._stored.agent_tokens is None:
+            logger.info("Jenkins hasn't exported the agent secret yet. Skipping setup for now.")
+            self.model.unit.status = ActiveStatus()
+            return
+
+        self.configure_pod(event)
 
 
 if __name__ == '__main__':

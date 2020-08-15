@@ -24,3 +24,9 @@ options:
       ${JENKINS_URL}/computer/${AGENT_NAME}/. Multiple tokens can be input by 
       using `:` as a separator matching the order of the agents in `jenkins_agent_name`.
       Example: "token-one:token-two:token-three"
+  jenkins_agent_labels:
+    type: string
+    default: ""
+    description: |
+      Comma-separated list of labels to be assigned to the agent in Jenkins. If not set it will default to 
+      the agents hardware identifier, e.g.: 'x86_64'
