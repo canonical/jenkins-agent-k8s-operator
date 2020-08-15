@@ -50,7 +50,7 @@ download_agent
 # Specify the pod as ready
 touch /var/lib/jenkins/agents/.ready
 
-shellcheck disable=SC2086
+#shellcheck disable=SC2086
 
 # Transform the env variables in arrays to iterate through it
 IFS=':' read -r -a AGENTS <<< ${JENKINS_AGENTS}
