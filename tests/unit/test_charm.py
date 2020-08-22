@@ -158,10 +158,10 @@ class TestJenkinsAgentCharm(unittest.TestCase):
 
     @patch("os.uname")
     @patch("os.cpu_count")
-    def test__on_slave_relation_joined(self, mock_os_cpu_count, mock_os_uname):
+    def test__on_agent_relation_joined(self, mock_os_cpu_count, mock_os_uname):
         """Test relation_data is set when a new relation joins"""
         mock_os_cpu_count.return_value = 8
-        mock_os_uname.return_value = ["", "", "", "", "x86_64"]
+        mock_os_uname.return_value.machine = "x86_64"
         expected_relation_data = {
             'executors': '8',
             'labels': 'x86_64',
@@ -180,7 +180,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         with self.assertLogs(level='INFO') as logger:
             self.harness.charm.configure_through_relation(mock_event)
             expected_output = [
-                "INFO:root:Setting up jenkins via slave relation",
+                "INFO:root:Setting up jenkins via agent relation",
                 "INFO:root:Jenkins hasn't exported its url yet. Skipping setup for now."
             ]
             self.assertEqual(logger.output, expected_output)
@@ -195,7 +195,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         with self.assertLogs(level='INFO') as logger:
             self.harness.charm.configure_through_relation(mock_event)
             expected_output = [
-                "INFO:root:Setting up jenkins via slave relation",
+                "INFO:root:Setting up jenkins via agent relation",
                 "INFO:root:Jenkins hasn't exported the agent secret yet. Skipping setup for now."
             ]
             self.assertEqual(logger.output, expected_output)
@@ -210,7 +210,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         with self.assertLogs(level='INFO') as logger:
             self.harness.charm.configure_through_relation(mock_event)
             expected_output = [
-                "INFO:root:Setting up jenkins via slave relation",
+                "INFO:root:Setting up jenkins via agent relation",
                 "INFO:root:Config option 'jenkins_master_url' is set. Can't use agent relation."
             ]
             self.assertEqual(logger.output, expected_output)
@@ -226,7 +226,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         with self.assertLogs(level='INFO') as logger:
             self.harness.charm.configure_through_relation(mock_event)
             expected_output = [
-                "INFO:root:Setting up jenkins via slave relation"
+                "INFO:root:Setting up jenkins via agent relation"
             ]
             self.assertEqual(logger.output, expected_output)
             mock_configure_pod.assert_called()
@@ -234,11 +234,11 @@ class TestJenkinsAgentCharm(unittest.TestCase):
 
     @patch("os.uname")
     @patch("os.cpu_count")
-    def test__on_slave_relation_joined__custom__label(self, mock_os_cpu_count, mock_os_uname):
+    def test__on_agent_relation_joined__custom__label(self, mock_os_cpu_count, mock_os_uname):
         """Test relation_data is set when a new relation joins
             and custom labels are set"""
         mock_os_cpu_count.return_value = 8
-        mock_os_uname.return_value = ["", "", "", "", "x86_64"]
+        mock_os_uname.return_value.machine = "x86_64"
         labels = "test, label"
         expected_relation_data = {
             'executors': '8',
@@ -254,10 +254,10 @@ class TestJenkinsAgentCharm(unittest.TestCase):
     @patch("charm.JenkinsAgentCharm.configure_through_relation")
     @patch("os.uname")
     @patch("os.cpu_count")
-    def test__on_slave_relation_changed__noop(self, mock_os_cpu_count, mock_os_uname, mock_configure_through_relation):
-        """Test on_slave_relation_changed when jenkins hasn't provided information yet"""
+    def test__on_agent_relation_changed__noop(self, mock_os_cpu_count, mock_os_uname, mock_configure_through_relation):
+        """Test on_agent_relation_changed when jenkins hasn't provided information yet"""
         mock_os_cpu_count.return_value = 8
-        mock_os_uname.return_value = ["", "", "", "", "x86_64"]
+        mock_os_uname.return_value.machine = "x86_64"
         remote_unit = "jenkins/0"
         self.harness.enable_hooks()
         rel_id = self.harness.add_relation("slave", "jenkins")
@@ -269,10 +269,10 @@ class TestJenkinsAgentCharm(unittest.TestCase):
     @patch("charm.JenkinsAgentCharm.configure_through_relation")
     @patch("os.uname")
     @patch("os.cpu_count")
-    def test__on_slave_relation_changed_old(self, mock_os_cpu_count, mock_os_uname, mock_configure_through_relation):
+    def test__on_agent_relation_changed_old(self, mock_os_cpu_count, mock_os_uname, mock_configure_through_relation):
         """Test relation_data is set when a new relation joins"""
         mock_os_cpu_count.return_value = 8
-        mock_os_uname.return_value = ["", "", "", "", "x86_64"]
+        mock_os_uname.return_value.machine = "x86_64"
         remote_unit = "jenkins/0"
         agent_name = "jenkins-agent-0"
         url = "http://test"
@@ -289,7 +289,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
     @patch("charm.JenkinsAgentCharm.configure_through_relation")
     @patch("os.uname")
     @patch("os.cpu_count")
-    def test__on_slave_relation_changed__multiple__agents(
+    def test__on_agent_relation_changed__multiple__agents(
         self,
         mock_os_cpu_count,
         mock_os_uname,
@@ -297,7 +297,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
     ):
         """Test relation_data is set when a new relation joins"""
         mock_os_cpu_count.return_value = 8
-        mock_os_uname.return_value = ["", "", "", "", "x86_64"]
+        mock_os_uname.return_value.machine = "x86_64"
         remote_unit = "jenkins/0"
         agent_name = "jenkins-agent-0"
         expected_new_agent = "jenkins-agent-1"

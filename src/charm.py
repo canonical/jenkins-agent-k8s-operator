@@ -4,9 +4,9 @@
 # Licensed under the GPLv3, see LICENCE file for details.
 
 import io
+import logging
 import os
 import pprint
-import logging
 
 from ops.charm import CharmBase
 from ops.framework import StoredState
@@ -26,8 +26,8 @@ class JenkinsAgentCharm(CharmBase):
         self.framework.observe(self.on.start, self.configure_pod)
         self.framework.observe(self.on.config_changed, self.configure_pod)
         self.framework.observe(self.on.upgrade_charm, self.configure_pod)
-        self.framework.observe(self.on.slave_relation_joined, self.on_slave_relation_joined)
-        self.framework.observe(self.on.slave_relation_changed, self.on_slave_relation_changed)
+        self.framework.observe(self.on.slave_relation_joined, self.on_agent_relation_joined)
+        self.framework.observe(self.on.slave_relation_changed, self.on_agent_relation_changed)
 
         self._stored.set_default(_spec=None, jenkins_url=None, agent_tokens=None, agents=None)
 
@@ -131,29 +131,23 @@ class JenkinsAgentCharm(CharmBase):
 
         return is_valid
 
-    def on_slave_relation_joined(self, event):
+    def on_agent_relation_joined(self, event):
         logger.info("Jenkins relation joined")
-        noexecutors = os.cpu_count()
+        num_executors = os.cpu_count()
         config_labels = self.model.config.get('jenkins_agent_labels')
-        agent_name = ""
-        if self._stored.agents:
-            self._stored.agents[-1]
-            name, number = self._stored.agents[-1].rsplit('-', 1)
-            agent_name = "{}-{}".format(name, int(number) + 1)
-        else:
-            self._stored.agents = []
-            agent_name = self.unit.name.replace('/', '-')
+        agent_name = self._gen_agent_name()
 
         if config_labels:
             labels = config_labels
         else:
-            labels = os.uname()[4]
+            print(os.uname())
+            labels = os.uname().machine
 
-        event.relation.data[self.model.unit]["executors"] = str(noexecutors)
+        event.relation.data[self.model.unit]["executors"] = str(num_executors)
         event.relation.data[self.model.unit]["labels"] = labels
         event.relation.data[self.model.unit]["slavehost"] = agent_name
 
-    def on_slave_relation_changed(self, event):
+    def on_agent_relation_changed(self, event):
         """Populate local configuration with data from relation"""
         logger.info("Jenkins relation changed")
         try:
@@ -164,23 +158,14 @@ class JenkinsAgentCharm(CharmBase):
         try:
             self._stored.agent_tokens = self._stored.agent_tokens or []
             self._stored.agent_tokens.append(event.relation.data[event.unit]['secret'])
-            agent_name = ""
-            if self._stored.agents:
-                self._stored.agents[-1]
-                name, number = self._stored.agents[-1].rsplit('-', 1)
-                agent_name = "{}-{}".format(name, int(number) + 1)
-                self._stored.agents.append(agent_name)
-            else:
-                self._stored.agents = []
-                agent_name = self.unit.name.replace('/', '-')
-                self._stored.agents.append(agent_name)
+            self._gen_agent_name(store=True)
         except KeyError:
             pass
 
         self.configure_through_relation(event)
 
     def configure_through_relation(self, event):
-        logger.info("Setting up jenkins via slave relation")
+        logger.info("Setting up jenkins via agent relation")
         self.model.unit.status = MaintenanceStatus("Configuring jenkins agent")
 
         if self.model.config.get("jenkins_master_url"):
@@ -199,6 +184,20 @@ class JenkinsAgentCharm(CharmBase):
             return
 
         self.configure_pod(event)
+
+    def _gen_agent_name(self, store=False):
+        agent_name = ""
+        if self._stored.agents:
+            name, number = self._stored.agents[-1].rsplit('-', 1)
+            agent_name = "{}-{}".format(name, int(number) + 1)
+            if store:
+                self._stored.agents.append(agent_name)
+        else:
+            agent_name = self.unit.name.replace('/', '-')
+            if store:
+                self._stored.agents = []
+                self._stored.agents.append(agent_name)
+        return agent_name
 
 
 if __name__ == '__main__':

@@ -7,7 +7,7 @@ options:
     type: string
     default: ""
     description: |
-      Configure the agent to use an explicit jenkins master instead of using
+      Configure the agent to use an explicit Jenkins master instead of using
       the jenkins-agent relation. This allows the agent to connect to a Jenkins instance not managed 
       by Juju.
   jenkins_agent_name:

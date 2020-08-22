@@ -50,8 +50,6 @@ download_agent
 # Specify the pod as ready
 touch /var/lib/jenkins/agents/.ready
 
-#shellcheck disable=SC2086
-
 # Transform the env variables in arrays to iterate through it
 IFS=':' read -r -a AGENTS <<< ${JENKINS_AGENTS}
 IFS=':' read -r -a TOKENS <<< ${JENKINS_TOKENS}
@@ -59,8 +57,6 @@ IFS=':' read -r -a TOKENS <<< ${JENKINS_TOKENS}
 echo ${!AGENTS[@]}
 
 for index in ${!AGENTS[@]}; do
-    echo "agent  : ${AGENTS[$index]}"
-    echo "value: ${TOKENS[$index]}"
-    echo "${JAVA}" "${JAVA_ARGS}" -jar "${AGENT_JAR}" -jnlpUrl "${JENKINS_URL}"/computer/"${AGENTS[$index]}"/slave-agent.jnlp -workDir "${JENKINS_WORKDIR}" -noReconnect -secret "${TOKENS[$index]}"
+    echo "About to run ${JAVA}" "${JAVA_ARGS}" -jar "${AGENT_JAR}" -jnlpUrl "${JENKINS_URL}"/computer/"${AGENTS[$index]}"/slave-agent.jnlp -workDir "${JENKINS_WORKDIR}" -noReconnect -secret "${TOKENS[$index]}"
     ${JAVA} ${JAVA_ARGS} -jar ${AGENT_JAR} -jnlpUrl ${JENKINS_URL}/computer/${AGENTS[$index]}/slave-agent.jnlp -workDir ${JENKINS_WORKDIR} -noReconnect -secret ${TOKENS[$index]} || echo "Invalid or already used credentials."
 done
