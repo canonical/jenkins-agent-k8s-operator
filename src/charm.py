@@ -140,7 +140,6 @@ class JenkinsAgentCharm(CharmBase):
         if config_labels:
             labels = config_labels
         else:
-            print(os.uname())
             labels = os.uname().machine
 
         event.relation.data[self.model.unit]["executors"] = str(num_executors)

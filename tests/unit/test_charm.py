@@ -7,11 +7,6 @@ import unittest
 from ops import testing
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
 
-
-import sys
-
-sys.path.append('src')  # noqa: E402
-
 from charm import JenkinsAgentCharm
 
 CONFIG_DEFAULT = {
