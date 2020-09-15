@@ -109,6 +109,20 @@ class JenkinsAgentCharm(CharmBase):
         secure_pod_config.update(full_pod_config)
         return spec
 
+    def _missing_charm_settings(self):
+        """Check configuration setting dependencies and return a list of
+        missing settings; otherwise return an empty list."""
+        config = self.model.config
+        missing = []
+        if self._stored.agent_tokens:
+            required_settings = ("image",)
+        else:
+            required_settings = ("image", "jenkins_master_url", "jenkins_agent_name", "jenkins_agent_token")
+
+        missing.extend([setting for setting in required_settings if not config[setting]])
+
+        return sorted(list(set(missing)))
+
     def is_valid_config(self):
         """Validate required configuration.
 
@@ -117,12 +131,7 @@ class JenkinsAgentCharm(CharmBase):
         are required."""
         is_valid = True
 
-        config = self.model.config
-        if self._stored.agent_tokens:
-            want = ("image",)
-        else:
-            want = ("image", "jenkins_master_url", "jenkins_agent_name", "jenkins_agent_token")
-        missing = [k for k in want if config[k].rstrip() == ""]
+        missing = self._missing_charm_settings()
         if missing:
             message = "Missing required config: {}".format(" ".join(missing))
             logger.info(message)
@@ -132,6 +141,7 @@ class JenkinsAgentCharm(CharmBase):
         return is_valid
 
     def on_agent_relation_joined(self, event):
+        """Set relation data for the unit once an agent has connected."""
         logger.info("Jenkins relation joined")
         num_executors = os.cpu_count()
         config_labels = self.model.config.get('jenkins_agent_labels')
@@ -147,7 +157,7 @@ class JenkinsAgentCharm(CharmBase):
         event.relation.data[self.model.unit]["slavehost"] = agent_name
 
     def on_agent_relation_changed(self, event):
-        """Populate local configuration with data from relation"""
+        """Populate local configuration with data from relation."""
         logger.info("Jenkins relation changed")
         try:
             self._stored.jenkins_url = event.relation.data[event.unit]['url']
@@ -164,6 +174,7 @@ class JenkinsAgentCharm(CharmBase):
         self.configure_through_relation(event)
 
     def configure_through_relation(self, event):
+        """Configure the agent through data from relation."""
         logger.info("Setting up jenkins via agent relation")
         self.model.unit.status = MaintenanceStatus("Configuring jenkins agent")
 
@@ -173,7 +184,7 @@ class JenkinsAgentCharm(CharmBase):
             return
 
         if self._stored.jenkins_url is None:
-            logger.info("Jenkins hasn't exported its url yet. Skipping setup for now.")
+            logger.info("Jenkins hasn't exported its URL yet. Skipping setup for now.")
             self.model.unit.status = ActiveStatus()
             return
 
@@ -185,6 +196,7 @@ class JenkinsAgentCharm(CharmBase):
         self.configure_pod(event)
 
     def _gen_agent_name(self, store=False):
+        """Generate the agent name or get the one already in use."""
         agent_name = ""
         if self._stored.agents:
             name, number = self._stored.agents[-1].rsplit('-', 1)
