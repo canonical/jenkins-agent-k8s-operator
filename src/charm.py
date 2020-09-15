@@ -59,16 +59,16 @@ class JenkinsAgentCharm(CharmBase):
 
     def configure_pod(self, event):
         """Assemble the pod spec and apply it, if possible."""
-        is_valid = self.is_valid_config()
+        is_valid = self._is_valid_config()
         if not is_valid:
             return
 
-        spec = self.make_pod_spec()
+        spec = self._make_pod_spec()
         if spec != self._stored._spec:
             self._stored._spec = spec
             # only the leader can set_spec()
             if self.model.unit.is_leader():
-                spec = self.make_pod_spec()
+                spec = self._make_pod_spec()
 
                 logger.info("Configuring pod")
                 self.model.unit.status = MaintenanceStatus("Configuring pod")
@@ -84,7 +84,7 @@ class JenkinsAgentCharm(CharmBase):
         self._stored.is_started = True
         self.model.unit.status = ActiveStatus()
 
-    def make_pod_spec(self):
+    def _make_pod_spec(self):
         """Prepare and return a pod spec."""
         config = self.model.config
 
@@ -123,7 +123,7 @@ class JenkinsAgentCharm(CharmBase):
 
         return sorted(list(set(missing)))
 
-    def is_valid_config(self):
+    def _is_valid_config(self):
         """Validate required configuration.
 
         When not configuring the agent through relations

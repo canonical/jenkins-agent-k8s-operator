@@ -124,7 +124,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         """Test configure_pod when there is no change in the spec."""
         self.harness.set_leader(is_leader=True)
         self.harness.update_config(CONFIG_ONE_AGENT_CUSTOM_IMAGE)
-        self.harness.charm._stored._spec = self.harness.charm.make_pod_spec()
+        self.harness.charm._stored._spec = self.harness.charm._make_pod_spec()
         with self.assertLogs(level='INFO') as logger:
             self.harness.charm.on.config_changed.emit()
             self.assertEqual(self.harness.model.unit.status, ActiveStatus())
@@ -135,7 +135,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
     def test__make_pod_spec(self):
         """Test the construction of the spec based on juju config."""
         self.harness.update_config(CONFIG_ONE_AGENT_CUSTOM_IMAGE)
-        self.assertEqual(self.harness.charm.make_pod_spec(), SPEC_EXPECTED)
+        self.assertEqual(self.harness.charm._make_pod_spec(), SPEC_EXPECTED)
 
     def test__is_valid_config(self):
         """Test config validation."""
@@ -145,13 +145,13 @@ class TestJenkinsAgentCharm(unittest.TestCase):
             "jenkins_agent_name": "agent-one",
             "jenkins_agent_token": "token-one"
         }
-        self.assertEqual(self.harness.charm.is_valid_config(), False)
+        self.assertEqual(self.harness.charm._is_valid_config(), False)
         with self.subTest("Config from relation"):
             self.harness.charm._stored.agent_tokens = "token"
-            self.assertEqual(self.harness.charm.is_valid_config(), True)
+            self.assertEqual(self.harness.charm._is_valid_config(), True)
         with self.subTest("Config from juju config"):
             self.harness.update_config(config)
-            self.assertEqual(self.harness.charm.is_valid_config(), True)
+            self.assertEqual(self.harness.charm._is_valid_config(), True)
 
     @patch("os.uname")
     @patch("os.cpu_count")
