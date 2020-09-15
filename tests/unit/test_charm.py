@@ -72,7 +72,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         self.assertEqual(self.harness.charm.generate_pod_config(CONFIG_ONE_AGENT, secured=False), expected)
 
     def test__generate_pod_config__with__relation__data(self):
-        """Test generate_pod_config with relation data"""
+        """Test generate_pod_config with relation data."""
         expected = {
             "JENKINS_URL": "http://test",
         }
@@ -91,14 +91,16 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         self.assertEqual(self.harness.charm.generate_pod_config(CONFIG_ONE_AGENT, secured=False), expected)
 
     def test__configure_pod__invalid__config(self):
-        """Test configure_pod when the config is invalid"""
+        """Test configure_pod when the config is invalid."""
         self.harness.charm.on.config_changed.emit()
-        message = "Missing required config: jenkins_master_url jenkins_agent_name jenkins_agent_token"
+        message = "Missing required config: jenkins_agent_name jenkins_agent_token jenkins_master_url"
+        print(self.harness.model.unit.status)
+        print(BlockedStatus(message))
         self.assertEqual(self.harness.model.unit.status, BlockedStatus(message))
         self.assertEqual(self.harness.get_pod_spec(), None)
 
     def test__configure_pod__unit__not__leader(self):
-        """Test configure_pod when the unit isn't leader"""
+        """Test configure_pod when the unit isn't leader."""
         self.harness.set_leader(is_leader=False)
         self.harness.update_config(CONFIG_ONE_AGENT)
         with self.assertLogs(level='INFO') as logger:
@@ -109,7 +111,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
             self.assertEqual(self.harness.get_pod_spec(), None)
 
     def test__configure_pod(self):
-        """Test configure_pod"""
+        """Test configure_pod."""
         expected = (SPEC_EXPECTED, None)
 
         self.harness.set_leader(is_leader=True)
@@ -119,7 +121,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         self.assertEqual(self.harness.get_pod_spec(), expected)
 
     def test__configure_pod__no__spec_change(self):
-        """Test configure_pod when there is no change in the spec"""
+        """Test configure_pod when there is no change in the spec."""
         self.harness.set_leader(is_leader=True)
         self.harness.update_config(CONFIG_ONE_AGENT_CUSTOM_IMAGE)
         self.harness.charm._stored._spec = self.harness.charm.make_pod_spec()
@@ -131,12 +133,12 @@ class TestJenkinsAgentCharm(unittest.TestCase):
             self.assertEqual(self.harness.get_pod_spec(), None)
 
     def test__make_pod_spec(self):
-        """Test the construction of the spec based on juju config"""
+        """Test the construction of the spec based on juju config."""
         self.harness.update_config(CONFIG_ONE_AGENT_CUSTOM_IMAGE)
         self.assertEqual(self.harness.charm.make_pod_spec(), SPEC_EXPECTED)
 
     def test__is_valid_config(self):
-        """Test config validation"""
+        """Test config validation."""
         config = {
             "image": "image-name",
             "jenkins_master_url": "http://test",
@@ -154,7 +156,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
     @patch("os.uname")
     @patch("os.cpu_count")
     def test__on_agent_relation_joined(self, mock_os_cpu_count, mock_os_uname):
-        """Test relation_data is set when a new relation joins"""
+        """Test relation_data is set when a new relation joins."""
         mock_os_cpu_count.return_value = 8
         mock_os_uname.return_value.machine = "x86_64"
         expected_relation_data = {
@@ -170,13 +172,13 @@ class TestJenkinsAgentCharm(unittest.TestCase):
 
     @patch("charm.JenkinsAgentCharm.configure_pod")
     def test__configure_through_relation__no__jenkins_master_url(self, mock_configure_pod):
-        """Test configure_through_relation when no configuration has been provided"""
+        """Test configure_through_relation when no configuration has been provided."""
         mock_event = MagicMock()
         with self.assertLogs(level='INFO') as logger:
             self.harness.charm.configure_through_relation(mock_event)
             expected_output = [
                 "INFO:root:Setting up jenkins via agent relation",
-                "INFO:root:Jenkins hasn't exported its url yet. Skipping setup for now."
+                "INFO:root:Jenkins hasn't exported its URL yet. Skipping setup for now."
             ]
             self.assertEqual(logger.output, expected_output)
             mock_configure_pod.assert_not_called()
@@ -184,7 +186,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
 
     @patch("charm.JenkinsAgentCharm.configure_pod")
     def test__configure_through_relation__no__jenkins_agent_tokens(self, mock_configure_pod):
-        """Test configure_through_relation when no tokens have been provided"""
+        """Test configure_through_relation when no tokens have been provided."""
         mock_event = MagicMock()
         self.harness.charm._stored.jenkins_url = "http://test"
         with self.assertLogs(level='INFO') as logger:
@@ -199,7 +201,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
 
     @patch("charm.JenkinsAgentCharm.configure_pod")
     def test__configure_through_relation__manual__config(self, mock_configure_pod):
-        """Test configure_through_relation when no configuration has been provided"""
+        """Test configure_through_relation when no configuration has been provided."""
         mock_event = MagicMock()
         self.harness.update_config({"jenkins_master_url": "http://test"})
         with self.assertLogs(level='INFO') as logger:
@@ -214,7 +216,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
 
     @patch("charm.JenkinsAgentCharm.configure_pod")
     def test__configure_through_relation(self, mock_configure_pod):
-        """Test configure_through_relation when the relation have provided all needed data"""
+        """Test configure_through_relation when the relation have provided all needed data."""
         mock_event = MagicMock()
         self.harness.charm._stored.jenkins_url = "http://test"
         self.harness.charm._stored.agent_tokens = "token"
@@ -250,7 +252,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
     @patch("os.uname")
     @patch("os.cpu_count")
     def test__on_agent_relation_changed__noop(self, mock_os_cpu_count, mock_os_uname, mock_configure_through_relation):
-        """Test on_agent_relation_changed when jenkins hasn't provided information yet"""
+        """Test on_agent_relation_changed when jenkins hasn't provided information yet."""
         mock_os_cpu_count.return_value = 8
         mock_os_uname.return_value.machine = "x86_64"
         remote_unit = "jenkins/0"
@@ -265,7 +267,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
     @patch("os.uname")
     @patch("os.cpu_count")
     def test__on_agent_relation_changed_old(self, mock_os_cpu_count, mock_os_uname, mock_configure_through_relation):
-        """Test relation_data is set when a new relation joins"""
+        """Test relation_data is set when a new relation joins."""
         mock_os_cpu_count.return_value = 8
         mock_os_uname.return_value.machine = "x86_64"
         remote_unit = "jenkins/0"
@@ -290,7 +292,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         mock_os_uname,
         mock_configure_through_relation
     ):
-        """Test relation_data is set when a new relation joins"""
+        """Test relation_data is set when a new relation joins."""
         mock_os_cpu_count.return_value = 8
         mock_os_uname.return_value.machine = "x86_64"
         remote_unit = "jenkins/0"
