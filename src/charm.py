@@ -18,7 +18,7 @@ logger = logging.getLogger()
 
 
 class JenkinsAgentCharm(CharmBase):
-    _stored = StoredState()
+    _state = StoredState()
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -29,7 +29,7 @@ class JenkinsAgentCharm(CharmBase):
         self.framework.observe(self.on.slave_relation_joined, self.on_agent_relation_joined)
         self.framework.observe(self.on.slave_relation_changed, self.on_agent_relation_changed)
 
-        self._stored.set_default(_spec=None, jenkins_url=None, agent_tokens=None, agents=None)
+        self._state.set_default(_spec=None, jenkins_url=None, agent_tokens=None, agents=None)
 
     def generate_pod_config(self, config, secured=True):
         """Kubernetes pod config generator.
@@ -40,17 +40,17 @@ class JenkinsAgentCharm(CharmBase):
         """
         pod_config = {}
 
-        if self._stored.jenkins_url:
-            pod_config["JENKINS_URL"] = self._stored.jenkins_url
+        if self._state.jenkins_url:
+            pod_config["JENKINS_URL"] = self._state.jenkins_url
         else:
             pod_config["JENKINS_URL"] = config["jenkins_master_url"]
 
         if secured:
             return pod_config
 
-        if self._stored.agent_tokens and self._stored.agents:
-            pod_config["JENKINS_AGENTS"] = ":".join(self._stored.agents)
-            pod_config["JENKINS_TOKENS"] = ":".join(self._stored.agent_tokens)
+        if self._state.agent_tokens and self._state.agents:
+            pod_config["JENKINS_AGENTS"] = ":".join(self._state.agents)
+            pod_config["JENKINS_TOKENS"] = ":".join(self._state.agent_tokens)
         else:
             pod_config["JENKINS_AGENTS"] = config["jenkins_agent_name"]
             pod_config["JENKINS_TOKENS"] = config["jenkins_agent_token"]
@@ -64,8 +64,8 @@ class JenkinsAgentCharm(CharmBase):
             return
 
         spec = self._make_pod_spec()
-        if spec != self._stored._spec:
-            self._stored._spec = spec
+        if spec != self._state._spec:
+            self._state._spec = spec
             # only the leader can set_spec()
             if self.model.unit.is_leader():
                 spec = self._make_pod_spec()
@@ -81,7 +81,7 @@ class JenkinsAgentCharm(CharmBase):
         else:
             logger.info("Pod spec unchanged")
 
-        self._stored.is_started = True
+        self._state.is_started = True
         self.model.unit.status = ActiveStatus()
 
     def _make_pod_spec(self):
@@ -110,18 +110,18 @@ class JenkinsAgentCharm(CharmBase):
         return spec
 
     def _missing_charm_settings(self):
-        """Check configuration setting dependencies and return a list of
-        missing settings; otherwise return an empty list."""
+        """Check configuration setting dependencies
+
+        Return a list of missing settings; otherwise return an empty list."""
         config = self.model.config
-        missing = []
-        if self._stored.agent_tokens:
+        if self._state.agent_tokens:
             required_settings = ("image",)
         else:
             required_settings = ("image", "jenkins_master_url", "jenkins_agent_name", "jenkins_agent_token")
 
-        missing.extend([setting for setting in required_settings if not config[setting]])
+        missing = [setting for setting in required_settings if not config[setting]]
 
-        return sorted(list(set(missing)))
+        return sorted(missing)
 
     def _is_valid_config(self):
         """Validate required configuration.
@@ -160,13 +160,13 @@ class JenkinsAgentCharm(CharmBase):
         """Populate local configuration with data from relation."""
         logger.info("Jenkins relation changed")
         try:
-            self._stored.jenkins_url = event.relation.data[event.unit]['url']
+            self._state.jenkins_url = event.relation.data[event.unit]['url']
         except KeyError:
             pass
 
         try:
-            self._stored.agent_tokens = self._stored.agent_tokens or []
-            self._stored.agent_tokens.append(event.relation.data[event.unit]['secret'])
+            self._state.agent_tokens = self._state.agent_tokens or []
+            self._state.agent_tokens.append(event.relation.data[event.unit]['secret'])
             self._gen_agent_name(store=True)
         except KeyError:
             pass
@@ -183,12 +183,12 @@ class JenkinsAgentCharm(CharmBase):
             self.model.unit.status = ActiveStatus()
             return
 
-        if self._stored.jenkins_url is None:
+        if self._state.jenkins_url is None:
             logger.info("Jenkins hasn't exported its URL yet. Skipping setup for now.")
             self.model.unit.status = ActiveStatus()
             return
 
-        if self._stored.agent_tokens is None:
+        if self._state.agent_tokens is None:
             logger.info("Jenkins hasn't exported the agent secret yet. Skipping setup for now.")
             self.model.unit.status = ActiveStatus()
             return
@@ -198,16 +198,16 @@ class JenkinsAgentCharm(CharmBase):
     def _gen_agent_name(self, store=False):
         """Generate the agent name or get the one already in use."""
         agent_name = ""
-        if self._stored.agents:
-            name, number = self._stored.agents[-1].rsplit('-', 1)
+        if self._state.agents:
+            name, number = self._state.agents[-1].rsplit('-', 1)
             agent_name = "{}-{}".format(name, int(number) + 1)
             if store:
-                self._stored.agents.append(agent_name)
+                self._state.agents.append(agent_name)
         else:
             agent_name = self.unit.name.replace('/', '-')
             if store:
-                self._stored.agents = []
-                self._stored.agents.append(agent_name)
+                self._state.agents = []
+                self._state.agents.append(agent_name)
         return agent_name
 
 

@@ -80,9 +80,9 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         url = "http://test"
         token = "token"
 
-        self.harness.charm._stored.jenkins_url = url
-        self.harness.charm._stored.agent_tokens = [token]
-        self.harness.charm._stored.agents = [agent_name]
+        self.harness.charm._state.jenkins_url = url
+        self.harness.charm._state.agent_tokens = [token]
+        self.harness.charm._state.agents = [agent_name]
 
         self.assertEqual(self.harness.charm.generate_pod_config(CONFIG_ONE_AGENT, secured=True), expected)
 
@@ -124,7 +124,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         """Test configure_pod when there is no change in the spec."""
         self.harness.set_leader(is_leader=True)
         self.harness.update_config(CONFIG_ONE_AGENT_CUSTOM_IMAGE)
-        self.harness.charm._stored._spec = self.harness.charm._make_pod_spec()
+        self.harness.charm._state._spec = self.harness.charm._make_pod_spec()
         with self.assertLogs(level='INFO') as logger:
             self.harness.charm.on.config_changed.emit()
             self.assertEqual(self.harness.model.unit.status, ActiveStatus())
@@ -147,7 +147,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         }
         self.assertEqual(self.harness.charm._is_valid_config(), False)
         with self.subTest("Config from relation"):
-            self.harness.charm._stored.agent_tokens = "token"
+            self.harness.charm._state.agent_tokens = "token"
             self.assertEqual(self.harness.charm._is_valid_config(), True)
         with self.subTest("Config from juju config"):
             self.harness.update_config(config)
@@ -188,7 +188,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
     def test__configure_through_relation__no__jenkins_agent_tokens(self, mock_configure_pod):
         """Test configure_through_relation when no tokens have been provided."""
         mock_event = MagicMock()
-        self.harness.charm._stored.jenkins_url = "http://test"
+        self.harness.charm._state.jenkins_url = "http://test"
         with self.assertLogs(level='INFO') as logger:
             self.harness.charm.configure_through_relation(mock_event)
             expected_output = [
@@ -218,8 +218,8 @@ class TestJenkinsAgentCharm(unittest.TestCase):
     def test__configure_through_relation(self, mock_configure_pod):
         """Test configure_through_relation when the relation have provided all needed data."""
         mock_event = MagicMock()
-        self.harness.charm._stored.jenkins_url = "http://test"
-        self.harness.charm._stored.agent_tokens = "token"
+        self.harness.charm._state.jenkins_url = "http://test"
+        self.harness.charm._state.agent_tokens = "token"
         with self.assertLogs(level='INFO') as logger:
             self.harness.charm.configure_through_relation(mock_event)
             expected_output = [
@@ -278,9 +278,9 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         rel_id = self.harness.add_relation("slave", "jenkins")
         self.harness.add_relation_unit(rel_id, remote_unit)
         self.harness.update_relation_data(rel_id, remote_unit, {"url": url, "secret": secret})
-        self.assertEqual(self.harness.charm._stored.jenkins_url, url)
-        self.assertEqual(self.harness.charm._stored.agent_tokens[-1], secret)
-        self.assertEqual(self.harness.charm._stored.agents[-1], agent_name)
+        self.assertEqual(self.harness.charm._state.jenkins_url, url)
+        self.assertEqual(self.harness.charm._state.agent_tokens[-1], secret)
+        self.assertEqual(self.harness.charm._state.agents[-1], agent_name)
         mock_configure_through_relation.assert_called()
 
     @patch("charm.JenkinsAgentCharm.configure_through_relation")
@@ -301,12 +301,12 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         url = "http://test"
         secret = "token"
 
-        self.harness.charm._stored.agents = [agent_name]
+        self.harness.charm._state.agents = [agent_name]
         self.harness.enable_hooks()
         rel_id = self.harness.add_relation("slave", "jenkins")
         self.harness.add_relation_unit(rel_id, remote_unit)
         self.harness.update_relation_data(rel_id, remote_unit, {"url": url, "secret": secret})
-        self.assertEqual(self.harness.charm._stored.jenkins_url, url)
-        self.assertEqual(self.harness.charm._stored.agent_tokens[-1], secret)
-        self.assertEqual(self.harness.charm._stored.agents[-1], expected_new_agent)
+        self.assertEqual(self.harness.charm._state.jenkins_url, url)
+        self.assertEqual(self.harness.charm._state.agent_tokens[-1], secret)
+        self.assertEqual(self.harness.charm._state.agents[-1], expected_new_agent)
         mock_configure_through_relation.assert_called()
