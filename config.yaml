@@ -3,32 +3,30 @@ options:
     type: string
     default: "jenkins-agent-operator"
     description: "The docker image to install. Required. Defaults to jenkins-agent-operator from rocks.canonical.com"
-  tools:
-    type: string
-    default: git gcc make bzr
-    description: Tooling to deploy on jenkins agent node
-  labels:
-    type: string
-    description: Jenkins labels to associate with jenkins agent node
-    default: ""
   jenkins_master_url:
     type: string
     default: ""
     description: |
-      Configure the agent to use an explicit jenkins master instead of using
-      the jenkins-agent relation. This allows for the agent and master to
-      be deployed in different environments.
+      Configure the agent to use an explicit Jenkins master instead of using
+      the jenkins-agent relation. This allows the agent to connect to a Jenkins instance not managed 
+      by Juju.
   jenkins_agent_name:
     type: string
     default: ""
     description: |
-      Jenkins agent name that will be seen on the jenkins master.
-      Will default to the hostname of the container.
-  jenkins_api_token:
+      Agent name as configured in Jenkins. Multiple names can be input by using `:` as a separator. 
+      Example: "agent-one:agent-two:agent-three"
+  jenkins_agent_token:
     type: string
     default: ""
-    description: "Jenkins API token used to join the master"
-  jenkins_user:
+    description: |
+      Agent token provided by Jenkins. Can be found in your Jenkins instance at 
+      ${JENKINS_URL}/computer/${AGENT_NAME}/. Multiple tokens can be input by 
+      using `:` as a separator matching the order of the agents in `jenkins_agent_name`.
+      Example: "token-one:token-two:token-three"
+  jenkins_agent_labels:
     type: string
-    default: "admin"
-    description: "Jenkins user to download agent.jar from master"
+    default: ""
+    description: |
+      Comma-separated list of labels to be assigned to the agent in Jenkins. If not set it will default to 
+      the agents hardware identifier, e.g.: 'x86_64'

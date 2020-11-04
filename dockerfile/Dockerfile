@@ -47,7 +47,9 @@ RUN apt-get update -y \
 
 WORKDIR /var/lib/jenkins
 
-USER ${USER}
+# Using root due to https://bugs.launchpad.net/juju/+bug/1879598
+#USER ${USER}
+USER root
 
 COPY files/entrypoint.sh /
 

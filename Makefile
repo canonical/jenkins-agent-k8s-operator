@@ -18,6 +18,13 @@ build-image: | $(dockerfile_dir)
 	  --build-arg REVISION="$(revision)" \
 	  -t $(JENKINS_IMAGE) $(dockerfile_dir)
 
+build-image-no-cache: | $(dockerfile_dir)
+	docker build \
+	  --build-arg AUTHOR=$(author) \
+	  --build-arg REVISION="$(revision)" \
+	  --no-cache \
+	  -t $(JENKINS_IMAGE) $(dockerfile_dir)
+
 build-release-image: | $(dockerfile_dir)
 	docker build \
 	  --build-arg DATE_CREATED="$(date_created)" \
