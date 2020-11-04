@@ -1,8 +1,8 @@
 options:
   image:
     type: string
-    default: "jenkins-agent-operator"
-    description: "The docker image to install. Required. Defaults to jenkins-agent-operator from rocks.canonical.com"
+    default: "jenkinscicharmers/jenkinsagent:edge"
+    description: "The docker image to install. Required. Defaults to jenkins-agent image on dockerhub"
   jenkins_master_url:
     type: string
     default: ""
