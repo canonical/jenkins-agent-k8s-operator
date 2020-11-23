@@ -19,10 +19,15 @@ First we're going to bootstrap and deploy Juju on LXC. We'll later add our
 MicroK8s model to this same controller.
 ```
 juju bootstrap localhost lxd
-juju deploy jenkins
+juju deploy jenkins --config password=admin
 ```
 Then go on the jenkins interface and create a permanent node called "jenkins-agent-k8s-test"
-manually for now. Grab the following variables for later use:
+manually for now. You can do this by visiting `$JENKINS_IP:8080` in a browser,
+and logging in with username `admin` and password `admin` (as set in config
+above). Once you've installed the plugins you want, and created an initial
+admin user you can then click the "Create an agent" link.
+
+Grab the following variables for later use:
 
 ```
 export JENKINS_API_TOKEN=$(juju ssh 0 -- sudo cat /var/lib/jenkins/.admin_token)
@@ -44,7 +49,7 @@ juju add-model jenkins-agent-k8s
 juju model-config logging-config="<root>=DEBUG"
 juju deploy cs:~jenkins-ci-charmers/jenkins-agent \
   --config "jenkins_agent_name=jenkins-agent-k8s-test" \
-  --config "jenkins_api_token=${JENKINS_API_TOKEN:?}" \
+  --config "jenkins_agent_token=${JENKINS_API_TOKEN:?}" \
   --config "jenkins_master_url=http://${JENKINS_IP:?}:8080"
 ```
 
