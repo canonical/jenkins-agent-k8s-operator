@@ -25,10 +25,10 @@ Then go on the jenkins interface and create a permanent node called "jenkins-age
 manually for now. You can do this by visiting `$JENKINS_IP:8080` in a browser,
 and logging in with username `admin` and password `admin` (as set in config
 above). Once you've installed the plugins you want, and created an initial
-admin user you can then click the "Create an agent" link.
+admin user you can then click the "Create an agent" link. You'll be asked to
+set the "remote root directory", which you should set to `/var/lib/jenkins`.
 
 Grab the following variables for later use:
-
 ```
 export JENKINS_API_TOKEN=$(juju ssh 0 -- sudo cat /var/lib/jenkins/.admin_token)
 export JENKINS_IP=$(juju status --format json jenkins | jq -r '.machines."0"."ip-addresses"[0]')
@@ -45,7 +45,7 @@ defined. See the "[Deploy Jenkins locally](#deploy-jenkins-locally)" section.
 In this repository directory
 ```
 microk8s.config | juju add-k8s micro --controller=lxd
-juju add-model jenkins-agent-k8s
+juju add-model jenkins-agent-k8s micro
 juju model-config logging-config="<root>=DEBUG"
 juju deploy cs:~jenkins-ci-charmers/jenkins-agent \
   --config "jenkins_agent_name=jenkins-agent-k8s-test" \
