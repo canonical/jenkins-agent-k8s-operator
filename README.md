@@ -13,7 +13,53 @@ microk8s.start
 microk8s.enable dns storage
 ```
 
-### Deploy Jenkins locally using LXC
+### Using Cross-model Relations
+
+The charm supports cross-model relations to connect to a Juju-deployed Jenkins
+instance in another model.
+
+First we're going to bootstrap and deploy Juju on LXC. We'll later add our
+MicroK8s model to this same controller.
+```
+juju bootstrap localhost lxd
+juju deploy jenkins --config password=admin
+```
+Then go to the jenkins interface by visiting `$JENKINS_IP:8080` in a browser,
+and logging in with the username `admin` and password `admin` (as set in
+config above). You can configure the plugins you want, and either create an
+initial admin user or skip that and continue with the pre-created one.
+
+Now we're going to create our k8s model and generate a cross-model relation
+offer:
+```
+microk8s.config | juju add-k8s micro --controller=lxd
+juju add-model jenkins-agent-k8s micro
+juju deploy cs:~jenkins-ci-charmers/jenkins-agent
+```
+The charm status will be "Blocked" with a message of "Missing required config:
+jenkins_agent_name jenkins_agent_token jenkins_master_url". This will be fixed
+by creating and accepting our cross-model relation. We do this from within the
+k8s model:
+```
+juju offer jenkins-agent:slave
+# The output will be something like:
+#  Application "jenkins-agent" endpoints [slave] available at "admin/jenkins-agent-k8s.jenkins-agent"
+```
+Switch back to your IaaS model where you deployed jenkins and run:
+```
+# Adjust based on the output of your 'juju offer' command above
+juju add-relation jenkins <your-controller>:admin/<your-microk8s-model>.jenkins-agent
+```
+You can now visit `$JENKINS_IP:8080/computer/` in a browser and you'll see the
+jenkins agent has been added to your jenkins instance.
+
+### Using a Manually Configured Node
+
+The charm also supports adding nodes manually, as we'll see below. This would
+allow you to manually connect to a Jenkins instance in another Juju model, or
+even to connect to a Jenkins instance that's not managed by Juju.
+
+#### Deploy Jenkins locally using LXC
 
 First we're going to bootstrap and deploy Juju on LXC. We'll later add our
 MicroK8s model to this same controller.
@@ -40,7 +86,7 @@ export JENKINS_AGENT_TOKEN=SOME_VALUE_PER_URL_ABOVE
 export JENKINS_IP=$(juju status --format json jenkins | jq -r '.machines."0"."ip-addresses"[0]')
 ```
 
-### Deploy the jenkins-agent charm
+#### Deploy the jenkins-agent charm
 
 You need to have a jenkins charm deployed locally and have the following variables
 defined. See the "[Deploy Jenkins locally](#deploy-jenkins-locally)" section.
