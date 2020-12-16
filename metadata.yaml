@@ -1,10 +1,11 @@
 name: jenkins-agent
-summary: jenkins-agent operator charm
+summary: Agent for Jenkins, the leading open source automation server. Jenkins provides hundreds of plugins to support building, deploying and automating any project.
+docs: https://discourse.charmhub.io/t/jenkins-agent-documentation-overview/3982
 maintainers:
     - Alexandre Gomes <alexandre.gomes@canonical.com>
     - Benjamin Allot <benjamin.allot@canonical.com>
 description: |
-  This charm sets up a jenkins-agent in kubernetes.
+  Agent for Jenkins, the leading open source automation server. Jenkins provides hundreds of plugins to support building, deploying and automating any project.
 series:
   - kubernetes
 deployment:
