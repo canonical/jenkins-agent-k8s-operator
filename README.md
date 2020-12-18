@@ -55,3 +55,7 @@ juju add-relation jenkins <your-controller>:admin/<your-microk8s-model>.jenkins-
 ```
 You can now visit `$JENKINS_IP:8080/computer/` in a browser and you'll see the
 jenkins agent has been added to your jenkins instance.
+
+---
+
+For more details [see here](https://charmhub.io/jenkins-agent/docs).
