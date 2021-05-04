@@ -3,10 +3,9 @@
 # Copyright 2020 Canonical Ltd.
 # Licensed under the GPLv3, see LICENCE file for details.
 
-import io
 import logging
 import os
-import pprint
+import yaml
 
 from ops.charm import CharmBase
 from ops.framework import StoredState
@@ -22,92 +21,62 @@ class JenkinsAgentCharm(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
-
-        self.framework.observe(self.on.start, self.configure_pod)
-        self.framework.observe(self.on.config_changed, self.configure_pod)
-        self.framework.observe(self.on.upgrade_charm, self.configure_pod)
+        self.framework.observe(self.on.start, self._on_config_changed)
+        self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(self.on.upgrade_charm, self._on_config_changed)
         self.framework.observe(self.on.slave_relation_joined, self.on_agent_relation_joined)
         self.framework.observe(self.on.slave_relation_changed, self.on_agent_relation_changed)
 
         self._stored.set_default(spec=None, jenkins_url=None, agent_tokens=None, agents=None)
+        self.service_name = "jenkins-agent"
 
-    def generate_pod_config(self, config, secured=True):
-        """Kubernetes pod config generator.
+    def _get_pebble_config(self, event):
+        """Generate our pebble config."""
+        env_config = self._get_env_config()
+        pebble_config = {
+            "summary": "jenkins agent layer",
+            "description": "Jenkins Agent layer",
+            "services": {
+                "jenkins-agent": {
+                    "override": "replace",
+                    "summary": "Jenkins Agent service",
+                    "command": "/entrypoint.sh",
+                    "startup": "enabled",
+                    "environment": env_config,
+                }
+            },
+        }
+        return pebble_config
 
-        generate_pod_config generates Kubernetes deployment config.
-        If the secured keyword is set then it will return a sanitised copy
-        without exposing secrets.
-        """
-        pod_config = {}
+    def _on_config_changed(self, event):
+        """Handle config-changed event."""
 
-        if self._stored.jenkins_url:
-            pod_config["JENKINS_URL"] = self._stored.jenkins_url
-        else:
-            pod_config["JENKINS_URL"] = config["jenkins_master_url"]
-
-        if secured:
-            return pod_config
-
-        if self._stored.agent_tokens and self._stored.agents:
-            pod_config["JENKINS_AGENTS"] = ":".join(self._stored.agents)
-            pod_config["JENKINS_TOKENS"] = ":".join(self._stored.agent_tokens)
-        else:
-            pod_config["JENKINS_AGENTS"] = config["jenkins_agent_name"]
-            pod_config["JENKINS_TOKENS"] = config["jenkins_agent_token"]
-
-        return pod_config
-
-    def configure_pod(self, event):
-        """Assemble the pod spec and apply it, if possible."""
         is_valid = self._is_valid_config()
         if not is_valid:
+            # Charm will be in blocked status.
             return
 
-        spec = self._make_pod_spec()
-        if spec != self._stored.spec:
-            self._stored.spec = spec
-            # only the leader can set_spec()
-            if self.model.unit.is_leader():
-                spec = self._make_pod_spec()
+        pebble_config = self._get_pebble_config(event)
+        container = self.unit.get_container(self.service_name)
 
-                logger.info("Configuring pod")
-                self.model.unit.status = MaintenanceStatus("Configuring pod")
-                self.model.pod.set_spec(spec)
+        plan = container.get_plan()
+        if not plan or not plan.services or (
+            plan.services[self.service_name].to_dict() != pebble_config["services"][self.service_name]
+        ):
+            logger.debug("About to add_layer with pebble_config:\n{}".format(yaml.dump(pebble_config)))
+            container.add_layer(self.service_name, pebble_config, combine=True)
 
-                logger.info("Pod configured")
-                self.model.unit.status = MaintenanceStatus("Pod configured")
-            else:
-                logger.info("Spec changes ignored by non-leader")
+            self._restart_service(self.service_name, container)
         else:
-            logger.info("Pod spec unchanged")
+            logger.debug("Pebble config unchanged")
 
-        self._stored.is_started = True
-        self.model.unit.status = ActiveStatus()
+        self.unit.status = ActiveStatus()
 
-    def _make_pod_spec(self):
-        """Prepare and return a pod spec."""
-        config = self.model.config
-
-        full_pod_config = self.generate_pod_config(config, secured=False)
-        secure_pod_config = self.generate_pod_config(config, secured=True)
-
-        spec = {
-            "containers": [
-                {
-                    "config": secure_pod_config,
-                    "imageDetails": {"imagePath": config["image"]},
-                    "name": self.app.name,
-                    "readinessProbe": {"exec": {"command": ["/bin/cat", "/var/lib/jenkins/agents/.ready"]}},
-                }
-            ],
-        }
-
-        out = io.StringIO()
-        pprint.pprint(spec, out)
-        logger.info("This is the Kubernetes Pod spec config (sans secrets) <<EOM\n{}\nEOM".format(out.getvalue()))
-
-        secure_pod_config.update(full_pod_config)
-        return spec
+    def _restart_service(self, service_name, container):
+        """Restart a service"""
+        if container.get_service(service_name).is_running():
+            container.stop(service_name)
+        container.start(service_name)
 
     def _missing_charm_settings(self):
         """Check configuration setting dependencies
@@ -117,7 +86,7 @@ class JenkinsAgentCharm(CharmBase):
         if self._stored.agent_tokens:
             required_settings = ("image",)
         else:
-            required_settings = ("image", "jenkins_master_url", "jenkins_agent_name", "jenkins_agent_token")
+            required_settings = ("image", "jenkins_url", "jenkins_agent_name", "jenkins_agent_token")
 
         missing = [setting for setting in required_settings if not config[setting]]
 
@@ -127,7 +96,7 @@ class JenkinsAgentCharm(CharmBase):
         """Validate required configuration.
 
         When not configuring the agent through relations
-        'jenkins_master_url', 'jenkins_agent_name' and 'jenkins_agent_token'
+        'jenkins_url', 'jenkins_agent_name' and 'jenkins_agent_token'
         are required."""
         is_valid = True
 
@@ -171,29 +140,32 @@ class JenkinsAgentCharm(CharmBase):
         except KeyError:
             pass
 
-        self.configure_through_relation(event)
+        print("alejdg")
+        print(self.valid_relation_data(event))
+        if self.valid_relation_data(event):
+            print("it's valid")
+            self._on_config_changed(event)
 
-    def configure_through_relation(self, event):
+    def valid_relation_data(self, event):
         """Configure the agent through data from relation."""
         logger.info("Setting up jenkins via agent relation")
         self.model.unit.status = MaintenanceStatus("Configuring jenkins agent")
 
-        if self.model.config.get("jenkins_master_url"):
-            logger.info("Config option 'jenkins_master_url' is set. Can't use agent relation.")
+        if self.model.config.get("jenkins_url"):
+            logger.info("Config option 'jenkins_url' is set. Can't use agent relation.")
             self.model.unit.status = ActiveStatus()
-            return
+            return False
 
         if self._stored.jenkins_url is None:
             logger.info("Jenkins hasn't exported its URL yet. Skipping setup for now.")
             self.model.unit.status = ActiveStatus()
-            return
+            return False
 
         if self._stored.agent_tokens is None:
             logger.info("Jenkins hasn't exported the agent secret yet. Skipping setup for now.")
             self.model.unit.status = ActiveStatus()
-            return
-
-        self.configure_pod(event)
+            return False
+        return True
 
     def _gen_agent_name(self, store=False):
         """Generate the agent name or get the one already in use."""
@@ -209,6 +181,24 @@ class JenkinsAgentCharm(CharmBase):
                 self._stored.agents = [agent_name]
         return agent_name
 
+    def _get_env_config(self):
+        env_config = {}
+        if self._stored.jenkins_url:
+            env_config["JENKINS_URL"] = self._stored.jenkins_url
+        else:
+            env_config["JENKINS_URL"] = self.config["jenkins_url"]
+
+        if self._stored.agent_tokens and self._stored.agents:
+            env_config["JENKINS_AGENTS"] = ":".join(self._stored.agents)
+            env_config["JENKINS_TOKENS"] = ":".join(self._stored.agent_tokens)
+        else:
+            env_config["JENKINS_AGENTS"] = self.config["jenkins_agent_name"]
+            env_config["JENKINS_TOKENS"] = self.config["jenkins_agent_token"]
+
+        return env_config
+
 
 if __name__ == '__main__':  # pragma: no cover
-    main(JenkinsAgentCharm)
+    # use_juju_for_storage is a workaround for states not persisting through upgrades:
+    # https://github.com/canonical/operator/issues/506
+    main(JenkinsAgentCharm, use_juju_for_storage=True)

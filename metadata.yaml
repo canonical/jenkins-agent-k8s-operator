@@ -6,10 +6,15 @@ maintainers:
     - Benjamin Allot <benjamin.allot@canonical.com>
 description: |
   Agent for Jenkins, the leading open source automation server. Jenkins provides hundreds of plugins to support building, deploying and automating any project.
-series:
-  - kubernetes
-deployment:
-  service: omit
 provides:
   slave:
     interface: jenkins-slave
+
+containers:
+  jenkins-agent:
+    resource: jenkins-agent-image
+
+resources:
+  jenkins-agent-image:
+    type: oci-image
+    description: OCI image for jenkins-agent

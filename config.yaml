@@ -3,11 +3,11 @@ options:
     type: string
     default: "jenkinscicharmers/jenkinsagent:edge"
     description: "The docker image to install. Required. Defaults to jenkins-agent image on dockerhub"
-  jenkins_master_url:
+  jenkins_url:
     type: string
     default: ""
     description: |
-      Configure the agent to use an explicit Jenkins master instead of using
+      Configure the agent to use an explicit Jenkins instead of using
       the jenkins-agent relation. This allows the agent to connect to a Jenkins instance not managed 
       by Juju.
   jenkins_agent_name:

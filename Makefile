@@ -52,6 +52,6 @@ clean:
 	@git clean -fXd
 
 jenkins-agent.charm: src/*.py requirements.txt
-	charmcraft build
+	charmcraft pack
 
 .PHONY: lint test unittest clean
