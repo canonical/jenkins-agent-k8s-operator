@@ -32,7 +32,7 @@ typeset AGENT_JAR=/var/lib/jenkins/agent.jar
 download_agent() {
     ## Download the agent.jar
 
-    # Retrieve agent JAR from Master Server
+    # Retrieve agent JAR from Jenkins Server
     echo "Downloading agent.jar from ${JENKINS_URL}..."
     curl -L -s -o "${AGENT_JAR}".new "${JENKINS_URL}"/jnlpJars/agent.jar
 

@@ -147,7 +147,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         """Test config validation."""
         config = {
             "image": "image-name",
-            "jenkins_master_url": "http://test",
+            "jenkins_url": "http://test",
             "jenkins_agent_name": "agent-one",
             "jenkins_agent_token": "token-one"
         }

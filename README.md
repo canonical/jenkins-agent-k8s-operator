@@ -40,7 +40,7 @@ juju add-model jenkins-agent-k8s micro
 juju deploy cs:~jenkins-ci-charmers/jenkins-agent
 ```
 The charm status will be "Blocked" with a message of "Missing required config:
-jenkins_agent_name jenkins_agent_token jenkins_master_url". This will be fixed
+jenkins_agent_name jenkins_agent_token jenkins_url". This will be fixed
 by creating and accepting our cross-model relation. We do this from within the
 k8s model:
 ```
