@@ -59,10 +59,8 @@ class JenkinsAgentCharm(CharmBase):
         pebble_config = self._get_pebble_config(event)
         container = self.unit.get_container(self.service_name)
 
-        plan = container.get_plan()
-        if not plan or not plan.services or (
-            plan.services[self.service_name].to_dict() != pebble_config["services"][self.service_name]
-        ):
+        services = container.get_plan().to_dict().get("services", [])
+        if services != pebble_config["services"]:
             logger.debug("About to add_layer with pebble_config:\n{}".format(yaml.dump(pebble_config)))
             container.add_layer(self.service_name, pebble_config, combine=True)
 
