@@ -26,13 +26,13 @@ MicroK8s model to this same controller.
 
 ```bash
 juju bootstrap localhost lxd
-juju deploy jenkins
+juju deploy jenkins --config jnlp-port=-1
 ```
 
 The default password for the 'admin' account will be auto-generated. Retrieve it using:
 
 ```bash
-juju run-action jenkins/0 get-admin-credentials
+juju run-action jenkins/0 get-admin-credentials --wait
 ```
 
 Then go to the jenkins interface by visiting `$JENKINS_IP:8080` in a browser,
@@ -46,7 +46,8 @@ offer:
 ```bash
 microk8s.config | juju add-k8s micro --controller=lxd
 juju add-model jenkins-agent-k8s micro
-juju deploy cs:~jenkins-ci-charmers/jenkins-agent
+charmcraft pack
+juju deploy ./alejdg-jenkins-agent-k8s.charm --resource jenkins-agent-image=jenkinscicharmers/jenkinsagent:edge
 ```
 
 The charm status will be "Blocked" with a message of "Missing required config:
