@@ -51,15 +51,14 @@ class JenkinsAgentCharm(CharmBase):
     def _on_config_changed(self, event):
         """Handle config-changed event."""
 
-        is_valid = self._is_valid_config()
-        if not is_valid:
+        if not self._is_valid_config():
             # Charm will be in blocked status.
             return
 
         pebble_config = self._get_pebble_config(event)
         container = self.unit.get_container(self.service_name)
 
-        services = container.get_plan().to_dict().get("services", [])
+        services = container.get_plan().to_dict().get("services", {})
         if services != pebble_config["services"]:
             logger.debug("About to add_layer with pebble_config:\n{}".format(yaml.dump(pebble_config)))
             container.add_layer(self.service_name, pebble_config, combine=True)
@@ -82,7 +81,7 @@ class JenkinsAgentCharm(CharmBase):
         Return a list of missing settings; otherwise return an empty list."""
         config = self.model.config
         if self._stored.agent_tokens:
-            required_settings = ("image",)
+            required_settings = ()
         else:
             required_settings = ("image", "jenkins_url", "jenkins_agent_name", "jenkins_agent_token")
 
@@ -138,13 +137,10 @@ class JenkinsAgentCharm(CharmBase):
         except KeyError:
             pass
 
-        print("alejdg")
-        print(self.valid_relation_data(event))
-        if self.valid_relation_data(event):
-            print("it's valid")
-            self._on_config_changed(event)
+        if self.valid_relation_data():
+            self.on.config_changed.emit()
 
-    def valid_relation_data(self, event):
+    def valid_relation_data(self):
         """Configure the agent through data from relation."""
         logger.info("Setting up jenkins via agent relation")
         self.model.unit.status = MaintenanceStatus("Configuring jenkins agent")
