@@ -83,7 +83,7 @@ class JenkinsAgentCharm(CharmBase):
         if self._stored.agent_tokens:
             required_settings = ()
         else:
-            required_settings = ("image", "jenkins_url", "jenkins_agent_name", "jenkins_agent_token")
+            required_settings = ("jenkins_url", "jenkins_agent_name", "jenkins_agent_token")
 
         missing = [setting for setting in required_settings if not config[setting]]
 

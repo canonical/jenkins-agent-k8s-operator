@@ -1,8 +1,4 @@
 options:
-  image:
-    type: string
-    default: "jenkinscicharmers/jenkinsagent:edge"
-    description: "The docker image to install. Required. Defaults to jenkins-agent image on dockerhub"
   jenkins_url:
     type: string
     default: ""
