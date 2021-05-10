@@ -23,39 +23,53 @@ connect our Jenkins Agent to it.
 
 First we're going to bootstrap and deploy Juju on LXC. We'll later add our
 MicroK8s model to this same controller.
-```
+
+```bash
 juju bootstrap localhost lxd
-juju deploy jenkins --config password=admin
+juju deploy jenkins
 ```
+
+The default password for the 'admin' account will be auto-generated. Retrieve it using:
+
+```bash
+juju run-action jenkins/0 get-admin-credentials
+```
+
 Then go to the jenkins interface by visiting `$JENKINS_IP:8080` in a browser,
-and logging in with the username `admin` and password `admin` (as set in
-config above). You can configure the plugins you want, and either create an
+and logging in with the username `admin` and password (as obtained through the command above).
+ You can configure the plugins you want, and either create an
 initial admin user or skip that and continue with the pre-created one.
 
 Now we're going to create our k8s model and generate a cross-model relation
 offer:
-```
+
+```bash
 microk8s.config | juju add-k8s micro --controller=lxd
 juju add-model jenkins-agent-k8s micro
 juju deploy cs:~jenkins-ci-charmers/jenkins-agent
 ```
+
 The charm status will be "Blocked" with a message of "Missing required config:
 jenkins_agent_name jenkins_agent_token jenkins_url". This will be fixed
 by creating and accepting our cross-model relation. We do this from within the
 k8s model:
-```
+
+```bash
 juju offer jenkins-agent:slave
 # The output will be something like:
 #  Application "jenkins-agent" endpoints [slave] available at "admin/jenkins-agent-k8s.jenkins-agent"
 ```
+
 Switch back to your IaaS model where you deployed jenkins and run:
-```
+
+```bash
 # Adjust based on the output of your 'juju offer' command above
 juju add-relation jenkins <your-controller>:admin/<your-microk8s-model>.jenkins-agent
 ```
+
 You can now visit `$JENKINS_IP:8080/computer/` in a browser and you'll see the
 jenkins agent has been added to your jenkins instance.
 
 ---
 
-For more details [see here](https://charmhub.io/jenkins-agent/docs).
+For more details [see here](https://charmhub.io/alejdg-jenkins-agent-k8s/docs).
