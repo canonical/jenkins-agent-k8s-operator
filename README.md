@@ -46,8 +46,7 @@ offer:
 ```bash
 microk8s.config | juju add-k8s micro --controller=lxd
 juju add-model jenkins-agent-k8s micro
-charmcraft pack
-juju deploy ./alejdg-jenkins-agent-k8s.charm --resource jenkins-agent-image=jenkinscicharmers/jenkinsagent:edge
+juju deploy alejdg-jenkins-agent-k8s --resource jenkins-agent-image=jenkinscicharmers/jenkinsagent:edge
 ```
 
 The charm status will be "Blocked" with a message of "Missing required config:
@@ -72,5 +71,17 @@ You can now visit `$JENKINS_IP:8080/computer/` in a browser and you'll see the
 jenkins agent has been added to your jenkins instance.
 
 ---
+
+## Future improvements
+
+Currently the charm only supports one unit per application when using relations. If new units are added they fail to connect to Jenkins.
+
+This is feature is being tracked in this [bug](https://bugs.launchpad.net/charm-k8s-jenkins-agent/+bug/1928022).
+
+If more units are needed while this is not available, deploy additional applications with:
+
+```bash
+juju deploy alejdg-jenkins-agent-k8s agent-one --resource jenkins-agent-image=jenkinscicharmers/jenkinsagent:edge
+```
 
 For more details [see here](https://charmhub.io/alejdg-jenkins-agent-k8s/docs).
