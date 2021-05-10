@@ -6,7 +6,6 @@ import unittest
 
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
 from ops.testing import Harness
-from pprint import pprint
 
 from charm import JenkinsAgentCharm
 
@@ -80,9 +79,6 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         """Test _get_env_config with config data"""
         self.assertEqual(self.harness.charm._get_env_config(), ENV_INITIAL)
         self.harness.update_config(CONFIG_ONE_AGENT)
-        # self.harness.update_config({"jenkins_url": CONFIG_ONE_AGENT["jenkins_url"]})
-        # self.harness.update_config({"jenkins_agent_name": CONFIG_ONE_AGENT["agent_name"]})
-        # self.harness.update_config({"jenkins_agent_token": CONFIG_ONE_AGENT["agent_token"]})
         self.assertEqual(self.harness.charm._get_env_config(), ENV_ONE_AGENT)
 
     def test__get_env_config__with__relation__data(self):
@@ -91,8 +87,6 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         self.harness.charm._stored.jenkins_url = CONFIG_ONE_AGENT["jenkins_url"]
         self.harness.charm._stored.agents = [CONFIG_ONE_AGENT["jenkins_agent_name"]]
         self.harness.charm._stored.agent_tokens = [CONFIG_ONE_AGENT["jenkins_agent_token"]]
-        pprint(self.harness.charm._get_env_config())
-        pprint(ENV_ONE_AGENT)
 
         self.assertEqual(self.harness.charm._get_env_config(), ENV_ONE_AGENT)
 
@@ -100,8 +94,6 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         """Test config changed when the config is invalid."""
         self.harness.charm.on.config_changed.emit()
         message = "Missing required config: jenkins_agent_name jenkins_agent_token jenkins_url"
-        print(self.harness.model.unit.status)
-        print(BlockedStatus(message))
         self.assertEqual(self.harness.model.unit.status, BlockedStatus(message))
         self.assertEqual(self.harness.get_pod_spec(), None)
 
@@ -123,14 +115,12 @@ class TestJenkinsAgentCharm(unittest.TestCase):
     def test__config_changed(self):
         """Test config changed."""
 
-        # self.harness.set_leader(is_leader=True)
         self.harness.update_config(CONFIG_ONE_AGENT)
         self.harness.charm.on.config_changed.emit()
         self.assertEqual(self.harness.model.unit.status, ActiveStatus())
 
     def test__config_changed__no__spec_change(self):
         """Test config changed when there is no change in the spec."""
-        # self.harness.set_leader(is_leader=True)
         mock_event = MagicMock()
         self.harness.update_config(CONFIG_ONE_AGENT)
         pebble_config = self.harness.charm._get_pebble_config(mock_event)
@@ -140,7 +130,6 @@ class TestJenkinsAgentCharm(unittest.TestCase):
             self.harness.charm.on.config_changed.emit()
             self.assertEqual(self.harness.model.unit.status, ActiveStatus())
             message = "DEBUG:root:Pebble config unchanged"
-            pprint(logger.output)
             self.assertEqual(logger.output[-1], message)
 
     def test__is_valid_config(self):
@@ -168,20 +157,19 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         expected_relation_data = {
             'executors': '8',
             'labels': 'x86_64',
-            'slavehost': 'jenkins-agent-0'
+            'slavehost': 'alejdg-jenkins-agent-k8s-0'
         }
         self.harness.enable_hooks()
         rel_id = self.harness.add_relation("slave", "jenkins")
-        self.harness.add_relation_unit(rel_id, "jenkins/0")
+        self.harness.add_relation_unit(rel_id, "alejdg-jenkins-agent-k8s/0")
 
-        self.assertEqual(self.harness.get_relation_data(rel_id, "jenkins-agent/0"), expected_relation_data)
+        self.assertEqual(self.harness.get_relation_data(rel_id, "alejdg-jenkins-agent-k8s/0"), expected_relation_data)
 
     @patch("charm.JenkinsAgentCharm._on_config_changed")
     def test__valid_relation_data__no__jenkins_url(self, mock_on_config_changed):
         """Test valid_relation_data when no configuration has been provided."""
-        mock_event = MagicMock()
         with self.assertLogs(level='INFO') as logger:
-            self.harness.charm.valid_relation_data(mock_event)
+            self.harness.charm.valid_relation_data()
             expected_output = [
                 "INFO:root:Setting up jenkins via agent relation",
                 "INFO:root:Jenkins hasn't exported its URL yet. Skipping setup for now."
@@ -193,10 +181,9 @@ class TestJenkinsAgentCharm(unittest.TestCase):
     @patch("charm.JenkinsAgentCharm._on_config_changed")
     def test__valid_relation_data__no__jenkins_agent_tokens(self, mock_on_config_changed):
         """Test valid_relation_data when no tokens have been provided."""
-        mock_event = MagicMock()
         self.harness.charm._stored.jenkins_url = "http://test"
         with self.assertLogs(level='INFO') as logger:
-            self.harness.charm.valid_relation_data(mock_event)
+            self.harness.charm.valid_relation_data()
             expected_output = [
                 "INFO:root:Setting up jenkins via agent relation",
                 "INFO:root:Jenkins hasn't exported the agent secret yet. Skipping setup for now."
@@ -208,10 +195,9 @@ class TestJenkinsAgentCharm(unittest.TestCase):
     @patch("charm.JenkinsAgentCharm._on_config_changed")
     def test__valid_relation_data__manual__config(self, mock_on_config_changed):
         """Test valid_relation_data when no configuration has been provided."""
-        mock_event = MagicMock()
         self.harness.update_config({"jenkins_url": "http://test"})
         with self.assertLogs(level='INFO') as logger:
-            self.harness.charm.valid_relation_data(mock_event)
+            self.harness.charm.valid_relation_data()
             expected_output = [
                 "INFO:root:Setting up jenkins via agent relation",
                 "INFO:root:Config option 'jenkins_url' is set. Can't use agent relation."
@@ -222,14 +208,12 @@ class TestJenkinsAgentCharm(unittest.TestCase):
 
     def test__valid_relation_data(self):
         """Test valid_relation_data when the relation have provided all needed data."""
-        mock_event = MagicMock()
         self.harness.charm._stored.jenkins_url = "http://test"
         self.harness.charm._stored.agent_tokens = "token"
         with self.assertLogs(level='INFO') as logger:
-            self.harness.charm.valid_relation_data(mock_event)
+            self.harness.charm.valid_relation_data()
             expected_output = "INFO:root:Setting up jenkins via agent relation"
             self.assertEqual(logger.output[-1], expected_output)
-            pprint(logger.output)
             self.assertEqual(self.harness.model.unit.status, MaintenanceStatus("Configuring jenkins agent"))
 
     @patch("charm.JenkinsAgentCharm._on_config_changed")
@@ -244,13 +228,13 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         expected_relation_data = {
             'executors': '8',
             'labels': labels,
-            'slavehost': 'jenkins-agent-0'
+            'slavehost': 'alejdg-jenkins-agent-k8s-0'
         }
         self.harness.update_config({"jenkins_agent_labels": labels})
         self.harness.enable_hooks()
         rel_id = self.harness.add_relation("slave", "jenkins")
         self.harness.add_relation_unit(rel_id, "jenkins/0")
-        self.assertEqual(self.harness.get_relation_data(rel_id, "jenkins-agent/0"), expected_relation_data)
+        self.assertEqual(self.harness.get_relation_data(rel_id, "alejdg-jenkins-agent-k8s/0"), expected_relation_data)
         mock_on_config_changed.assert_not_called()
 
     @patch("charm.JenkinsAgentCharm._on_config_changed")
@@ -276,7 +260,7 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         mock_os_cpu_count.return_value = 8
         mock_os_uname.return_value.machine = "x86_64"
         remote_unit = "jenkins/0"
-        agent_name = "jenkins-agent-0"
+        agent_name = "alejdg-jenkins-agent-k8s-0"
         url = "http://test"
         secret = "token"
         self.harness.enable_hooks()
@@ -301,8 +285,8 @@ class TestJenkinsAgentCharm(unittest.TestCase):
         mock_os_cpu_count.return_value = 8
         mock_os_uname.return_value.machine = "x86_64"
         remote_unit = "jenkins/0"
-        agent_name = "jenkins-agent-0"
-        expected_new_agent = "jenkins-agent-1"
+        agent_name = "alejdg-jenkins-agent-k8s-0"
+        expected_new_agent = "alejdg-jenkins-agent-k8s-1"
         url = "http://test"
         secret = "token"
 
