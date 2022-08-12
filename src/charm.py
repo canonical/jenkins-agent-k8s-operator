@@ -11,7 +11,7 @@ import typing
 from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
+from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, Container
 
 
 logger = logging.getLogger()
@@ -47,8 +47,12 @@ class JenkinsAgentCharm(CharmBase):
         self._stored.set_default(spec=None, jenkins_url=None, agent_tokens=None, agents=None)
         self.service_name = "jenkins-agent"
 
-    def _get_pebble_config(self):
-        """Generate our pebble config."""
+    def _get_pebble_config(self) -> dict:
+        """Generate the pebble config for the charm.
+
+        Returns:
+            Tje pebble configuration for the charm.
+        """
         env_config = self._get_env_config()
         pebble_config = {
             "summary": "jenkins agent layer",
@@ -77,46 +81,43 @@ class JenkinsAgentCharm(CharmBase):
 
         services = container.get_plan().to_dict().get("services", {})
         if services != pebble_config["services"]:
-            logger.debug(
-                "About to add_layer with pebble_config:\n{}".format(yaml.dump(pebble_config))
-            )
+            logger.debug(f"About to add_layer with pebble_config:\n{yaml.dump(pebble_config)}")
             container.add_layer(self.service_name, pebble_config, combine=True)
-
-            self._restart_service(self.service_name, container)
+            container.restart(self.service_name)
         else:
             logger.debug("Pebble config unchanged")
 
         self.unit.status = ActiveStatus()
 
-    def _restart_service(self, service_name, container):
-        """Restart a service"""
-        if container.get_service(service_name).is_running():
-            container.stop(service_name)
-        container.start(service_name)
+    def _missing_charm_settings(self) -> list[str]:
+        """Retirve the names of any settings that are missing.
 
-    def _missing_charm_settings(self):
-        """Check configuration setting dependencies
-
-        Return a list of missing settings; otherwise return an empty list."""
-        config = self.model.config
+        Returns
+            List of settings that are missing which is empty if there are no missing settings.
+        """
         if self._stored.agent_tokens:
             required_settings = ()
         else:
             required_settings = ("jenkins_url", "jenkins_agent_name", "jenkins_agent_token")
 
-        missing = [setting for setting in required_settings if not config[setting]]
+        missing = [setting for setting in required_settings if not self.model.config[setting]]
 
         return sorted(missing)
 
-    def _is_valid_config(self):
+    def _is_valid_config(self) -> bool:
         """Validate required configuration.
 
-        When not configuring the agent through relations
+        When not configuring the agent through relations,
         'jenkins_url', 'jenkins_agent_name' and 'jenkins_agent_token'
-        are required."""
-        missing = self._missing_charm_settings()
-        if missing:
-            message = f"Missing required config: {' '.join(missing)}"
+        are required.
+
+        Returns:
+            Whether the configuration is valid.
+        """
+        missing_settings = self._missing_charm_settings()
+
+        if missing_settings:
+            message = f"Missing required config: {' '.join(missing_settings)}"
             logger.info(message)
             self.model.unit.status = BlockedStatus(message)
             return False

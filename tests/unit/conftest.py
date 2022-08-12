@@ -9,7 +9,7 @@ from charm import JenkinsAgentCharm
 
 
 @pytest.fixture
-def harness():
+def harness() -> testing.Harness[JenkinsAgentCharm]:
     """Creates test harness for unit tests."""
     # Create and confifgure harness
     harness = testing.Harness(JenkinsAgentCharm)
@@ -27,3 +27,13 @@ def harness():
     yield harness
 
     harness.cleanup()
+
+
+@pytest.fixture(scope="module")
+def valid_config():
+    """Valid configuration for the charm."""
+    return {
+        "jenkins_url": "http://test",
+        "jenkins_agent_name": "agent-one",
+        "jenkins_agent_token": "token-one",
+    }

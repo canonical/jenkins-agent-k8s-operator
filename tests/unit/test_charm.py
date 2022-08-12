@@ -1,11 +1,11 @@
 # Copyright 2020 Canonical Ltd.
 # Licensed under the GPLv3, see LICENCE file for details.
 
-from mock import MagicMock, patch
-import unittest
+from unittest import mock
+import logging
 
 import pytest
-from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
+from ops import model
 from ops import testing
 
 from charm import JenkinsAgentCharm
@@ -169,6 +169,63 @@ def test__get_env_config_config_relation(harness: testing.Harness[JenkinsAgentCh
     }
 
 
+def test_config_changed_invalid(harness: testing.Harness[JenkinsAgentCharm]):
+    """arrange: given charm in its initial state
+    act: when the config_changed event occurs
+    assert: the charm enters the blocked status with message that required configuration is missing
+    """
+    harness.charm.on.config_changed.emit()
+
+    assert isinstance(harness.model.unit.status, model.BlockedStatus)
+    assert "jenkins_agent_name" in harness.model.unit.status.message
+    assert "jenkins_agent_token" in harness.model.unit.status.message
+
+
+def test_config_changed(
+    harness: testing.Harness[JenkinsAgentCharm], valid_config, caplog: pytest.LogCaptureFixture
+):
+    """arrange: given charm in its initial state with valid configuration
+    act: when the config_changed event occurs
+    assert: the charm is in the active status, the container has the jenkins-agent service and has
+        been restarted and a log message indicating a layer has been added is written.
+    """
+    harness.update_config(valid_config)
+    # Mock the restart function on the container
+    container: model.Container = harness.model.unit.get_container(harness.charm.service_name)
+    container.restart = mock.MagicMock()
+
+    caplog.set_level(logging.DEBUG)
+    harness.charm.on.config_changed.emit()
+
+    assert isinstance(harness.model.unit.status, model.ActiveStatus)
+    assert harness.charm.service_name in container.get_plan().services
+    container.restart.assert_called_once_with(harness.charm.service_name)
+    assert "add_layer" in caplog.text
+
+
+def test_config_changed_no_change(
+    harness: testing.Harness[JenkinsAgentCharm], valid_config, caplog: pytest.LogCaptureFixture
+):
+    """arrange: given charm in active state with valid configuration
+    act: when the config_changed event occurs
+    assert: the charm stays in the active status, the container is not restarted and a log message
+        indicating unchaged configuration is written.
+    """
+    # Get container into active state
+    harness.update_config(valid_config)
+    harness.charm.on.config_changed.emit()
+    # Mock the restart function on the container
+    container: model.Container = harness.model.unit.get_container(harness.charm.service_name)
+    container.restart = mock.MagicMock()
+
+    caplog.set_level(logging.DEBUG)
+    harness.charm.on.config_changed.emit()
+
+    assert isinstance(harness.model.unit.status, model.ActiveStatus)
+    container.restart.assert_not_called()
+    assert "unchanged" in caplog.text
+
+
 # class TestJenkinsAgentCharm(unittest.TestCase):
 #     def setUp(self):
 #         self.harness = Harness(JenkinsAgentCharm)
@@ -176,57 +233,6 @@ def test__get_env_config_config_relation(harness: testing.Harness[JenkinsAgentCh
 #         self.harness.begin()
 #         self.harness.disable_hooks()
 #         self.harness.update_config(CONFIG_DEFAULT)
-
-#     def test__get_env_config__with__relation__data(self):
-#         """Test get_env_config with relation data."""
-#         self.harness.update_config(CONFIG_ONE_AGENT)
-#         self.harness.charm._stored.jenkins_url = CONFIG_ONE_AGENT["jenkins_url"]
-#         self.harness.charm._stored.agents = [CONFIG_ONE_AGENT["jenkins_agent_name"]]
-#         self.harness.charm._stored.agent_tokens = [CONFIG_ONE_AGENT["jenkins_agent_token"]]
-
-#         self.assertEqual(self.harness.charm._get_env_config(), ENV_ONE_AGENT)
-
-#     def test__invalid__config(self):
-#         """Test config changed when the config is invalid."""
-#         self.harness.charm.on.config_changed.emit()
-#         message = "Missing required config: jenkins_agent_name jenkins_agent_token jenkins_url"
-#         self.assertEqual(self.harness.model.unit.status, BlockedStatus(message))
-#         self.assertEqual(self.harness.get_pod_spec(), None)
-
-#     def test__restart_service(self):
-#         """Test restarting a service"""
-#         mock_container = MagicMock()
-#         with self.subTest("Service not running"):
-#             mock_container.get_service.return_value.is_running.return_value = False
-#             self.harness.charm._restart_service(SERVICE_NAME, mock_container)
-#             mock_container.stop.assert_not_called()
-#             mock_container.start.assert_called()
-#         with self.subTest("Service already running"):
-#             mock_container.get_service.return_value.is_running.return_value = True
-#             self.harness.charm._restart_service(SERVICE_NAME, mock_container)
-#             mock_container.get_service.return_value.is_running.assert_called()
-#             mock_container.stop.assert_called()
-#             mock_container.start.assert_called()
-
-#     def test__config_changed(self):
-#         """Test config changed."""
-
-#         self.harness.update_config(CONFIG_ONE_AGENT)
-#         self.harness.charm.on.config_changed.emit()
-#         self.assertEqual(self.harness.model.unit.status, ActiveStatus())
-
-#     def test__config_changed__no__spec_change(self):
-#         """Test config changed when there is no change in the spec."""
-#         mock_event = MagicMock()
-#         self.harness.update_config(CONFIG_ONE_AGENT)
-#         pebble_config = self.harness.charm._get_pebble_config(mock_event)
-#         container = self.harness.model.unit.get_container(SERVICE_NAME)
-#         container.add_layer(SERVICE_NAME, pebble_config, combine=True)
-#         with self.assertLogs(level='DEBUG') as logger:
-#             self.harness.charm.on.config_changed.emit()
-#             self.assertEqual(self.harness.model.unit.status, ActiveStatus())
-#             message = "DEBUG:root:Pebble config unchanged"
-#             self.assertEqual(logger.output[-1], message)
 
 #     def test__is_valid_config(self):
 #         """Test config validation."""
