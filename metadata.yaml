@@ -1,9 +1,10 @@
-name: alejdg-jenkins-agent-k8s
+name: jenkins-agent
 summary: Agent for Jenkins, the leading open source automation server. Jenkins provides hundreds of plugins to support building, deploying and automating any project.
 docs: https://discourse.charmhub.io/t/jenkins-agent-documentation-overview/3982
 maintainers:
     - Alexandre Gomes <alexandre.gomes@canonical.com>
     - Benjamin Allot <benjamin.allot@canonical.com>
+    - David Andersson <david.andersson@canonical.com>
 description: |
   Agent for Jenkins, the leading open source automation server. Jenkins provides hundreds of plugins to support building, deploying and automating any project.
 provides:
@@ -18,3 +19,4 @@ resources:
   jenkins-agent-image:
     type: oci-image
     description: OCI image for jenkins-agent
+    auto-fetch: true

@@ -30,7 +30,7 @@ class JenkinsAgentCharm(CharmBase):
         self._stored.set_default(spec=None, jenkins_url=None, agent_tokens=None, agents=None)
         self.service_name = "jenkins-agent"
 
-    def _get_pebble_config(self, event):
+    def _get_pebble_config(self):
         """Generate our pebble config."""
         env_config = self._get_env_config()
         pebble_config = {
@@ -48,14 +48,14 @@ class JenkinsAgentCharm(CharmBase):
         }
         return pebble_config
 
-    def _on_config_changed(self, event):
+    def _on_config_changed(self, _):
         """Handle config-changed event."""
 
         if not self._is_valid_config():
             # Charm will be in blocked status.
             return
 
-        pebble_config = self._get_pebble_config(event)
+        pebble_config = self._get_pebble_config()
         container = self.unit.get_container(self.service_name)
 
         services = container.get_plan().to_dict().get("services", {})
@@ -95,16 +95,14 @@ class JenkinsAgentCharm(CharmBase):
         When not configuring the agent through relations
         'jenkins_url', 'jenkins_agent_name' and 'jenkins_agent_token'
         are required."""
-        is_valid = True
-
         missing = self._missing_charm_settings()
         if missing:
-            message = "Missing required config: {}".format(" ".join(missing))
+            message = f"Missing required config: {' '.join(missing)}"
             logger.info(message)
             self.model.unit.status = BlockedStatus(message)
-            is_valid = False
+            return False
 
-        return is_valid
+        return True
 
     def on_agent_relation_joined(self, event):
         """Set relation data for the unit once an agent has connected."""
