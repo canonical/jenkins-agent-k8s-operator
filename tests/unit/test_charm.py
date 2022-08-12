@@ -4,6 +4,7 @@
 from mock import MagicMock, patch
 import unittest
 
+import pytest
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
 from ops import testing
 
@@ -95,23 +96,41 @@ def test__get_env_config_config(harness: testing.Harness[JenkinsAgentCharm]):
     }
 
 
-def test__get_env_config_relation(harness: testing.Harness[JenkinsAgentCharm]):
+@pytest.mark.parametrize(
+    "agents, expected_jenkins_agent_name, tokens, expected_jenkins_agent_token",
+    [
+        pytest.param([], "", [], "", id="empty"),
+        pytest.param(["agent"], "agent", ["token"], "token", id="single"),
+        pytest.param(
+            ["agent 1", "agent 2"],
+            "agent 1:agent 2",
+            ["token 1", "token 2"],
+            "token 1:token 2",
+            id="multiple",
+        ),
+    ],
+)
+def test__get_env_config_relation(
+    harness: testing.Harness[JenkinsAgentCharm],
+    agents: list[str],
+    expected_jenkins_agent_name: str,
+    tokens: list[str],
+    expected_jenkins_agent_token: str,
+):
     """arrange: given charm in its initial state except that relation data has been set
     act: when the environment variables for the charm are generated
     assert: then the environment contains the data from the relation.
     """
     jenkins_url = "http://test"
-    jenkins_agent_name = "agent"
-    jenkins_agent_token = "token"
     harness.charm._stored.jenkins_url = jenkins_url
-    harness.charm._stored.agents = [jenkins_agent_name]
-    harness.charm._stored.agent_tokens = [jenkins_agent_token]
+    harness.charm._stored.agents = agents
+    harness.charm._stored.agent_tokens = tokens
 
     env_config = harness.charm._get_env_config()
 
     assert env_config == {
-        'JENKINS_AGENTS': jenkins_agent_name,
-        'JENKINS_TOKENS': jenkins_agent_token,
+        'JENKINS_AGENTS': expected_jenkins_agent_name,
+        'JENKINS_TOKENS': expected_jenkins_agent_token,
         'JENKINS_URL': jenkins_url,
     }
 
