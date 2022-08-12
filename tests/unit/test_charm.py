@@ -226,6 +226,84 @@ def test_config_changed_no_change(
     assert "unchanged" in caplog.text
 
 
+@pytest.mark.parametrize(
+    "agent_tokens, config, expected_validity, expected_message_contents, "
+    "expected_not_in_message_contents",
+    [
+        pytest.param(
+            [],
+            {"jenkins_url": "", "jenkins_agent_name": "", "jenkins_agent_token": ""},
+            False,
+            ("jenkins_url", "jenkins_agent_name", "jenkins_agent_token"),
+            (),
+            id="agent_tokens not set and configuration empty",
+        ),
+        pytest.param(
+            ["token"],
+            {"jenkins_url": "", "jenkins_agent_name": "", "jenkins_agent_token": ""},
+            True,
+            (),
+            (),
+            id="agent_tokens set and configuration empty",
+        ),
+        pytest.param(
+            [],
+            {"jenkins_url": "http://test", "jenkins_agent_name": "", "jenkins_agent_token": ""},
+            False,
+            ("jenkins_agent_name", "jenkins_agent_token"),
+            ("jenkins_url",),
+            id="agent_tokens not set and configuration empty except jenkins_url set",
+        ),
+        pytest.param(
+            [],
+            {"jenkins_url": "", "jenkins_agent_name": "agent 1", "jenkins_agent_token": "token 1"},
+            False,
+            ("jenkins_url",),
+            ("jenkins_agent_name", "jenkins_agent_token"),
+            id="agent_tokens not set and configuration empty except jenkins_agent_name and "
+            "jenkins_agent_token set",
+        ),
+        pytest.param(
+            [],
+            {
+                "jenkins_url": "http://test",
+                "jenkins_agent_name": "agent 1",
+                "jenkins_agent_token": "token 1",
+            },
+            True,
+            (),
+            (),
+            id="agent_tokens not set and configuration valid",
+        ),
+    ],
+)
+def test__is_valid_config(
+    harness: testing.Harness[JenkinsAgentCharm],
+    agent_tokens: list[str],
+    config,
+    expected_validity: bool,
+    expected_message_contents: tuple[str, ...],
+    expected_not_in_message_contents: tuple[str, ...],
+):
+    """arrange: given charm with the given agent_tokens and configuration set
+    act: when _is_valid_config is called
+    assert: then the expected configuration validity and message is returned.
+    """
+    harness.charm._stored.agent_tokens = agent_tokens
+    harness.update_config(config)
+
+    validity, message = harness.charm._is_valid_config()
+
+    assert validity == expected_validity
+    if validity:
+        assert message is None
+        return
+    for expected_message_content in expected_message_contents:
+        assert expected_message_content in message
+    for expected_not_in_message_content in expected_not_in_message_contents:
+        assert expected_not_in_message_content not in message
+
+
 # class TestJenkinsAgentCharm(unittest.TestCase):
 #     def setUp(self):
 #         self.harness = Harness(JenkinsAgentCharm)

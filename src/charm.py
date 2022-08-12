@@ -11,7 +11,8 @@ import typing
 from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, Container
+from ops.model import ActiveStatus, MaintenanceStatus, Container
+from ops import model
 
 
 logger = logging.getLogger()
@@ -71,14 +72,16 @@ class JenkinsAgentCharm(CharmBase):
 
     def _on_config_changed(self, _):
         """Handle config-changed event."""
-
-        if not self._is_valid_config():
-            # Charm will be in blocked status.
+        # Check whether configuration is valid
+        config_valid, message = self._is_valid_config()
+        if not config_valid:
+            logger.info(message)
+            self.unit.status = model.BlockedStatus(message)
             return
 
+        # Add any newly required or changed services
         pebble_config = self._get_pebble_config()
         container = self.unit.get_container(self.service_name)
-
         services = container.get_plan().to_dict().get("services", {})
         if services != pebble_config["services"]:
             logger.debug(f"About to add_layer with pebble_config:\n{yaml.dump(pebble_config)}")
@@ -87,42 +90,32 @@ class JenkinsAgentCharm(CharmBase):
         else:
             logger.debug("Pebble config unchanged")
 
-        self.unit.status = ActiveStatus()
+        self.unit.status = model.ActiveStatus()
 
-    def _missing_charm_settings(self) -> list[str]:
-        """Retirve the names of any settings that are missing.
-
-        Returns
-            List of settings that are missing which is empty if there are no missing settings.
-        """
-        if self._stored.agent_tokens:
-            required_settings = ()
-        else:
-            required_settings = ("jenkins_url", "jenkins_agent_name", "jenkins_agent_token")
-
-        missing = [setting for setting in required_settings if not self.model.config[setting]]
-
-        return sorted(missing)
-
-    def _is_valid_config(self) -> bool:
+    def _is_valid_config(self) -> tuple[True, None] | tuple[False, str]:
         """Validate required configuration.
 
-        When not configuring the agent through relations,
-        'jenkins_url', 'jenkins_agent_name' and 'jenkins_agent_token'
-        are required.
+        When not configuring the agent through relations (as indicated by the agent tokens stored
+        state), 'jenkins_url', 'jenkins_agent_name' and 'jenkins_agent_token' are required.
 
         Returns:
-            Whether the configuration is valid.
+            Whether the configuration is valid, including a reason if it is not.
         """
-        missing_settings = self._missing_charm_settings()
+        # Check for agent tokens
+        if self._stored.agent_tokens:
+            return True, None
 
-        if missing_settings:
-            message = f"Missing required config: {' '.join(missing_settings)}"
-            logger.info(message)
-            self.model.unit.status = BlockedStatus(message)
-            return False
+        # Retrieve required and non-empty configuration options
+        required_options = {"jenkins_url", "jenkins_agent_name", "jenkins_agent_token"}
+        non_empty_options = {option for option in required_options if self.model.config[option]}
 
-        return True
+        if required_options.issubset(non_empty_options):
+            return True, None
+
+        return (
+            False,
+            f"Missing required configuration: {' '.join(sorted(required_options - non_empty_options))}",
+        )
 
     def on_agent_relation_joined(self, event):
         """Set relation data for the unit once an agent has connected."""
