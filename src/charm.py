@@ -6,6 +6,7 @@
 import logging
 import os
 import yaml
+import typing
 
 from ops.charm import CharmBase
 from ops.framework import StoredState
@@ -16,8 +17,24 @@ from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
 logger = logging.getLogger()
 
 
+class JenkinsAgentCharStoredState(StoredState):
+    """Defines valid attributes of the stored state for the Jenkins Agent."""
+
+    jenkins_url: str
+    agents: list[str]
+    agent_tokens: list[str]
+
+
+class JenkinsAgentEnvConfig(typing.TypedDict):
+    """The envornment configuration for the jenkins agent."""
+
+    JENKINS_AGENTS: str
+    JENKINS_TOKENS: str
+    JENKINS_URL: str
+
+
 class JenkinsAgentCharm(CharmBase):
-    _stored = StoredState()
+    _stored = JenkinsAgentCharStoredState()
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -60,7 +77,9 @@ class JenkinsAgentCharm(CharmBase):
 
         services = container.get_plan().to_dict().get("services", {})
         if services != pebble_config["services"]:
-            logger.debug("About to add_layer with pebble_config:\n{}".format(yaml.dump(pebble_config)))
+            logger.debug(
+                "About to add_layer with pebble_config:\n{}".format(yaml.dump(pebble_config))
+            )
             container.add_layer(self.service_name, pebble_config, combine=True)
 
             self._restart_service(self.service_name, container)
@@ -173,7 +192,15 @@ class JenkinsAgentCharm(CharmBase):
                 self._stored.agents = [agent_name]
         return agent_name
 
-    def _get_env_config(self):
+    def _get_env_config(self) -> JenkinsAgentEnvConfig:
+        """Retrieve the environment configuration.
+
+        Reads the jenkis url, agents and tokens either from the configuration or as set by a
+        relation to jenkins with the relation data preferred over the configuration.
+
+        Returns:
+            A dictionary with the environment variables to be set for the jenkins agent.
+        """
         env_config = {}
         if self._stored.jenkins_url:
             env_config["JENKINS_URL"] = self._stored.jenkins_url
