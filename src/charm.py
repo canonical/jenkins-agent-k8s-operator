@@ -39,9 +39,9 @@ class JenkinsAgentCharm(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
-        self.framework.observe(self.on.start, self._on_config_changed)
-        self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(self.on.upgrade_charm, self._on_config_changed)
+        self.framework.observe(self.on.start, self.on_config_changed)
+        self.framework.observe(self.on.config_changed, self.on_config_changed)
+        self.framework.observe(self.on.upgrade_charm, self.on_config_changed)
         self.framework.observe(self.on.slave_relation_joined, self.on_agent_relation_joined)
         self.framework.observe(self.on.slave_relation_changed, self.on_agent_relation_changed)
 
@@ -70,7 +70,7 @@ class JenkinsAgentCharm(CharmBase):
         }
         return pebble_config
 
-    def _on_config_changed(self, _):
+    def on_config_changed(self, _):
         """Handle config-changed event."""
         # Check whether configuration is valid
         config_valid, message = self._is_valid_config()
@@ -172,18 +172,22 @@ class JenkinsAgentCharm(CharmBase):
             return False
         return True
 
-    def _gen_agent_name(self, store=False):
-        """Generate the agent name or get the one already in use."""
+    def _gen_agent_name(self, store: bool = False) -> str:
+        """Generate the agent name or get the one already in use.
+
+        Returns:
+            The agent name.
+        """
         agent_name = ""
         if self._stored.agents:
             name, number = self._stored.agents[-1].rsplit('-', 1)
-            agent_name = "{}-{}".format(name, int(number) + 1)
-            if store:
-                self._stored.agents.append(agent_name)
+            agent_name = f"{name}-{int(number) + 1}"
         else:
             agent_name = self.unit.name.replace('/', '-')
-            if store:
-                self._stored.agents = [agent_name]
+
+        if store:
+            self._stored.agents = [agent_name]
+
         return agent_name
 
     def _get_env_config(self) -> JenkinsAgentEnvConfig:

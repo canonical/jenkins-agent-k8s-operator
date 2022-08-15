@@ -3,6 +3,7 @@
 
 from unittest import mock
 import logging
+import os
 
 import pytest
 from ops import model
@@ -304,6 +305,35 @@ def test__is_valid_config(
         assert expected_not_in_message_content not in message
 
 
+def test_on_agent_relation_joined(
+    harness: testing.Harness[JenkinsAgentCharm], monkeypatch: pytest.MonkeyPatch
+):
+    """arrange: given charm in its initial state
+    act: when the slave_relation_joined occurs
+    assert: then the agent sets the executors, labels and slave hosts relation data.
+    """
+    # Mock uname and CPU count
+    mock_os_cpu_count = mock.MagicMock()
+    cpu_count = 8
+    mock_os_cpu_count.return_value = cpu_count
+    monkeypatch.setattr(os, "cpu_count", mock_os_cpu_count)
+    mock_os_uname = mock.MagicMock()
+    machine_architecture = "x86_64"
+    mock_os_uname.return_value.machine = machine_architecture
+    monkeypatch.setattr(os, "uname", mock_os_uname)
+
+    harness.enable_hooks()
+    relation_id = harness.add_relation("slave", "jenkins")
+    unit_name = "jenkins-agent-k8s/0"
+    harness.add_relation_unit(relation_id, unit_name)
+
+    assert harness.get_relation_data(relation_id, unit_name) == {
+        'executors': str(cpu_count),
+        'labels': machine_architecture,
+        'slavehost': unit_name.replace("/", "-"),
+    }
+
+
 # class TestJenkinsAgentCharm(unittest.TestCase):
 #     def setUp(self):
 #         self.harness = Harness(JenkinsAgentCharm)
@@ -311,35 +341,6 @@ def test__is_valid_config(
 #         self.harness.begin()
 #         self.harness.disable_hooks()
 #         self.harness.update_config(CONFIG_DEFAULT)
-
-#     def test__is_valid_config(self):
-#         """Test config validation."""
-#         config = {
-#             "image": "image-name",
-#             "jenkins_url": "http://test",
-#             "jenkins_agent_name": "agent-one",
-#             "jenkins_agent_token": "token-one",
-#         }
-#         self.assertEqual(self.harness.charm._is_valid_config(), False)
-#         with self.subTest("Config from relation"):
-#             self.harness.charm._stored.agent_tokens = "token"
-#             self.assertEqual(self.harness.charm._is_valid_config(), True)
-#         with self.subTest("Config from juju config"):
-#             self.harness.update_config(config)
-#             self.assertEqual(self.harness.charm._is_valid_config(), True)
-
-#     @patch("os.uname")
-#     @patch("os.cpu_count")
-#     def test__on_agent_relation_joined(self, mock_os_cpu_count, mock_os_uname):
-#         """Test relation_data is set when a new relation joins."""
-#         mock_os_cpu_count.return_value = 8
-#         mock_os_uname.return_value.machine = "x86_64"
-#         expected_relation_data = {'executors': '8', 'labels': 'x86_64', 'slavehost': 'alejdg-jenkins-agent-k8s-0'}
-#         self.harness.enable_hooks()
-#         rel_id = self.harness.add_relation("slave", "jenkins")
-#         self.harness.add_relation_unit(rel_id, "alejdg-jenkins-agent-k8s/0")
-
-#         self.assertEqual(self.harness.get_relation_data(rel_id, "alejdg-jenkins-agent-k8s/0"), expected_relation_data)
 
 #     @patch("charm.JenkinsAgentCharm._on_config_changed")
 #     def test__valid_relation_data__no__jenkins_url(self, mock_on_config_changed):
