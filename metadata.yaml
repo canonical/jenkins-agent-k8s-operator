@@ -1,4 +1,4 @@
-name: jenkins-agent
+name: jenkins-agent-k8s
 summary: Agent for Jenkins, the leading open source automation server. Jenkins provides hundreds of plugins to support building, deploying and automating any project.
 docs: https://discourse.charmhub.io/t/jenkins-agent-documentation-overview/3982
 maintainers:
