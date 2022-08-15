@@ -21,9 +21,9 @@ logger = logging.getLogger()
 class JenkinsAgentCharStoredState(StoredState):
     """Defines valid attributes of the stored state for the Jenkins Agent."""
 
-    jenkins_url: str
-    agents: list[str]
-    agent_tokens: list[str]
+    jenkins_url: str | None
+    agents: list[str] | None
+    agent_tokens: list[str] | None
 
 
 class JenkinsAgentEnvConfig(typing.TypedDict):
@@ -70,8 +70,13 @@ class JenkinsAgentCharm(CharmBase):
         }
         return pebble_config
 
-    def on_config_changed(self, _):
+    def on_config_changed(self, event: charm.ConfigChangedEvent) -> None:
         """Handle config-changed event."""
+        # Check for container connectivity
+        if not self.unit.get_container(self.service_name).can_connect():
+            event.defer()
+            return
+
         # Check whether configuration is valid
         config_valid, message = self._is_valid_config()
         if not config_valid:
@@ -137,46 +142,44 @@ class JenkinsAgentCharm(CharmBase):
         event.relation.data[self.model.unit]["labels"] = labels
         event.relation.data[self.model.unit]["slavehost"] = agent_name
 
-    def on_agent_relation_changed(self, event):
+    def on_agent_relation_changed(self, event: charm.RelationChangedEvent):
         """Populate local configuration with data from relation."""
         logger.info("Jenkins relation changed")
+        agent_name = self._gen_agent_name()
+        self._stored.agents = [agent_name]
+        self._stored.agent_tokens = self._stored.agent_tokens or []
+
+        # Check event data
         try:
             self._stored.jenkins_url = event.relation.data[event.unit]['url']
         except KeyError:
-            pass
-
+            logger.warning(
+                f"Expected 'url' key for {event.unit} unit in relation data. "
+                "Skipping setup for now."
+            )
+            self.model.unit.status = ActiveStatus()
+            return
         try:
-            self._stored.agent_tokens = self._stored.agent_tokens or []
             self._stored.agent_tokens.append(event.relation.data[event.unit]['secret'])
-            self._gen_agent_name(store=True)
         except KeyError:
-            pass
+            logger.warning(
+                f"Expected 'secret' key for {event.unit} unit in relation data. "
+                "Skipping setup for now."
+            )
+            self.model.unit.status = ActiveStatus()
+            return
 
-        if self.valid_relation_data():
-            self.on.config_changed.emit()
-
-    def valid_relation_data(self):
-        """Configure the agent through data from relation."""
-        logger.info("Setting up jenkins via agent relation")
-        self.model.unit.status = MaintenanceStatus("Configuring jenkins agent")
-
+        # Check whether jenkins_url has been set
         if self.model.config.get("jenkins_url"):
             logger.info("Config option 'jenkins_url' is set. Can't use agent relation.")
             self.model.unit.status = ActiveStatus()
-            return False
+            return
 
-        if self._stored.jenkins_url is None:
-            logger.info("Jenkins hasn't exported its URL yet. Skipping setup for now.")
-            self.model.unit.status = ActiveStatus()
-            return False
+        logger.info("Setting up jenkins via agent relation")
+        self.model.unit.status = MaintenanceStatus("Configuring jenkins agent")
+        self.on.config_changed.emit()
 
-        if self._stored.agent_tokens is None:
-            logger.info("Jenkins hasn't exported the agent secret yet. Skipping setup for now.")
-            self.model.unit.status = ActiveStatus()
-            return False
-        return True
-
-    def _gen_agent_name(self, store: bool = False) -> str:
+    def _gen_agent_name(self) -> str:
         """Generate the agent name or get the one already in use.
 
         Returns:
@@ -188,9 +191,6 @@ class JenkinsAgentCharm(CharmBase):
             agent_name = f"{name}-{int(number) + 1}"
         else:
             agent_name = self.unit.name.replace('/', '-')
-
-        if store:
-            self._stored.agents = [agent_name]
 
         return agent_name
 
