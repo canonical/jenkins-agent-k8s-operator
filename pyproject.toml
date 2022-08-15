@@ -1,3 +1,10 @@
 [tool.black]
 skip-string-normalization = true
 line-length = 100
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+fail_under = 100
+skip_covered = true
