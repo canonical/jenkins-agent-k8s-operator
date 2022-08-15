@@ -173,7 +173,7 @@ class JenkinsAgentCharm(CharmBase):
 
         # Check whether jenkins_url has been set
         if self.model.config.get("jenkins_url"):
-            logger.info("Config option 'jenkins_url' is set, ignoring and using agent relation.")
+            logger.warning("Config option 'jenkins_url' is set, ignoring and using agent relation.")
 
         logger.info("Setting up jenkins via agent relation")
         self.model.unit.status = MaintenanceStatus("Configuring jenkins agent")

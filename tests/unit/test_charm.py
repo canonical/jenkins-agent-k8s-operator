@@ -460,8 +460,8 @@ def test_on_agent_relation_changed_jenkins_url_configured(
 ):
     """arrange: given charm with relation to jenkins and the jenkins_url configuration set
     act: when the relation data is updated
-    assert: then the relation data is stored on the charm, the unit stays in active status, does
-        not emit the config_changed event and writes a note to the logs.
+    assert: then the relation data is stored on the charm, the unit goes into active status, emits
+        the config_changed event and writes a warning to the logs.
     """
     harness.update_config(valid_config)
     # Mock config_changed hook
@@ -469,7 +469,7 @@ def test_on_agent_relation_changed_jenkins_url_configured(
     monkeypatch.setattr(harness.charm.on, "config_changed", mock_config_changed)
 
     # Update relation data
-    caplog.set_level(logging.INFO)
+    caplog.set_level(logging.WARNING)
     relation_jenkins_url = "http://relation"
     relation_secret = "relation token"
     harness.update_relation_data(
@@ -483,6 +483,4 @@ def test_on_agent_relation_changed_jenkins_url_configured(
     assert harness.charm._stored.agents[-1] == "jenkins-agent-k8s-0"
     mock_config_changed.emit.assert_called_once_with()
     assert isinstance(harness.model.unit.status, model.MaintenanceStatus)
-    assert "relation" in caplog.text.lower()
-    assert "changed" in caplog.text.lower()
     assert "'jenkins_url'" in caplog.text.lower()
