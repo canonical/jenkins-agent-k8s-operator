@@ -8,19 +8,16 @@ import os
 import yaml
 import typing
 
-from ops.charm import CharmBase
-from ops.framework import StoredState
-from ops.main import main
-from ops.model import ActiveStatus, MaintenanceStatus, Container
-from ops import model, charm
+from ops import model, charm, framework, main
 
 
 logger = logging.getLogger()
 
 
-class JenkinsAgentCharStoredState(StoredState):
+class JenkinsAgentCharStoredState(framework.StoredState):
     """Defines valid attributes of the stored state for the Jenkins Agent."""
 
+    relation_configured: bool | None
     jenkins_url: str | None
     agents: list[str] | None
     agent_tokens: list[str] | None
@@ -34,8 +31,9 @@ class JenkinsAgentEnvConfig(typing.TypedDict):
     JENKINS_URL: str
 
 
-class JenkinsAgentCharm(CharmBase):
+class JenkinsAgentCharm(charm.CharmBase):
     _stored = JenkinsAgentCharStoredState()
+    service_name = "jenkins-agent"
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -45,8 +43,9 @@ class JenkinsAgentCharm(CharmBase):
         self.framework.observe(self.on.slave_relation_joined, self.on_agent_relation_joined)
         self.framework.observe(self.on.slave_relation_changed, self.on_agent_relation_changed)
 
-        self._stored.set_default(spec=None, jenkins_url=None, agent_tokens=None, agents=None)
-        self.service_name = "jenkins-agent"
+        self._stored.set_default(
+            relation_configured=False, jenkins_url=None, agents=None, agent_tokens=None
+        )
 
     def _get_pebble_config(self) -> dict:
         """Generate the pebble config for the charm.
@@ -71,7 +70,11 @@ class JenkinsAgentCharm(CharmBase):
         return pebble_config
 
     def on_config_changed(self, event: charm.ConfigChangedEvent) -> None:
-        """Handle config-changed event."""
+        """Handle config-changed event.
+
+        Args:
+            event: The innformation about the event.
+        """
         # Check for container connectivity
         if not self.unit.get_container(self.service_name).can_connect():
             event.defer()
@@ -84,7 +87,7 @@ class JenkinsAgentCharm(CharmBase):
             self.unit.status = model.BlockedStatus(message)
             return
 
-        # Add any newly required or changed services
+        # Add any newly required or update any changed services
         pebble_config = self._get_pebble_config()
         container = self.unit.get_container(self.service_name)
         services = container.get_plan().to_dict().get("services", {})
@@ -100,14 +103,14 @@ class JenkinsAgentCharm(CharmBase):
     def _is_valid_config(self) -> tuple[True, None] | tuple[False, str]:
         """Validate required configuration.
 
-        When not configuring the agent through relations (as indicated by the agent tokens stored
-        state), 'jenkins_url', 'jenkins_agent_name' and 'jenkins_agent_token' are required.
+        When not configuring the agent through relations (as indicated by relation_configured
+        stored state), 'jenkins_url', 'jenkins_agent_name' and 'jenkins_agent_token' are required.
 
         Returns:
             Whether the configuration is valid, including a reason if it is not.
         """
         # Check for agent tokens
-        if self._stored.agent_tokens:
+        if self._stored.relation_configured:
             return True, None
 
         # Retrieve required and non-empty configuration options
@@ -157,7 +160,7 @@ class JenkinsAgentCharm(CharmBase):
                 f"Expected 'url' key for {event.unit} unit in relation data. "
                 "Skipping setup for now."
             )
-            self.model.unit.status = ActiveStatus()
+            self.model.unit.status = model.ActiveStatus()
             return
         try:
             relation_secret = event.relation.data[event.unit]['secret']
@@ -166,17 +169,18 @@ class JenkinsAgentCharm(CharmBase):
                 f"Expected 'secret' key for {event.unit} unit in relation data. "
                 "Skipping setup for now."
             )
-            self.model.unit.status = ActiveStatus()
+            self.model.unit.status = model.ActiveStatus()
             return
         self._stored.jenkins_url = relation_jenkins_url
         self._stored.agent_tokens.append(relation_secret)
+        self._stored.relation_configured = True
 
         # Check whether jenkins_url has been set
         if self.model.config.get("jenkins_url"):
             logger.warning("Config option 'jenkins_url' is set, ignoring and using agent relation.")
 
         logger.info("Setting up jenkins via agent relation")
-        self.model.unit.status = MaintenanceStatus("Configuring jenkins agent")
+        self.model.unit.status = model.MaintenanceStatus("Configuring jenkins agent")
         self.on.config_changed.emit()
 
     def _gen_agent_name(self) -> str:
@@ -203,23 +207,20 @@ class JenkinsAgentCharm(CharmBase):
         Returns:
             A dictionary with the environment variables to be set for the jenkins agent.
         """
-        env_config = {}
-        if self._stored.jenkins_url:
-            env_config["JENKINS_URL"] = self._stored.jenkins_url
-        else:
-            env_config["JENKINS_URL"] = self.config["jenkins_url"]
-
-        if self._stored.agent_tokens and self._stored.agents:
-            env_config["JENKINS_AGENTS"] = ":".join(self._stored.agents)
-            env_config["JENKINS_TOKENS"] = ":".join(self._stored.agent_tokens)
-        else:
-            env_config["JENKINS_AGENTS"] = self.config["jenkins_agent_name"]
-            env_config["JENKINS_TOKENS"] = self.config["jenkins_agent_token"]
-
-        return env_config
+        if self._stored.relation_configured:
+            return {
+                "JENKINS_URL": self._stored.jenkins_url,
+                "JENKINS_AGENTS": ":".join(self._stored.agents),
+                "JENKINS_TOKENS": ":".join(self._stored.agent_tokens),
+            }
+        return {
+            "JENKINS_URL": self.config["jenkins_url"],
+            "JENKINS_AGENTS": self.config["jenkins_agent_name"],
+            "JENKINS_TOKENS": self.config["jenkins_agent_token"],
+        }
 
 
 if __name__ == '__main__':  # pragma: no cover
     # use_juju_for_storage is a workaround for states not persisting through upgrades:
     # https://github.com/canonical/operator/issues/506
-    main(JenkinsAgentCharm, use_juju_for_storage=True)
+    main.main(JenkinsAgentCharm, use_juju_for_storage=True)

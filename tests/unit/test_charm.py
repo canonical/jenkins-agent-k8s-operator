@@ -78,6 +78,7 @@ def test__get_env_config_relation(
     assert: then the environment contains the data from the relation.
     """
     jenkins_url = "http://test"
+    harness.charm._stored.relation_configured = True
     harness.charm._stored.jenkins_url = jenkins_url
     harness.charm._stored.agents = agents
     harness.charm._stored.agent_tokens = tokens
@@ -112,6 +113,7 @@ def test__get_env_config_config_relation(harness: testing.Harness[JenkinsAgentCh
     relation_jenkins_url = "http://test_relation"
     relation_jenkins_agent_name = "agent relation"
     relation_jenkins_agent_token = "token relation"
+    harness.charm._stored.relation_configured = True
     harness.charm._stored.jenkins_url = relation_jenkins_url
     harness.charm._stored.agents = [relation_jenkins_agent_name]
     harness.charm._stored.agent_tokens = [relation_jenkins_agent_token]
@@ -210,43 +212,48 @@ def test_config_changed_no_change(
 
 
 @pytest.mark.parametrize(
-    "agent_tokens, config, expected_validity, expected_message_contents, "
+    "relation_configured, agent_tokens, config, expected_validity, expected_message_contents, "
     "expected_not_in_message_contents",
     [
         pytest.param(
+            False,
             [],
             {"jenkins_url": "", "jenkins_agent_name": "", "jenkins_agent_token": ""},
             False,
             ("jenkins_url", "jenkins_agent_name", "jenkins_agent_token"),
             (),
-            id="agent_tokens not set and configuration empty",
+            id="relation_configured not set and configuration empty",
         ),
         pytest.param(
+            True,
             ["token"],
             {"jenkins_url": "", "jenkins_agent_name": "", "jenkins_agent_token": ""},
             True,
             (),
             (),
-            id="agent_tokens set and configuration empty",
+            id="relation_configured set and configuration empty",
         ),
         pytest.param(
+            False,
             [],
             {"jenkins_url": "http://test", "jenkins_agent_name": "", "jenkins_agent_token": ""},
             False,
             ("jenkins_agent_name", "jenkins_agent_token"),
             ("jenkins_url",),
-            id="agent_tokens not set and configuration empty except jenkins_url set",
+            id="relation_configured not set and configuration empty except jenkins_url set",
         ),
         pytest.param(
+            False,
             [],
             {"jenkins_url": "", "jenkins_agent_name": "agent 1", "jenkins_agent_token": "token 1"},
             False,
             ("jenkins_url",),
             ("jenkins_agent_name", "jenkins_agent_token"),
-            id="agent_tokens not set and configuration empty except jenkins_agent_name and "
+            id="relation_configured not set and configuration empty except jenkins_agent_name and "
             "jenkins_agent_token set",
         ),
         pytest.param(
+            False,
             [],
             {
                 "jenkins_url": "http://test",
@@ -256,12 +263,13 @@ def test_config_changed_no_change(
             True,
             (),
             (),
-            id="agent_tokens not set and configuration valid",
+            id="relation_configured not set and configuration valid",
         ),
     ],
 )
 def test__is_valid_config(
     harness: testing.Harness[JenkinsAgentCharm],
+    relation_configured,
     agent_tokens: list[str],
     config,
     expected_validity: bool,
@@ -272,6 +280,7 @@ def test__is_valid_config(
     act: when _is_valid_config is called
     assert: then the expected configuration validity and message is returned.
     """
+    harness.charm._stored.relation_configured = relation_configured
     harness.charm._stored.agent_tokens = agent_tokens
     harness.update_config(config)
 
@@ -419,11 +428,13 @@ def test_on_agent_relation_changed(
         key_values={"url": relation_jenkins_url, "secret": relation_secret},
     )
 
+    assert harness.charm._stored.relation_configured is True
     assert harness.charm._stored.jenkins_url == relation_jenkins_url
     assert harness.charm._stored.agent_tokens[-1] == relation_secret
     assert harness.charm._stored.agents[-1] == "jenkins-agent-k8s-0"
     mock_config_changed.emit.assert_called_once_with()
     assert isinstance(harness.model.unit.status, model.MaintenanceStatus)
+    assert "configuring" in harness.model.unit.status.message.lower()
     assert "relation" in caplog.text.lower()
     assert "changed" in caplog.text.lower()
 
