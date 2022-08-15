@@ -1,4 +1,4 @@
-# Copyright 2020 Canonical Ltd.
+# Copyright 2022 Canonical Ltd.
 # Licensed under the GPLv3, see LICENCE file for details.
 
 from unittest import mock
@@ -11,52 +11,6 @@ from ops import testing
 
 from charm import JenkinsAgentCharm
 from . import types
-
-SERVICE_NAME = "jenkins-agent"
-
-CONFIG_DEFAULT = {
-    "image": "jenkins-agent-operator",
-    "jenkins_url": "",
-    "jenkins_agent_name": "",
-    "jenkins_agent_token": "",
-    "jenkins_agent_label": "",
-}
-
-CONFIG_ONE_AGENT = {
-    "jenkins_url": "http://test",
-    "jenkins_agent_name": "agent-one",
-    "jenkins_agent_token": "token-one",
-}
-
-CONFIG_ONE_AGENT_CUSTOM_IMAGE = {
-    "image": "image-name",
-    "jenkins_url": "http://test",
-    "jenkins_agent_name": "agent-one",
-    "jenkins_agent_token": "token-one",
-}
-
-ENV_INITIAL = {'JENKINS_AGENTS': '', 'JENKINS_TOKENS': '', 'JENKINS_URL': ''}
-
-ENV_ONE_AGENT = {
-    'JENKINS_AGENTS': 'agent-one',
-    'JENKINS_TOKENS': 'token-one',
-    'JENKINS_URL': 'http://test',
-}
-
-SPEC_EXPECTED = {
-    'containers': [
-        {
-            'config': {
-                'JENKINS_AGENTS': 'agent-one',
-                'JENKINS_TOKENS': 'token-one',
-                'JENKINS_URL': 'http://test',
-            },
-            'imageDetails': {'imagePath': 'image-name'},
-            'name': 'jenkins-agent',
-            'readinessProbe': {'exec': {'command': ['/bin/cat', '/var/lib/jenkins/agents/.ready']}},
-        }
-    ]
-}
 
 
 def test__get_env_config_initial(harness: testing.Harness[JenkinsAgentCharm]):
@@ -525,42 +479,8 @@ def test_on_agent_relation_changed_jenkins_url_configured(
     assert harness.charm._stored.jenkins_url == relation_jenkins_url
     assert harness.charm._stored.agent_tokens[-1] == relation_secret
     assert harness.charm._stored.agents[-1] == "jenkins-agent-k8s-0"
-    mock_config_changed.emit.assert_not_called()
-    assert isinstance(harness.model.unit.status, model.ActiveStatus)
+    mock_config_changed.emit.assert_called_once_with()
+    assert isinstance(harness.model.unit.status, model.MaintenanceStatus)
     assert "relation" in caplog.text.lower()
     assert "changed" in caplog.text.lower()
     assert "'jenkins_url'" in caplog.text.lower()
-
-
-# class TestJenkinsAgentCharm(unittest.TestCase):
-#     def setUp(self):
-#         self.harness = Harness(JenkinsAgentCharm)
-#         self.addCleanup(self.harness.cleanup)
-#         self.harness.begin()
-#         self.harness.disable_hooks()
-#         self.harness.update_config(CONFIG_DEFAULT)
-
-#     @patch("charm.JenkinsAgentCharm._on_config_changed")
-#     @patch("os.uname")
-#     @patch("os.cpu_count")
-#     def test__on_agent_relation_changed__multiple__agents(
-#         self, mock_os_cpu_count, mock_os_uname, mock_on_config_changed
-#     ):
-#         """Test relation_data is set when a new relation joins."""
-#         mock_os_cpu_count.return_value = 8
-#         mock_os_uname.return_value.machine = "x86_64"
-#         remote_unit = "jenkins/0"
-#         agent_name = "alejdg-jenkins-agent-k8s-0"
-#         expected_new_agent = "alejdg-jenkins-agent-k8s-1"
-#         url = "http://test"
-#         secret = "token"
-
-#         self.harness.charm._stored.agents = [agent_name]
-#         self.harness.enable_hooks()
-#         rel_id = self.harness.add_relation("slave", "jenkins")
-#         self.harness.add_relation_unit(rel_id, remote_unit)
-#         self.harness.update_relation_data(rel_id, remote_unit, {"url": url, "secret": secret})
-#         self.assertEqual(self.harness.charm._stored.jenkins_url, url)
-#         self.assertEqual(self.harness.charm._stored.agent_tokens[-1], secret)
-#         self.assertEqual(self.harness.charm._stored.agents[-1], expected_new_agent)
-#         mock_on_config_changed.assert_called()

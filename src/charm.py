@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2020 Canonical Ltd.
+# Copyright 2022 Canonical Ltd.
 # Licensed under the GPLv3, see LICENCE file for details.
 
 import logging
@@ -171,9 +171,7 @@ class JenkinsAgentCharm(CharmBase):
 
         # Check whether jenkins_url has been set
         if self.model.config.get("jenkins_url"):
-            logger.info("Config option 'jenkins_url' is set. Can't use agent relation.")
-            self.model.unit.status = ActiveStatus()
-            return
+            logger.info("Config option 'jenkins_url' is set, ignoring and using agent relation.")
 
         logger.info("Setting up jenkins via agent relation")
         self.model.unit.status = MaintenanceStatus("Configuring jenkins agent")
