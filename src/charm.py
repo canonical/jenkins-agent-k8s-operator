@@ -151,7 +151,7 @@ class JenkinsAgentCharm(CharmBase):
 
         # Check event data
         try:
-            self._stored.jenkins_url = event.relation.data[event.unit]['url']
+            relation_jenkins_url = event.relation.data[event.unit]['url']
         except KeyError:
             logger.warning(
                 f"Expected 'url' key for {event.unit} unit in relation data. "
@@ -160,7 +160,7 @@ class JenkinsAgentCharm(CharmBase):
             self.model.unit.status = ActiveStatus()
             return
         try:
-            self._stored.agent_tokens.append(event.relation.data[event.unit]['secret'])
+            relation_secret = event.relation.data[event.unit]['secret']
         except KeyError:
             logger.warning(
                 f"Expected 'secret' key for {event.unit} unit in relation data. "
@@ -168,6 +168,8 @@ class JenkinsAgentCharm(CharmBase):
             )
             self.model.unit.status = ActiveStatus()
             return
+        self._stored.jenkins_url = relation_jenkins_url
+        self._stored.agent_tokens.append(relation_secret)
 
         # Check whether jenkins_url has been set
         if self.model.config.get("jenkins_url"):
