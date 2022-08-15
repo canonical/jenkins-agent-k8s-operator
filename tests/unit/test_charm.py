@@ -306,7 +306,9 @@ def test__is_valid_config(
 
 
 def test_on_agent_relation_joined(
-    harness: testing.Harness[JenkinsAgentCharm], monkeypatch: pytest.MonkeyPatch
+    harness: testing.Harness[JenkinsAgentCharm],
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ):
     """arrange: given charm in its initial state
     act: when the slave_relation_joined occurs
@@ -322,6 +324,7 @@ def test_on_agent_relation_joined(
     mock_os_uname.return_value.machine = machine_architecture
     monkeypatch.setattr(os, "uname", mock_os_uname)
 
+    caplog.set_level(logging.INFO)
     harness.enable_hooks()
     relation_id = harness.add_relation("slave", "jenkins")
     unit_name = "jenkins-agent-k8s/0"
@@ -332,6 +335,8 @@ def test_on_agent_relation_joined(
         'labels': machine_architecture,
         'slavehost': unit_name.replace("/", "-"),
     }
+    assert "relation" in caplog.text.lower()
+    assert "joined" in caplog.text.lower()
 
 
 # class TestJenkinsAgentCharm(unittest.TestCase):

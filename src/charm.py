@@ -12,7 +12,7 @@ from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
 from ops.model import ActiveStatus, MaintenanceStatus, Container
-from ops import model
+from ops import model, charm
 
 
 logger = logging.getLogger()
@@ -117,8 +117,12 @@ class JenkinsAgentCharm(CharmBase):
             f"Missing required configuration: {' '.join(sorted(required_options - non_empty_options))}",
         )
 
-    def on_agent_relation_joined(self, event):
-        """Set relation data for the unit once an agent has connected."""
+    def on_agent_relation_joined(self, event: charm.RelationJoinedEvent) -> None:
+        """Set relation data for the unit once an agent has connected.
+
+        Args:
+            event: information about the relation joined event.
+        """
         logger.info("Jenkins relation joined")
         num_executors = os.cpu_count()
         config_labels = self.model.config.get('jenkins_agent_labels')
