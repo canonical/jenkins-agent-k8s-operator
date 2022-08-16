@@ -10,7 +10,7 @@ date_created ?= $(shell date +'%Y%m%d%H%M')
 
 # Customize image name with environment variable
 REVISION ?= $(shell git -C $(project_dir) rev-parse HEAD)
-JENKINS_IMAGE ?= $(charm_name):$(REVISION)
+JENKINS_IMAGE ?= "localhost:32000/"$(charm_name):$(REVISION)
 
 build-image: | $(dockerfile_dir)
 	docker build \
