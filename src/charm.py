@@ -37,11 +37,11 @@ class JenkinsAgentCharm(charm.CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
-        self.framework.observe(self.on.start, self.on_config_changed)
-        self.framework.observe(self.on.config_changed, self.on_config_changed)
-        self.framework.observe(self.on.upgrade_charm, self.on_config_changed)
-        self.framework.observe(self.on.slave_relation_joined, self.on_agent_relation_joined)
-        self.framework.observe(self.on.slave_relation_changed, self.on_agent_relation_changed)
+        self.framework.observe(self.on.start, self._on_config_changed)
+        self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(self.on.upgrade_charm, self._on_config_changed)
+        self.framework.observe(self.on.slave_relation_joined, self._on_agent_relation_joined)
+        self.framework.observe(self.on.slave_relation_changed, self._on_agent_relation_changed)
 
         self._stored.set_default(
             relation_configured=False, jenkins_url=None, agents=None, agent_tokens=None
@@ -51,7 +51,7 @@ class JenkinsAgentCharm(charm.CharmBase):
         """Generate the pebble config for the charm.
 
         Returns:
-            Tje pebble configuration for the charm.
+            The pebble configuration for the charm.
         """
         env_config = self._get_env_config()
         pebble_config = {
@@ -69,11 +69,11 @@ class JenkinsAgentCharm(charm.CharmBase):
         }
         return pebble_config
 
-    def on_config_changed(self, event: charm.ConfigChangedEvent) -> None:
+    def _on_config_changed(self, event: charm.ConfigChangedEvent) -> None:
         """Handle config-changed event.
 
         Args:
-            event: The innformation about the event.
+            event: The information about the event.
         """
         # Check for container connectivity
         if not self.unit.get_container(self.service_name).can_connect():
@@ -125,7 +125,7 @@ class JenkinsAgentCharm(charm.CharmBase):
             f"Missing required configuration: {' '.join(sorted(required_options - non_empty_options))}",
         )
 
-    def on_agent_relation_joined(self, event: charm.RelationJoinedEvent) -> None:
+    def _on_agent_relation_joined(self, event: charm.RelationJoinedEvent) -> None:
         """Set relation data for the unit once an agent has connected.
 
         Args:
@@ -145,7 +145,7 @@ class JenkinsAgentCharm(charm.CharmBase):
         event.relation.data[self.model.unit]["labels"] = labels
         event.relation.data[self.model.unit]["slavehost"] = agent_name
 
-    def on_agent_relation_changed(self, event: charm.RelationChangedEvent):
+    def _on_agent_relation_changed(self, event: charm.RelationChangedEvent):
         """Populate local configuration with data from relation."""
         logger.info("Jenkins relation changed")
         agent_name = self._gen_agent_name()

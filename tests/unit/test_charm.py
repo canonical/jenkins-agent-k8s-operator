@@ -14,7 +14,8 @@ from . import types
 
 
 def test__get_env_config_initial(harness: testing.Harness[JenkinsAgentCharm]):
-    """arrange: given charm in its initial state
+    """
+    arrange: given charm in its initial state
     act: when the environment variables for the charm are generated
     assert: then the environment is empty.
     """
@@ -28,7 +29,8 @@ def test__get_env_config_initial(harness: testing.Harness[JenkinsAgentCharm]):
 
 
 def test__get_env_config_config(harness: testing.Harness[JenkinsAgentCharm]):
-    """arrange: given charm in its initial state except that the configuration has been set
+    """
+    arrange: given charm in its initial state except that the configuration has been set
     act: when the environment variables for the charm are generated
     assert: then the environment contains the data from the configuration.
     """
@@ -73,7 +75,8 @@ def test__get_env_config_relation(
     tokens: list[str],
     expected_jenkins_agent_token: str,
 ):
-    """arrange: given charm in its initial state except that relation data has been set
+    """
+    arrange: given charm in its initial state except that relation data has been set
     act: when the environment variables for the charm are generated
     assert: then the environment contains the data from the relation.
     """
@@ -93,7 +96,8 @@ def test__get_env_config_relation(
 
 
 def test__get_env_config_config_relation(harness: testing.Harness[JenkinsAgentCharm]):
-    """arrange: given charm in its initial state except that the configuration and relation data
+    """
+    arrange: given charm in its initial state except that the configuration and relation data
         has been set
     act: when the environment variables for the charm are generated
     assert: then the environment contains the data from the relation.
@@ -128,7 +132,8 @@ def test__get_env_config_config_relation(harness: testing.Harness[JenkinsAgentCh
 
 
 def test_config_changed_invalid(harness_pebble_ready: testing.Harness[JenkinsAgentCharm]):
-    """arrange: given charm in its initial state
+    """
+    arrange: given charm in its initial state
     act: when the config_changed event occurs
     assert: then the charm enters the blocked status with message that required configuration is
         missing.
@@ -146,7 +151,8 @@ def test_config_changed(
     valid_config,
     caplog: pytest.LogCaptureFixture,
 ):
-    """arrange: given charm in its initial state with valid configuration
+    """
+    arrange: given charm in its initial state with valid configuration
     act: when the config_changed event occurs
     assert: then the charm is in the active status, the container has the jenkins-agent service and
         has been restarted and a log message indicating a layer has been added is written.
@@ -169,7 +175,8 @@ def test_config_changed(
 
 
 def test_config_changed_pebble_not_ready(harness: testing.Harness[JenkinsAgentCharm], valid_config):
-    """arrange: given charm where the pebble is not ready state with valid configuration
+    """
+    arrange: given charm where the pebble is not ready state with valid configuration
     act: when the config_changed event occurs
     assert: then the unit stayis in maintenance status and the container is not restarted.
     """
@@ -189,7 +196,8 @@ def test_config_changed_no_change(
     valid_config,
     caplog: pytest.LogCaptureFixture,
 ):
-    """arrange: given charm in active state with valid configuration
+    """
+    arrange: given charm in active state with valid configuration
     act: when the config_changed event occurs
     assert: the charm stays in the active status, the container is not restarted and a log message
         indicating unchaged configuration is written.
@@ -276,7 +284,8 @@ def test__is_valid_config(
     expected_message_contents: tuple[str, ...],
     expected_not_in_message_contents: tuple[str, ...],
 ):
-    """arrange: given charm with the given agent_tokens and configuration set
+    """
+    arrange: given charm with the given agent_tokens and configuration set
     act: when _is_valid_config is called
     assert: then the expected configuration validity and message is returned.
     """
@@ -301,7 +310,8 @@ def test_on_agent_relation_joined(
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
 ):
-    """arrange: given charm in its initial state
+    """
+    arrange: given charm in its initial state
     act: when the slave_relation_joined event occurs
     assert: then the agent sets the executors, labels and slave hosts relation data and writes a
         note to the logs.
@@ -334,7 +344,8 @@ def test_on_agent_relation_joined(
 def test_on_agent_relation_joined_labels(
     harness: testing.Harness[JenkinsAgentCharm], monkeypatch: pytest.MonkeyPatch
 ):
-    """arrange: given charm in its initial state with labels configured
+    """
+    arrange: given charm in its initial state with labels configured
     act: when the slave_relation_joined occurs
     assert: then the agent sets the labels based on the configuration.
     """
@@ -358,7 +369,8 @@ def test_on_agent_relation_changed_jenkins_url_missing(
     caplog: pytest.LogCaptureFixture,
     charm_with_jenkins_relation: types.CharmWithJenkinsRelation,
 ):
-    """arrange: given charm with relation to jenkins
+    """
+    arrange: given charm with relation to jenkins
     act: when the relation data is updated without the jenkins url
     assert: the unit stays in active status and a warning is written to the logs.
     """
@@ -383,7 +395,8 @@ def test_on_agent_relation_changed_secret_missing(
     caplog: pytest.LogCaptureFixture,
     charm_with_jenkins_relation: types.CharmWithJenkinsRelation,
 ):
-    """arrange: given charm with relation to jenkins
+    """
+    arrange: given charm with relation to jenkins
     act: when the relation data is updated without the secret
     assert: the unit stays in active status and a warning is written to the logs.
     """
@@ -409,7 +422,8 @@ def test_on_agent_relation_changed(
     charm_with_jenkins_relation: types.CharmWithJenkinsRelation,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    """arrange: given charm with relation to jenkins
+    """
+    arrange: given charm with relation to jenkins
     act: when the relation data is updated
     assert: then the relation data is stored on the charm, the unit enters maintenance status,
         emits the config_changed event and writes a note to the logs.
@@ -444,7 +458,8 @@ def test_on_agent_relation_changed_new_agent_name(
     charm_with_jenkins_relation: types.CharmWithJenkinsRelation,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    """arrange: given charm with relation to jenkins and an existing agent
+    """
+    arrange: given charm with relation to jenkins and an existing agent
     act: when the relation data is updated
     assert: then a new agent is stored.
     """
@@ -469,7 +484,8 @@ def test_on_agent_relation_changed_jenkins_url_configured(
     charm_with_jenkins_relation: types.CharmWithJenkinsRelation,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    """arrange: given charm with relation to jenkins and the jenkins_url configuration set
+    """
+    arrange: given charm with relation to jenkins and the jenkins_url configuration set
     act: when the relation data is updated
     assert: then the relation data is stored on the charm, the unit goes into active status, emits
         the config_changed event and writes a warning to the logs.
