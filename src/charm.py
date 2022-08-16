@@ -5,11 +5,10 @@
 
 import logging
 import os
-import yaml
 import typing
 
-from ops import model, charm, framework, main
-
+import yaml
+from ops import charm, framework, main, model
 
 logger = logging.getLogger()
 

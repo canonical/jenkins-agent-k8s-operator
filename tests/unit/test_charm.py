@@ -1,15 +1,15 @@
 # Copyright 2022 Canonical Ltd.
 # Licensed under the GPLv3, see LICENCE file for details.
 
-from unittest import mock
 import logging
 import os
+from unittest import mock
 
 import pytest
-from ops import model
-from ops import testing
+from ops import model, testing
 
 from charm import JenkinsAgentCharm
+
 from . import types
 
 

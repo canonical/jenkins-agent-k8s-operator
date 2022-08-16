@@ -5,12 +5,11 @@ import os
 from unittest import mock
 
 import pytest
-
 from ops import testing
 
 from charm import JenkinsAgentCharm
-from . import types
 
+from . import types
 
 testing.SIMULATE_CAN_CONNECT = True
 
