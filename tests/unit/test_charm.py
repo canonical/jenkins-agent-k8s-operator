@@ -1,6 +1,13 @@
 # Copyright 2022 Canonical Ltd.
 # Licensed under the GPLv3, see LICENCE file for details.
 
+# Disable since testing relies on checking private state of the charm.
+# pylint: disable=protected-access
+# Disable since parametrised testing sometimes requires many arguments.
+# pylint: disable=too-many-arguments
+
+"""Unit tests for the charm."""
+
 import logging
 import os
 from unittest import mock
@@ -319,14 +326,14 @@ def test_on_agent_relation_joined(
         note to the logs.
     """
     # Mock uname and CPU count
-    mock_os_cpu_count = mock.MagicMock()
+    mock_cpu_count = mock.MagicMock()
     cpu_count = 8
-    mock_os_cpu_count.return_value = cpu_count
-    monkeypatch.setattr(os, "cpu_count", mock_os_cpu_count)
-    mock_os_uname = mock.MagicMock()
+    mock_cpu_count.return_value = cpu_count
+    monkeypatch.setattr(os, "cpu_count", mock_cpu_count)
+    mock_uname = mock.MagicMock()
     machine_architecture = "x86_64"
-    mock_os_uname.return_value.machine = machine_architecture
-    monkeypatch.setattr(os, "uname", mock_os_uname)
+    mock_uname.return_value.machine = machine_architecture
+    monkeypatch.setattr(os, "uname", mock_uname)
 
     caplog.set_level(logging.INFO)
     harness.enable_hooks()

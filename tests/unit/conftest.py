@@ -1,6 +1,9 @@
 # Copyright 2022 Canonical Ltd.
 # Licensed under the GPLv3, see LICENCE file for details.
 
+# Disable since pytest fixtures require the fixture name as an argument.
+# pylint: disable=redefined-outer-name
+
 """Fixtures for unit tests."""
 
 import os

@@ -18,6 +18,9 @@ logger = logging.getLogger()
 class JenkinsAgentCharStoredState(framework.StoredState):
     """Defines valid attributes of the stored state for the Jenkins Agent."""
 
+    # Disabling since class is used to add type information to the stored state.
+    # pylint: disable=too-few-public-methods
+
     relation_configured: bool | None
     jenkins_url: str | None
     agents: list[str] | None
@@ -96,7 +99,7 @@ class JenkinsAgentCharm(charm.CharmBase):
         container = self.unit.get_container(self.service_name)
         services = container.get_plan().to_dict().get("services", {})
         if services != pebble_config["services"]:
-            logger.debug(f"About to add_layer with pebble_config:\n{yaml.dump(pebble_config)}")
+            logger.debug("About to add_layer with pebble_config:\n%s", yaml.dump(pebble_config))
             container.add_layer(self.service_name, pebble_config, combine=True)
             container.restart(self.service_name)
         else:
@@ -126,7 +129,8 @@ class JenkinsAgentCharm(charm.CharmBase):
 
         return (
             False,
-            f"Missing required configuration: {' '.join(sorted(required_options - non_empty_options))}",
+            "Missing required configuration: "
+            f"{' '.join(sorted(required_options - non_empty_options))}",
         )
 
     def _on_agent_relation_joined(self, event: charm.RelationJoinedEvent) -> None:
@@ -161,8 +165,8 @@ class JenkinsAgentCharm(charm.CharmBase):
             relation_jenkins_url = event.relation.data[event.unit]['url']
         except KeyError:
             logger.warning(
-                f"Expected 'url' key for {event.unit} unit in relation data. "
-                "Skipping setup for now."
+                "Expected 'url' key for %s unit in relation data. Skipping setup for now.",
+                event.unit,
             )
             self.model.unit.status = model.ActiveStatus()
             return
@@ -170,8 +174,8 @@ class JenkinsAgentCharm(charm.CharmBase):
             relation_secret = event.relation.data[event.unit]['secret']
         except KeyError:
             logger.warning(
-                f"Expected 'secret' key for {event.unit} unit in relation data. "
-                "Skipping setup for now."
+                "Expected 'secret' key for %s unit in relation data. Skipping setup for now.",
+                event.unit,
             )
             self.model.unit.status = model.ActiveStatus()
             return
