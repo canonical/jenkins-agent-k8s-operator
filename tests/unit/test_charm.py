@@ -174,7 +174,9 @@ def test_config_changed(
     assert "add_layer" in caplog.text.lower()
 
 
-def test_config_changed_pebble_not_ready(harness: testing.Harness[JenkinsAgentCharm], valid_config):
+def test_config_changed_pebble_not_ready(
+    harness: testing.Harness[JenkinsAgentCharm], valid_config, monkeypatch: pytest.MonkeyPatch
+):
     """
     arrange: given charm where the pebble is not ready state with valid configuration
     act: when the config_changed event occurs
@@ -183,18 +185,20 @@ def test_config_changed_pebble_not_ready(harness: testing.Harness[JenkinsAgentCh
     harness.update_config(valid_config)
     # Mock the restart function on the container
     container: model.Container = harness.model.unit.get_container(harness.charm.service_name)
-    container.restart = mock.MagicMock()
+    mock_restart = mock.MagicMock()
+    monkeypatch.setattr(container, "restart", mock_restart)
 
     harness.charm.on.config_changed.emit()
 
     assert isinstance(harness.model.unit.status, model.MaintenanceStatus)
-    container.restart.assert_not_called()
+    mock_restart.assert_not_called()
 
 
 def test_config_changed_no_change(
     harness_pebble_ready: testing.Harness[JenkinsAgentCharm],
     valid_config,
     caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
 ):
     """
     arrange: given charm in active state with valid configuration
@@ -209,13 +213,14 @@ def test_config_changed_no_change(
     container: model.Container = harness_pebble_ready.model.unit.get_container(
         harness_pebble_ready.charm.service_name
     )
-    container.restart = mock.MagicMock()
+    mock_restart = mock.MagicMock()
+    monkeypatch.setattr(container, "restart", mock_restart)
 
     caplog.set_level(logging.DEBUG)
     harness_pebble_ready.charm.on.config_changed.emit()
 
     assert isinstance(harness_pebble_ready.model.unit.status, model.ActiveStatus)
-    container.restart.assert_not_called()
+    mock_restart.assert_not_called()
     assert "unchanged" in caplog.text.lower()
 
 
@@ -228,8 +233,8 @@ def test_config_changed_no_change(
             [],
             {"jenkins_url": "", "jenkins_agent_name": "", "jenkins_agent_token": ""},
             False,
-            ("jenkins_url", "jenkins_agent_name", "jenkins_agent_token"),
-            (),
+            ["jenkins_url", "jenkins_agent_name", "jenkins_agent_token"],
+            [],
             id="relation_configured not set and configuration empty",
         ),
         pytest.param(
@@ -237,8 +242,8 @@ def test_config_changed_no_change(
             ["token"],
             {"jenkins_url": "", "jenkins_agent_name": "", "jenkins_agent_token": ""},
             True,
-            (),
-            (),
+            [],
+            [],
             id="relation_configured set and configuration empty",
         ),
         pytest.param(
@@ -246,8 +251,8 @@ def test_config_changed_no_change(
             [],
             {"jenkins_url": "http://test", "jenkins_agent_name": "", "jenkins_agent_token": ""},
             False,
-            ("jenkins_agent_name", "jenkins_agent_token"),
-            ("jenkins_url",),
+            ["jenkins_agent_name", "jenkins_agent_token"],
+            ["jenkins_url"],
             id="relation_configured not set and configuration empty except jenkins_url set",
         ),
         pytest.param(
@@ -255,8 +260,8 @@ def test_config_changed_no_change(
             [],
             {"jenkins_url": "", "jenkins_agent_name": "agent 1", "jenkins_agent_token": "token 1"},
             False,
-            ("jenkins_url",),
-            ("jenkins_agent_name", "jenkins_agent_token"),
+            ["jenkins_url"],
+            ["jenkins_agent_name", "jenkins_agent_token"],
             id="relation_configured not set and configuration empty except jenkins_agent_name and "
             "jenkins_agent_token set",
         ),
@@ -269,8 +274,8 @@ def test_config_changed_no_change(
                 "jenkins_agent_token": "token 1",
             },
             True,
-            (),
-            (),
+            [],
+            [],
             id="relation_configured not set and configuration valid",
         ),
     ],
@@ -281,8 +286,8 @@ def test__is_valid_config(
     agent_tokens: list[str],
     config,
     expected_validity: bool,
-    expected_message_contents: tuple[str, ...],
-    expected_not_in_message_contents: tuple[str, ...],
+    expected_message_contents: list[str],
+    expected_not_in_message_contents: list[str],
 ):
     """
     arrange: given charm with the given agent_tokens and configuration set
@@ -296,9 +301,6 @@ def test__is_valid_config(
     validity, message = harness.charm._is_valid_config()
 
     assert validity == expected_validity
-    if validity:
-        assert message is None
-        return
     for expected_message_content in expected_message_contents:
         assert expected_message_content in message
     for expected_not_in_message_content in expected_not_in_message_contents:

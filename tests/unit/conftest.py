@@ -4,6 +4,7 @@
 """Fixtures for unit tests."""
 
 import os
+import typing
 from unittest import mock
 
 import pytest
@@ -17,7 +18,7 @@ testing.SIMULATE_CAN_CONNECT = True
 
 
 @pytest.fixture
-def harness() -> testing.Harness[JenkinsAgentCharm]:
+def harness() -> typing.Generator[testing.Harness[JenkinsAgentCharm], None, None]:
     """Create test harness for unit tests."""
     # Create and confifgure harness
     harness = testing.Harness(JenkinsAgentCharm)
@@ -52,7 +53,7 @@ def harness_pebble_ready(harness: testing.Harness[JenkinsAgentCharm]):
     """Get the charm to the pebble ready state."""
     harness.container_pebble_ready(harness.charm.service_name)
 
-    yield harness
+    return harness
 
 
 @pytest.fixture
@@ -79,7 +80,7 @@ def charm_with_jenkins_relation(
         relation_id=relation_id, remote_unit_name=remote_unit_name
     )
 
-    yield types.CharmWithJenkinsRelation(
+    return types.CharmWithJenkinsRelation(
         cpu_count=cpu_count,
         machine_architecture=machine_architecture,
         remote_app=remote_app,

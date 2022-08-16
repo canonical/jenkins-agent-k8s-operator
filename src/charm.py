@@ -104,7 +104,7 @@ class JenkinsAgentCharm(charm.CharmBase):
 
         self.unit.status = model.ActiveStatus()
 
-    def _is_valid_config(self) -> tuple[True, None] | tuple[False, str]:
+    def _is_valid_config(self) -> tuple[bool, str]:
         """Validate required configuration.
 
         When not configuring the agent through relations (as indicated by relation_configured
@@ -115,14 +115,14 @@ class JenkinsAgentCharm(charm.CharmBase):
         """
         # Check for agent tokens
         if self._stored.relation_configured:
-            return True, None
+            return True, ""
 
         # Retrieve required and non-empty configuration options
         required_options = {"jenkins_url", "jenkins_agent_name", "jenkins_agent_token"}
         non_empty_options = {option for option in required_options if self.model.config[option]}
 
         if required_options.issubset(non_empty_options):
-            return True, None
+            return True, ""
 
         return (
             False,
@@ -213,9 +213,9 @@ class JenkinsAgentCharm(charm.CharmBase):
         """
         if self._stored.relation_configured:
             return {
-                "JENKINS_URL": self._stored.jenkins_url,
-                "JENKINS_AGENTS": ":".join(self._stored.agents),
-                "JENKINS_TOKENS": ":".join(self._stored.agent_tokens),
+                "JENKINS_URL": self._stored.jenkins_url or "",
+                "JENKINS_AGENTS": ":".join(self._stored.agents or []),
+                "JENKINS_TOKENS": ":".join(self._stored.agent_tokens or []),
             }
         return {
             "JENKINS_URL": self.config["jenkins_url"],
