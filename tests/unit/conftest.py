@@ -13,7 +13,7 @@ from unittest import mock
 import pytest
 from ops import testing
 
-from charm import JenkinsAgentCharm
+from src.charm import JenkinsAgentCharm
 
 from . import types
 
