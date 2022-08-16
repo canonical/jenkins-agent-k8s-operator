@@ -3,6 +3,8 @@
 # Copyright 2022 Canonical Ltd.
 # Licensed under the GPLv3, see LICENCE file for details.
 
+"""Charm for Jenkins Agent on kubernetes."""
+
 import logging
 import os
 import typing
@@ -31,10 +33,13 @@ class JenkinsAgentEnvConfig(typing.TypedDict):
 
 
 class JenkinsAgentCharm(charm.CharmBase):
+    """Charm for Jenkins Agent on kubernetes."""
+
     _stored = JenkinsAgentCharStoredState()
     service_name = "jenkins-agent"
 
     def __init__(self, *args):
+        """Constructor."""
         super().__init__(*args)
         self.framework.observe(self.on.start, self._on_config_changed)
         self.framework.observe(self.on.config_changed, self._on_config_changed)

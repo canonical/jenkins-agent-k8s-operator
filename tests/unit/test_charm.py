@@ -102,7 +102,7 @@ def test__get_env_config_config_relation(harness: testing.Harness[JenkinsAgentCh
     act: when the environment variables for the charm are generated
     assert: then the environment contains the data from the relation.
     """
-    # Set the configuraton
+    # Set the configuration
     config_jenkins_url = "http://test_config"
     config_jenkins_agent_name = "agent config"
     config_jenkins_agent_token = "token config"
@@ -200,7 +200,7 @@ def test_config_changed_no_change(
     arrange: given charm in active state with valid configuration
     act: when the config_changed event occurs
     assert: the charm stays in the active status, the container is not restarted and a log message
-        indicating unchaged configuration is written.
+        indicating unchanged configuration is written.
     """
     # Get container into active state
     harness_pebble_ready.update_config(valid_config)

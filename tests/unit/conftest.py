@@ -1,6 +1,8 @@
 # Copyright 2022 Canonical Ltd.
 # Licensed under the GPLv3, see LICENCE file for details.
 
+"""Fixtures for unit tests."""
+
 import os
 from unittest import mock
 
@@ -16,7 +18,7 @@ testing.SIMULATE_CAN_CONNECT = True
 
 @pytest.fixture
 def harness() -> testing.Harness[JenkinsAgentCharm]:
-    """Creates test harness for unit tests."""
+    """Create test harness for unit tests."""
     # Create and confifgure harness
     harness = testing.Harness(JenkinsAgentCharm)
     harness.begin()
@@ -37,7 +39,7 @@ def harness() -> testing.Harness[JenkinsAgentCharm]:
 
 @pytest.fixture(scope="module")
 def valid_config():
-    """Valid configuration for the charm."""
+    """Get valid configuration for the charm."""
     return {
         "jenkins_url": "http://test",
         "jenkins_agent_name": "agent-one",
@@ -58,7 +60,7 @@ def charm_with_jenkins_relation(
     harness_pebble_ready: testing.Harness[JenkinsAgentCharm],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    """Creates the jenkins agent charm with an existing relation to jenkins."""
+    """Create the jenkins agent charm with an existing relation to jenkins."""
     # Mock uname and CPU count
     mock_os_cpu_count = mock.MagicMock()
     cpu_count = 8
