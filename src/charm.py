@@ -15,7 +15,7 @@ from ops import charm, framework, main, model
 logger = logging.getLogger()
 
 
-class JenkinsAgentCharStoredState(framework.StoredState):
+class JenkinsAgentCharmStoredState(framework.StoredState):
     """Defines valid attributes of the stored state for the Jenkins Agent."""
 
     # Disabling since class is used to add type information to the stored state.
@@ -28,7 +28,7 @@ class JenkinsAgentCharStoredState(framework.StoredState):
 
 
 class JenkinsAgentEnvConfig(typing.TypedDict):
-    """The envornment configuration for the jenkins agent."""
+    """The environment configuration for the jenkins agent."""
 
     JENKINS_AGENTS: str
     JENKINS_TOKENS: str
@@ -38,7 +38,7 @@ class JenkinsAgentEnvConfig(typing.TypedDict):
 class JenkinsAgentCharm(charm.CharmBase):
     """Charm for Jenkins Agent on kubernetes."""
 
-    _stored = JenkinsAgentCharStoredState()
+    _stored = JenkinsAgentCharmStoredState()
     service_name = "jenkins-agent"
 
     def __init__(self, *args):
