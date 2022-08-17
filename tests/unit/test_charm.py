@@ -61,27 +61,7 @@ def test__get_env_config_config(harness: testing.Harness[JenkinsAgentCharm]):
     }
 
 
-@pytest.mark.parametrize(
-    "agents, expected_jenkins_agent_name, tokens, expected_jenkins_agent_token",
-    [
-        pytest.param([], "", [], "", id="empty"),
-        pytest.param(["agent"], "agent", ["token"], "token", id="single"),
-        pytest.param(
-            ["agent 1", "agent 2"],
-            "agent 1:agent 2",
-            ["token 1", "token 2"],
-            "token 1:token 2",
-            id="multiple",
-        ),
-    ],
-)
-def test__get_env_config_relation(
-    harness: testing.Harness[JenkinsAgentCharm],
-    agents: list[str],
-    expected_jenkins_agent_name: str,
-    tokens: list[str],
-    expected_jenkins_agent_token: str,
-):
+def test__get_env_config_relation(harness: testing.Harness[JenkinsAgentCharm]):
     """
     arrange: given charm in its initial state except that relation data has been set
     act: when the environment variables for the charm are generated
@@ -90,14 +70,16 @@ def test__get_env_config_relation(
     jenkins_url = "http://test"
     harness.charm._stored.relation_configured = True
     harness.charm._stored.jenkins_url = jenkins_url
-    harness.charm._stored.agents = agents
-    harness.charm._stored.agent_tokens = tokens
+    agent_name = "agent 0"
+    harness.charm._stored.relation_agent_name = agent_name
+    agent_token = "token 0"
+    harness.charm._stored.relation_agent_token = agent_token
 
     env_config = harness.charm._get_env_config()
 
     assert env_config == {
-        'JENKINS_AGENTS': expected_jenkins_agent_name,
-        'JENKINS_TOKENS': expected_jenkins_agent_token,
+        'JENKINS_AGENTS': agent_name,
+        'JENKINS_TOKENS': agent_token,
         'JENKINS_URL': jenkins_url,
     }
 
@@ -126,8 +108,8 @@ def test__get_env_config_config_relation(harness: testing.Harness[JenkinsAgentCh
     relation_jenkins_agent_token = "token relation"
     harness.charm._stored.relation_configured = True
     harness.charm._stored.jenkins_url = relation_jenkins_url
-    harness.charm._stored.agents = [relation_jenkins_agent_name]
-    harness.charm._stored.agent_tokens = [relation_jenkins_agent_token]
+    harness.charm._stored.relation_agent_name = relation_jenkins_agent_name
+    harness.charm._stored.relation_agent_token = relation_jenkins_agent_token
 
     env_config = harness.charm._get_env_config()
 
@@ -302,7 +284,7 @@ def test__is_valid_config(
     assert: then the expected configuration validity and message is returned.
     """
     harness.charm._stored.relation_configured = relation_configured
-    harness.charm._stored.agent_tokens = agent_tokens
+    harness.charm._stored.relation_agent_tokens = agent_tokens
     harness.update_config(config)
 
     validity, message = harness.charm._is_valid_config()
@@ -392,8 +374,8 @@ def test_on_agent_relation_changed_jenkins_url_missing(
     )
 
     assert harness.charm._stored.jenkins_url is None
-    assert harness.charm._stored.agent_tokens == []
-    assert harness.charm._stored.agents[-1] == "jenkins-agent-k8s-0"
+    assert harness.charm._stored.relation_agent_token is None
+    assert harness.charm._stored.relation_agent_name == harness.charm.unit.name.replace("/", "-")
     assert isinstance(harness.model.unit.status, model.ActiveStatus)
     assert "expected 'url'" in caplog.text.lower()
     assert "skipping setup" in caplog.text.lower()
@@ -418,8 +400,8 @@ def test_on_agent_relation_changed_secret_missing(
     )
 
     assert harness.charm._stored.jenkins_url is None
-    assert harness.charm._stored.agent_tokens == []
-    assert harness.charm._stored.agents[-1] == "jenkins-agent-k8s-0"
+    assert harness.charm._stored.relation_agent_token is None
+    assert harness.charm._stored.relation_agent_name == harness.charm.unit.name.replace("/", "-")
     assert isinstance(harness.model.unit.status, model.ActiveStatus)
     assert "expected 'secret'" in caplog.text.lower()
     assert "skipping setup" in caplog.text.lower()
@@ -453,8 +435,8 @@ def test_on_agent_relation_changed(
 
     assert harness.charm._stored.relation_configured is True
     assert harness.charm._stored.jenkins_url == relation_jenkins_url
-    assert harness.charm._stored.agent_tokens[-1] == relation_secret
-    assert harness.charm._stored.agents[-1] == "jenkins-agent-k8s-0"
+    assert harness.charm._stored.relation_agent_token == relation_secret
+    assert harness.charm._stored.relation_agent_name == harness.charm.unit.name.replace("/", "-")
     mock_config_changed.emit.assert_called_once_with()
     assert isinstance(harness.model.unit.status, model.MaintenanceStatus)
     assert "configuring" in harness.model.unit.status.message.lower()
@@ -472,7 +454,7 @@ def test_on_agent_relation_changed_new_agent_name(
     act: when the relation data is updated
     assert: then a new agent is stored.
     """
-    harness.charm._stored.agents = ["jenkins-agent-k8s-0"]
+    harness.charm._stored.relation_agent_name = harness.charm.unit.name.replace("/", "-")
     # Mock config_changed hook
     monkeypatch.setattr(harness.charm.on, "config_changed", mock.MagicMock())
 
@@ -483,7 +465,7 @@ def test_on_agent_relation_changed_new_agent_name(
         key_values={"url": "http://relation", "secret": "relation token"},
     )
 
-    assert harness.charm._stored.agents[-1] == "jenkins-agent-k8s-1"
+    assert harness.charm._stored.relation_agent_name == harness.charm.unit.name.replace("/", "-")
 
 
 def test_on_agent_relation_changed_jenkins_url_configured(
@@ -515,8 +497,8 @@ def test_on_agent_relation_changed_jenkins_url_configured(
     )
 
     assert harness.charm._stored.jenkins_url == relation_jenkins_url
-    assert harness.charm._stored.agent_tokens[-1] == relation_secret
-    assert harness.charm._stored.agents[-1] == "jenkins-agent-k8s-0"
+    assert harness.charm._stored.relation_agent_token == relation_secret
+    assert harness.charm._stored.relation_agent_name == harness.charm.unit.name.replace("/", "-")
     mock_config_changed.emit.assert_called_once_with()
     assert isinstance(harness.model.unit.status, model.MaintenanceStatus)
     assert "'jenkins_url'" in caplog.text.lower()
