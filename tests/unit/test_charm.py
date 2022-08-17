@@ -320,13 +320,14 @@ def test_on_agent_relation_joined(
     caplog.set_level(logging.INFO)
     harness.enable_hooks()
     relation_id = harness.add_relation(relation_name="slave", remote_app="jenkins")
-    unit_name = "jenkins-agent-k8s/0"
-    harness.add_relation_unit(relation_id=relation_id, remote_unit_name=unit_name)
+    harness.add_relation_unit(relation_id=relation_id, remote_unit_name=harness.charm.unit.name)
 
-    assert harness.get_relation_data(relation_id=relation_id, app_or_unit=unit_name) == {
+    assert harness.get_relation_data(
+        relation_id=relation_id, app_or_unit=harness.charm.unit.name
+    ) == {
         'executors': str(cpu_count),
         'labels': machine_architecture,
-        'slavehost': unit_name.replace("/", "-"),
+        'slavehost': harness.charm._stored.relation_agent_name,
     }
     assert "relation" in caplog.text.lower()
     assert "joined" in caplog.text.lower()
@@ -375,7 +376,7 @@ def test_on_agent_relation_changed_jenkins_url_missing(
 
     assert harness.charm._stored.jenkins_url is None
     assert harness.charm._stored.relation_agent_token is None
-    assert harness.charm._stored.relation_agent_name == harness.charm.unit.name.replace("/", "-")
+    assert harness.charm._stored.relation_agent_name == harness.charm._stored.relation_agent_name
     assert isinstance(harness.model.unit.status, model.ActiveStatus)
     assert "expected 'url'" in caplog.text.lower()
     assert "skipping setup" in caplog.text.lower()
@@ -401,7 +402,7 @@ def test_on_agent_relation_changed_secret_missing(
 
     assert harness.charm._stored.jenkins_url is None
     assert harness.charm._stored.relation_agent_token is None
-    assert harness.charm._stored.relation_agent_name == harness.charm.unit.name.replace("/", "-")
+    assert harness.charm._stored.relation_agent_name == harness.charm._stored.relation_agent_name
     assert isinstance(harness.model.unit.status, model.ActiveStatus)
     assert "expected 'secret'" in caplog.text.lower()
     assert "skipping setup" in caplog.text.lower()
@@ -436,7 +437,7 @@ def test_on_agent_relation_changed(
     assert harness.charm._stored.relation_configured is True
     assert harness.charm._stored.jenkins_url == relation_jenkins_url
     assert harness.charm._stored.relation_agent_token == relation_secret
-    assert harness.charm._stored.relation_agent_name == harness.charm.unit.name.replace("/", "-")
+    assert harness.charm._stored.relation_agent_name == harness.charm._stored.relation_agent_name
     mock_config_changed.emit.assert_called_once_with()
     assert isinstance(harness.model.unit.status, model.MaintenanceStatus)
     assert "configuring" in harness.model.unit.status.message.lower()
@@ -454,7 +455,7 @@ def test_on_agent_relation_changed_new_agent_name(
     act: when the relation data is updated
     assert: then a new agent is stored.
     """
-    harness.charm._stored.relation_agent_name = harness.charm.unit.name.replace("/", "-")
+    harness.charm._stored.relation_agent_name = harness.charm._stored.relation_agent_name
     # Mock config_changed hook
     monkeypatch.setattr(harness.charm.on, "config_changed", mock.MagicMock())
 
@@ -465,7 +466,7 @@ def test_on_agent_relation_changed_new_agent_name(
         key_values={"url": "http://relation", "secret": "relation token"},
     )
 
-    assert harness.charm._stored.relation_agent_name == harness.charm.unit.name.replace("/", "-")
+    assert harness.charm._stored.relation_agent_name == harness.charm._stored.relation_agent_name
 
 
 def test_on_agent_relation_changed_jenkins_url_configured(
@@ -498,7 +499,7 @@ def test_on_agent_relation_changed_jenkins_url_configured(
 
     assert harness.charm._stored.jenkins_url == relation_jenkins_url
     assert harness.charm._stored.relation_agent_token == relation_secret
-    assert harness.charm._stored.relation_agent_name == harness.charm.unit.name.replace("/", "-")
+    assert harness.charm._stored.relation_agent_name == harness.charm._stored.relation_agent_name
     mock_config_changed.emit.assert_called_once_with()
     assert isinstance(harness.model.unit.status, model.MaintenanceStatus)
     assert "'jenkins_url'" in caplog.text.lower()

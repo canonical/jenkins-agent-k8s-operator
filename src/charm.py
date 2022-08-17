@@ -8,6 +8,7 @@
 import logging
 import os
 import typing
+import uuid
 
 import yaml
 from ops import charm, framework, main, model
@@ -53,7 +54,7 @@ class JenkinsAgentCharm(charm.CharmBase):
         self._stored.set_default(
             relation_configured=False,
             jenkins_url=None,
-            relation_agent_name=self.unit.name.replace('/', '-'),
+            relation_agent_name=f"{self.unit.name.replace('/', '-')}-{uuid.uuid4()}",
             relation_agent_token=None,
         )
 
