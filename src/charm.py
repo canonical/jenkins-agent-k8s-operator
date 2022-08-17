@@ -14,7 +14,7 @@ from ops import model, charm, framework, main
 logger = logging.getLogger()
 
 
-class JenkinsAgentCharStoredState(framework.StoredState):
+class JenkinsAgentCharmStoredState(framework.StoredState):
     """Defines valid attributes of the stored state for the Jenkins Agent."""
 
     relation_configured: bool | None
@@ -24,7 +24,7 @@ class JenkinsAgentCharStoredState(framework.StoredState):
 
 
 class JenkinsAgentEnvConfig(typing.TypedDict):
-    """The envornment configuration for the jenkins agent."""
+    """The environment configuration for the jenkins agent."""
 
     JENKINS_AGENTS: str
     JENKINS_TOKENS: str
@@ -32,7 +32,7 @@ class JenkinsAgentEnvConfig(typing.TypedDict):
 
 
 class JenkinsAgentCharm(charm.CharmBase):
-    _stored = JenkinsAgentCharStoredState()
+    _stored = JenkinsAgentCharmStoredState()
     service_name = "jenkins-agent"
 
     def __init__(self, *args):
