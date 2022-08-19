@@ -94,7 +94,7 @@ class JenkinsAgentCharm(CharmBase):
         container = self.unit.get_container(self.service_name)
         services = container.get_plan().to_dict().get("services", {})
         if services != pebble_config["services"]:
-            logger.debug(f"About to add_layer with pebble_config:\n{yaml.dump(pebble_config)}")
+            logger.debug("About to add_layer with pebble_config:\n%s", yaml.dump(pebble_config))
             container.add_layer(self.service_name, pebble_config, combine=True)
             container.restart(self.service_name)
         else:
@@ -159,8 +159,8 @@ class JenkinsAgentCharm(CharmBase):
             relation_jenkins_url = event.relation.data[event.unit]['url']
         except KeyError:
             logger.warning(
-                f"Expected 'url' key for {event.unit} unit in relation data. "
-                "Skipping setup for now."
+                "Expected 'url' key for %s unit in relation data. Skipping setup for now.",
+                event.unit,
             )
             self.model.unit.status = ActiveStatus()
             return
@@ -168,8 +168,8 @@ class JenkinsAgentCharm(CharmBase):
             relation_secret = event.relation.data[event.unit]['secret']
         except KeyError:
             logger.warning(
-                f"Expected 'secret' key for {event.unit} unit in relation data. "
-                "Skipping setup for now."
+                "Expected 'secret' key for %s unit in relation data. Skipping setup for now.",
+                event.unit,
             )
             self.model.unit.status = ActiveStatus()
             return
