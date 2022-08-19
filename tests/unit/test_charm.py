@@ -12,9 +12,9 @@ import logging
 import os
 from unittest import mock
 
-from ops.testing import Harness
-from ops.model import BlockedStatus, ActiveStatus, Container, MaintenanceStatus
 import pytest
+from ops.model import ActiveStatus, BlockedStatus, Container, MaintenanceStatus
+from ops.testing import Harness
 
 from charm import JenkinsAgentCharm
 
