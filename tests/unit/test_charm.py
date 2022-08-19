@@ -13,14 +13,15 @@ import os
 from unittest import mock
 
 import pytest
-from ops import model, testing
+from ops.model import ActiveStatus, BlockedStatus, Container, MaintenanceStatus
+from ops.testing import Harness
 
 from src.charm import JenkinsAgentCharm
 
 from . import types
 
 
-def test__get_env_config_initial(harness: testing.Harness[JenkinsAgentCharm]):
+def test__get_env_config_initial(harness: Harness[JenkinsAgentCharm]):
     """
     arrange: given charm in its initial state
     act: when the environment variables for the charm are generated
@@ -35,7 +36,7 @@ def test__get_env_config_initial(harness: testing.Harness[JenkinsAgentCharm]):
     }
 
 
-def test__get_env_config_config(harness: testing.Harness[JenkinsAgentCharm]):
+def test__get_env_config_config(harness: Harness[JenkinsAgentCharm]):
     """
     arrange: given charm in its initial state except that the configuration has been set
     act: when the environment variables for the charm are generated
@@ -61,7 +62,7 @@ def test__get_env_config_config(harness: testing.Harness[JenkinsAgentCharm]):
     }
 
 
-def test__get_env_config_relation(harness: testing.Harness[JenkinsAgentCharm]):
+def test__get_env_config_relation(harness: Harness[JenkinsAgentCharm]):
     """
     arrange: given charm in its initial state except that relation data has been set
     act: when the environment variables for the charm are generated
@@ -84,7 +85,7 @@ def test__get_env_config_relation(harness: testing.Harness[JenkinsAgentCharm]):
     }
 
 
-def test__get_env_config_config_relation(harness: testing.Harness[JenkinsAgentCharm]):
+def test__get_env_config_config_relation(harness: Harness[JenkinsAgentCharm]):
     """
     arrange: given charm in its initial state except that the configuration and relation data
         has been set
@@ -120,7 +121,7 @@ def test__get_env_config_config_relation(harness: testing.Harness[JenkinsAgentCh
     }
 
 
-def test_config_changed_invalid(harness_pebble_ready: testing.Harness[JenkinsAgentCharm]):
+def test_config_changed_invalid(harness_pebble_ready: Harness[JenkinsAgentCharm]):
     """
     arrange: given charm in its initial state
     act: when the config_changed event occurs
@@ -129,13 +130,13 @@ def test_config_changed_invalid(harness_pebble_ready: testing.Harness[JenkinsAge
     """
     harness_pebble_ready.charm.on.config_changed.emit()
 
-    assert isinstance(harness_pebble_ready.model.unit.status, model.BlockedStatus)
+    assert isinstance(harness_pebble_ready.model.unit.status, BlockedStatus)
     assert "jenkins_agent_name" in harness_pebble_ready.model.unit.status.message
     assert "jenkins_agent_token" in harness_pebble_ready.model.unit.status.message
 
 
 def test_config_changed(
-    harness_pebble_ready: testing.Harness[JenkinsAgentCharm],
+    harness_pebble_ready: Harness[JenkinsAgentCharm],
     monkeypatch: pytest.MonkeyPatch,
     valid_config,
     caplog: pytest.LogCaptureFixture,
@@ -148,7 +149,7 @@ def test_config_changed(
     """
     harness_pebble_ready.update_config(valid_config)
     # Mock the restart function on the container
-    container: model.Container = harness_pebble_ready.model.unit.get_container(
+    container: Container = harness_pebble_ready.model.unit.get_container(
         harness_pebble_ready.charm.service_name
     )
     mock_restart = mock.MagicMock()
@@ -157,14 +158,14 @@ def test_config_changed(
     caplog.set_level(logging.DEBUG)
     harness_pebble_ready.charm.on.config_changed.emit()
 
-    assert isinstance(harness_pebble_ready.model.unit.status, model.ActiveStatus)
+    assert isinstance(harness_pebble_ready.model.unit.status, ActiveStatus)
     assert harness_pebble_ready.charm.service_name in container.get_plan().services
     mock_restart.assert_called_once_with(harness_pebble_ready.charm.service_name)
     assert "add_layer" in caplog.text.lower()
 
 
 def test_config_changed_pebble_not_ready(
-    harness: testing.Harness[JenkinsAgentCharm], valid_config, monkeypatch: pytest.MonkeyPatch
+    harness: Harness[JenkinsAgentCharm], valid_config, monkeypatch: pytest.MonkeyPatch
 ):
     """
     arrange: given charm where the pebble is not ready state with valid configuration
@@ -173,18 +174,18 @@ def test_config_changed_pebble_not_ready(
     """
     harness.update_config(valid_config)
     # Mock the restart function on the container
-    container: model.Container = harness.model.unit.get_container(harness.charm.service_name)
+    container: Container = harness.model.unit.get_container(harness.charm.service_name)
     mock_restart = mock.MagicMock()
     monkeypatch.setattr(container, "restart", mock_restart)
 
     harness.charm.on.config_changed.emit()
 
-    assert isinstance(harness.model.unit.status, model.MaintenanceStatus)
+    assert isinstance(harness.model.unit.status, MaintenanceStatus)
     mock_restart.assert_not_called()
 
 
 def test_config_changed_no_change(
-    harness_pebble_ready: testing.Harness[JenkinsAgentCharm],
+    harness_pebble_ready: Harness[JenkinsAgentCharm],
     valid_config,
     caplog: pytest.LogCaptureFixture,
     monkeypatch: pytest.MonkeyPatch,
@@ -199,7 +200,7 @@ def test_config_changed_no_change(
     harness_pebble_ready.update_config(valid_config)
     harness_pebble_ready.charm.on.config_changed.emit()
     # Mock the restart function on the container
-    container: model.Container = harness_pebble_ready.model.unit.get_container(
+    container: Container = harness_pebble_ready.model.unit.get_container(
         harness_pebble_ready.charm.service_name
     )
     mock_restart = mock.MagicMock()
@@ -208,7 +209,7 @@ def test_config_changed_no_change(
     caplog.set_level(logging.DEBUG)
     harness_pebble_ready.charm.on.config_changed.emit()
 
-    assert isinstance(harness_pebble_ready.model.unit.status, model.ActiveStatus)
+    assert isinstance(harness_pebble_ready.model.unit.status, ActiveStatus)
     mock_restart.assert_not_called()
     assert "unchanged" in caplog.text.lower()
 
@@ -270,7 +271,7 @@ def test_config_changed_no_change(
     ],
 )
 def test__is_valid_config(
-    harness: testing.Harness[JenkinsAgentCharm],
+    harness: Harness[JenkinsAgentCharm],
     relation_configured,
     agent_tokens: list[str],
     config,
@@ -297,7 +298,7 @@ def test__is_valid_config(
 
 
 def test_on_agent_relation_joined(
-    harness: testing.Harness[JenkinsAgentCharm],
+    harness: Harness[JenkinsAgentCharm],
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
 ):
@@ -334,7 +335,7 @@ def test_on_agent_relation_joined(
 
 
 def test_on_agent_relation_joined_labels(
-    harness: testing.Harness[JenkinsAgentCharm], monkeypatch: pytest.MonkeyPatch
+    harness: Harness[JenkinsAgentCharm], monkeypatch: pytest.MonkeyPatch
 ):
     """
     arrange: given charm in its initial state with labels configured
@@ -357,7 +358,7 @@ def test_on_agent_relation_joined_labels(
 
 
 def test_on_agent_relation_changed_jenkins_url_missing(
-    harness: testing.Harness[JenkinsAgentCharm],
+    harness: Harness[JenkinsAgentCharm],
     caplog: pytest.LogCaptureFixture,
     charm_with_jenkins_relation: types.CharmWithJenkinsRelation,
 ):
@@ -377,13 +378,13 @@ def test_on_agent_relation_changed_jenkins_url_missing(
     assert harness.charm._stored.jenkins_url is None
     assert harness.charm._stored.relation_agent_token is None
     assert harness.charm._stored.relation_agent_name == harness.charm._stored.relation_agent_name
-    assert isinstance(harness.model.unit.status, model.ActiveStatus)
+    assert isinstance(harness.model.unit.status, ActiveStatus)
     assert "expected 'url'" in caplog.text.lower()
     assert "skipping setup" in caplog.text.lower()
 
 
 def test_on_agent_relation_changed_secret_missing(
-    harness: testing.Harness[JenkinsAgentCharm],
+    harness: Harness[JenkinsAgentCharm],
     caplog: pytest.LogCaptureFixture,
     charm_with_jenkins_relation: types.CharmWithJenkinsRelation,
 ):
@@ -403,13 +404,13 @@ def test_on_agent_relation_changed_secret_missing(
     assert harness.charm._stored.jenkins_url is None
     assert harness.charm._stored.relation_agent_token is None
     assert harness.charm._stored.relation_agent_name == harness.charm._stored.relation_agent_name
-    assert isinstance(harness.model.unit.status, model.ActiveStatus)
+    assert isinstance(harness.model.unit.status, ActiveStatus)
     assert "expected 'secret'" in caplog.text.lower()
     assert "skipping setup" in caplog.text.lower()
 
 
 def test_on_agent_relation_changed(
-    harness: testing.Harness[JenkinsAgentCharm],
+    harness: Harness[JenkinsAgentCharm],
     caplog: pytest.LogCaptureFixture,
     charm_with_jenkins_relation: types.CharmWithJenkinsRelation,
     monkeypatch: pytest.MonkeyPatch,
@@ -439,14 +440,14 @@ def test_on_agent_relation_changed(
     assert harness.charm._stored.relation_agent_token == relation_secret
     assert harness.charm._stored.relation_agent_name == harness.charm._stored.relation_agent_name
     mock_config_changed.emit.assert_called_once_with()
-    assert isinstance(harness.model.unit.status, model.MaintenanceStatus)
+    assert isinstance(harness.model.unit.status, MaintenanceStatus)
     assert "configuring" in harness.model.unit.status.message.lower()
     assert "relation" in caplog.text.lower()
     assert "changed" in caplog.text.lower()
 
 
 def test_on_agent_relation_changed_new_agent_name(
-    harness: testing.Harness[JenkinsAgentCharm],
+    harness: Harness[JenkinsAgentCharm],
     charm_with_jenkins_relation: types.CharmWithJenkinsRelation,
     monkeypatch: pytest.MonkeyPatch,
 ):
@@ -470,7 +471,7 @@ def test_on_agent_relation_changed_new_agent_name(
 
 
 def test_on_agent_relation_changed_jenkins_url_configured(
-    harness: testing.Harness[JenkinsAgentCharm],
+    harness: Harness[JenkinsAgentCharm],
     valid_config,
     caplog: pytest.LogCaptureFixture,
     charm_with_jenkins_relation: types.CharmWithJenkinsRelation,
@@ -501,5 +502,5 @@ def test_on_agent_relation_changed_jenkins_url_configured(
     assert harness.charm._stored.relation_agent_token == relation_secret
     assert harness.charm._stored.relation_agent_name == harness.charm._stored.relation_agent_name
     mock_config_changed.emit.assert_called_once_with()
-    assert isinstance(harness.model.unit.status, model.MaintenanceStatus)
+    assert isinstance(harness.model.unit.status, MaintenanceStatus)
     assert "'jenkins_url'" in caplog.text.lower()
