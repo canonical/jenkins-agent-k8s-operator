@@ -3,7 +3,12 @@
 
 """Fixtures for all tests."""
 
+from pytest import Parser
 
-def pytest_addoption(parser):
+
+def pytest_addoption(parser: Parser):
     """Store command line options."""
     parser.addoption("--jenkins-agent-image", action="store")
+    parser.addoption("--jenkins-controller-name", action="store")
+    parser.addoption("--jenkins-model-name", action="store")
+    parser.addoption("--jenkins-unit-number", action="store")
