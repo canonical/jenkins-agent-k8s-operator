@@ -10,7 +10,12 @@ import os
 import typing
 
 import yaml
-from ops.charm import CharmBase, ConfigChangedEvent, RelationChangedEvent, RelationJoinedEvent
+from ops.charm import (
+    CharmBase,
+    ConfigChangedEvent,
+    RelationChangedEvent,
+    RelationJoinedEvent,
+)
 from ops.framework import StoredState
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus

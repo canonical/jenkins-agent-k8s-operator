@@ -211,13 +211,8 @@ def test_config_changed_no_change(
     """
     arrange: given charm in active state with valid configuration
     act: when the config_changed event occurs
-<<<<<<< HEAD
-    assert: the charm stays in the active status, the container is not restarted and a log message
-        indicating unchanged configuration is written.
-=======
     assert: the charm stays in the active status, the container is not replanned and a log message
-        indicating unchaged configuration is written.
->>>>>>> fix-unit-tests
+        indicating unchanged configuration is written.
     """
     # Get container into active state
     harness_pebble_ready.update_config(valid_config)
