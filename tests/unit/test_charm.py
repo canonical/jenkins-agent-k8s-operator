@@ -30,9 +30,9 @@ def test__get_env_config_initial(harness: Harness[JenkinsAgentCharm]):
     env_config = harness.charm._get_env_config()
 
     assert env_config == {
-        'JENKINS_AGENTS': '',
-        'JENKINS_TOKENS': '',
-        'JENKINS_URL': '',
+        "JENKINS_AGENTS": "",
+        "JENKINS_TOKENS": "",
+        "JENKINS_URL": "",
     }
 
 
@@ -56,9 +56,9 @@ def test__get_env_config_config(harness: Harness[JenkinsAgentCharm]):
     env_config = harness.charm._get_env_config()
 
     assert env_config == {
-        'JENKINS_AGENTS': jenkins_agent_name,
-        'JENKINS_TOKENS': jenkins_agent_token,
-        'JENKINS_URL': jenkins_url,
+        "JENKINS_AGENTS": jenkins_agent_name,
+        "JENKINS_TOKENS": jenkins_agent_token,
+        "JENKINS_URL": jenkins_url,
     }
 
 
@@ -97,9 +97,9 @@ def test__get_env_config_relation(
     env_config = harness.charm._get_env_config()
 
     assert env_config == {
-        'JENKINS_AGENTS': expected_jenkins_agent_name,
-        'JENKINS_TOKENS': expected_jenkins_agent_token,
-        'JENKINS_URL': jenkins_url,
+        "JENKINS_AGENTS": expected_jenkins_agent_name,
+        "JENKINS_TOKENS": expected_jenkins_agent_token,
+        "JENKINS_URL": jenkins_url,
     }
 
 
@@ -133,9 +133,9 @@ def test__get_env_config_config_relation(harness: Harness[JenkinsAgentCharm]):
     env_config = harness.charm._get_env_config()
 
     assert env_config == {
-        'JENKINS_AGENTS': relation_jenkins_agent_name,
-        'JENKINS_TOKENS': relation_jenkins_agent_token,
-        'JENKINS_URL': relation_jenkins_url,
+        "JENKINS_AGENTS": relation_jenkins_agent_name,
+        "JENKINS_TOKENS": relation_jenkins_agent_token,
+        "JENKINS_URL": relation_jenkins_url,
     }
 
 
@@ -163,22 +163,22 @@ def test_config_changed(
     arrange: given charm in its initial state with valid configuration
     act: when the config_changed event occurs
     assert: then the charm is in the active status, the container has the jenkins-agent service and
-        has been restarted and a log message indicating a layer has been added is written.
+        has been replanned and a log message indicating a layer has been added is written.
     """
     harness_pebble_ready.update_config(valid_config)
-    # Mock the restart function on the container
+    # Mock the replan_services function on the container
     container: Container = harness_pebble_ready.model.unit.get_container(
         harness_pebble_ready.charm.service_name
     )
-    mock_restart = mock.MagicMock()
-    monkeypatch.setattr(container, "restart", mock_restart)
+    mock_replan_services = mock.MagicMock()
+    monkeypatch.setattr(container.pebble, "replan_services", mock_replan_services)
 
     caplog.set_level(logging.DEBUG)
     harness_pebble_ready.charm.on.config_changed.emit()
 
     assert isinstance(harness_pebble_ready.model.unit.status, ActiveStatus)
     assert harness_pebble_ready.charm.service_name in container.get_plan().services
-    mock_restart.assert_called_once_with(harness_pebble_ready.charm.service_name)
+    mock_replan_services.assert_called_once_with()
     assert "add_layer" in caplog.text.lower()
 
 
@@ -188,18 +188,18 @@ def test_config_changed_pebble_not_ready(
     """
     arrange: given charm where the pebble is not ready state with valid configuration
     act: when the config_changed event occurs
-    assert: then the unit stayis in maintenance status and the container is not restarted.
+    assert: then the unit stayis in maintenance status and the container is not replanned.
     """
     harness.update_config(valid_config)
-    # Mock the restart function on the container
+    # Mock the replan_services function on the container
     container: Container = harness.model.unit.get_container(harness.charm.service_name)
-    mock_restart = mock.MagicMock()
-    monkeypatch.setattr(container, "restart", mock_restart)
+    mock_replan_services = mock.MagicMock()
+    monkeypatch.setattr(container.pebble, "replan_services", mock_replan_services)
 
     harness.charm.on.config_changed.emit()
 
     assert isinstance(harness.model.unit.status, MaintenanceStatus)
-    mock_restart.assert_not_called()
+    mock_replan_services.assert_not_called()
 
 
 def test_config_changed_no_change(
@@ -211,24 +211,29 @@ def test_config_changed_no_change(
     """
     arrange: given charm in active state with valid configuration
     act: when the config_changed event occurs
+<<<<<<< HEAD
     assert: the charm stays in the active status, the container is not restarted and a log message
         indicating unchanged configuration is written.
+=======
+    assert: the charm stays in the active status, the container is not replanned and a log message
+        indicating unchaged configuration is written.
+>>>>>>> fix-unit-tests
     """
     # Get container into active state
     harness_pebble_ready.update_config(valid_config)
     harness_pebble_ready.charm.on.config_changed.emit()
-    # Mock the restart function on the container
+    # Mock the replan_services function on the container
     container: Container = harness_pebble_ready.model.unit.get_container(
         harness_pebble_ready.charm.service_name
     )
-    mock_restart = mock.MagicMock()
-    monkeypatch.setattr(container, "restart", mock_restart)
+    mock_replan_services = mock.MagicMock()
+    monkeypatch.setattr(container.pebble, "replan_services", mock_replan_services)
 
     caplog.set_level(logging.DEBUG)
     harness_pebble_ready.charm.on.config_changed.emit()
 
     assert isinstance(harness_pebble_ready.model.unit.status, ActiveStatus)
-    mock_restart.assert_not_called()
+    mock_replan_services.assert_not_called()
     assert "unchanged" in caplog.text.lower()
 
 
@@ -343,9 +348,9 @@ def test_on_agent_relation_joined(
     harness.add_relation_unit(relation_id=relation_id, remote_unit_name=unit_name)
 
     assert harness.get_relation_data(relation_id=relation_id, app_or_unit=unit_name) == {
-        'executors': str(cpu_count),
-        'labels': machine_architecture,
-        'slavehost': unit_name.replace("/", "-"),
+        "executors": str(cpu_count),
+        "labels": machine_architecture,
+        "slavehost": unit_name.replace("/", "-"),
     }
     assert "relation" in caplog.text.lower()
     assert "joined" in caplog.text.lower()
