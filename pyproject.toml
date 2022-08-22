@@ -30,7 +30,9 @@ select = ["E", "W", "F", "C", "N", "R", "D", "H"]
 # Ignore W503, E501 because using black creates errors with this
 # Ignore D107 Missing docstring in __init__
 ignore = ["W503", "E501", "D107"]
-# D100, D101, D102, D103: Ignore missing docstrings in tests
+# D100, D101, D102, D103, D104: Ignore missing docstrings in tests
+# D205, D212, D415: Ignore malformed docstrings in tests since their
+# format is different
 per-file-ignores = ["tests/*:D100,D101,D102,D103,D104,D205,D212,D415"]
 docstring-convention = "google"
 # Check for properly formatted copyright header in each file
