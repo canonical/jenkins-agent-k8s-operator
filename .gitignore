@@ -2,6 +2,7 @@
 *.charm
 .tox
 .coverage
+coverage.xml
 __pycache__
 build
 lib/ops
