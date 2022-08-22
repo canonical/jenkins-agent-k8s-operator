@@ -11,7 +11,12 @@ import typing
 import uuid
 
 import yaml
-from ops.charm import CharmBase, ConfigChangedEvent, RelationChangedEvent, RelationJoinedEvent
+from ops.charm import (
+    CharmBase,
+    ConfigChangedEvent,
+    RelationChangedEvent,
+    RelationJoinedEvent,
+)
 from ops.framework import StoredState
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
@@ -107,8 +112,10 @@ class JenkinsAgentCharm(CharmBase):
         services = container.get_plan().to_dict().get("services", {})
         if services != pebble_config["services"]:
             logger.debug("About to add_layer with pebble_config:\n%s", yaml.dump(pebble_config))
+            self.unit.status = MaintenanceStatus(f"Adding {container.name} layer to pebble")
             container.add_layer(self.service_name, pebble_config, combine=True)
-            container.restart(self.service_name)
+            self.unit.status = MaintenanceStatus(f"Starting {container.name} container")
+            container.pebble.replan_services()
         else:
             logger.debug("Pebble config unchanged")
 
@@ -148,7 +155,7 @@ class JenkinsAgentCharm(CharmBase):
         """
         logger.info("Jenkins relation joined")
         num_executors = os.cpu_count()
-        config_labels = self.model.config.get('jenkins_agent_labels')
+        config_labels = self.model.config.get("jenkins_agent_labels")
 
         if config_labels:
             labels = config_labels
@@ -165,7 +172,7 @@ class JenkinsAgentCharm(CharmBase):
 
         # Check event data
         try:
-            relation_jenkins_url = event.relation.data[event.unit]['url']
+            relation_jenkins_url = event.relation.data[event.unit]["url"]
         except KeyError:
             logger.warning(
                 "Expected 'url' key for %s unit in relation data. Skipping setup for now.",
@@ -174,7 +181,7 @@ class JenkinsAgentCharm(CharmBase):
             self.model.unit.status = ActiveStatus()
             return
         try:
-            relation_secret = event.relation.data[event.unit]['secret']
+            relation_secret = event.relation.data[event.unit]["secret"]
         except KeyError:
             logger.warning(
                 "Expected 'secret' key for %s unit in relation data. Skipping setup for now.",
@@ -188,7 +195,9 @@ class JenkinsAgentCharm(CharmBase):
 
         # Check whether jenkins_url has been set
         if self.model.config.get("jenkins_url"):
-            logger.warning("Config option 'jenkins_url' is set, ignoring and using agent relation.")
+            logger.warning(
+                "Config option 'jenkins_url' is set, ignoring and using agent relation."
+            )
 
         logger.info("Setting up jenkins via agent relation")
         self.model.unit.status = MaintenanceStatus("Configuring jenkins agent")
@@ -216,7 +225,7 @@ class JenkinsAgentCharm(CharmBase):
         }
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     # use_juju_for_storage is a workaround for states not persisting through upgrades:
     # https://github.com/canonical/operator/issues/506
     main(JenkinsAgentCharm, use_juju_for_storage=True)
