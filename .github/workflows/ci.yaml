@@ -55,6 +55,7 @@ jobs:
           mv geckodriver ~/.local/bin
           pip3 install selenium pyyaml
           echo Deploying jenkins
+          juju controllers
           python3 tests/integration/deploy_jenkins.py
       - name: Checking if output works
         run: |
