@@ -38,16 +38,6 @@ class JenkinsDeployment:
             return f"[{self.public_address}]"
         return self.public_address
 
-    def generate_github_actions_output(self) -> str:
-        """Generate the output command for GitHub Actions based on the dpeloyment."""
-        return "\n".join(
-            [
-                f"::set-output name=controller_name::{self.controller_name}",
-                f"::set-output name=model_name::{self.model_name}",
-                f"::set-output name=unit_number::{self.unit_number}",
-            ]
-        )
-
 
 def jenkins_active() -> bool:
     """Check whether the jenkins application is active."""
@@ -160,8 +150,12 @@ def main():
     set_agent_port_to_random(deployment=deployment)
 
     # Writing output parameters to file
-    with open("output.txt", "w") as text_file:
-        text_file.write(deployment.generate_github_actions_output())
+    with open("controller_name.txt", "w") as text_file:
+        text_file.write(deployment.controller_name)
+    with open("model_name.txt", "w") as text_file:
+        text_file.write(deployment.model_name)
+    with open("unit_number.txt", "w") as text_file:
+        text_file.write(deployment.unit_number)
 
 
 if __name__ == "__main__":

@@ -56,7 +56,10 @@ jobs:
           pip3 install selenium pyyaml
           echo Deploying jenkins
           python3 tests/integration/deploy_jenkins.py
-          echo $(cat output.txt)
+          echo Setting output values
+          echo "::set-output name=controller_name::$(cat controller_name.txt)"
+          echo "::set-output name=model_name::$(cat model_name.txt)"
+          echo "::set-output name=unit_number::$(cat unit_number.txt)"
       - name: Checking if output works
         run: |
           echo ${{ steps.vars.outputs.controller_name }}
