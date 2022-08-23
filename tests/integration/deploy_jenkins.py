@@ -1,15 +1,18 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from selenium.webdriver import FirefoxOptions, Firefox
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-import time
-import subprocess
-import yaml
+"""Deploy jenkins to lxd using juju."""
+
 import dataclasses
 import logging
+import subprocess
 import sys
+import time
+
+import yaml
+from selenium.webdriver import Firefox, FirefoxOptions
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 
 logging.basicConfig(
     stream=sys.stdout, format="%(levelname)s %(asctime)s - %(message)s", level=logging.INFO

@@ -3,6 +3,8 @@
 
 # Disable since pytest fixtures require the fixture name as an argument.
 # pylint: disable=redefined-outer-name
+# Disable since fixtures can become complicated
+# pylint: disable=too-many-arguments
 
 """Fixtures for integration tests."""
 
