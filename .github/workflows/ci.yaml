@@ -46,7 +46,7 @@ jobs:
       - name: Setup jenkins
         run: |
           echo installing and initializing juju
-          snap install juju --classic
+          sudo snap install juju --classic
           lxd init --auto
           juju bootstrap localhost lxd
           echo Installing selinium for Jenkins configuration

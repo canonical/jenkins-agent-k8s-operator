@@ -38,6 +38,9 @@ class JenkinsDeployment:
             return f"[{self.public_address}]"
         return self.public_address
 
+    def generate_github_actions_output(self) -> str:
+        """Generate the output command for GitHub Actions based on the dpeloyment."""
+
 
 def jenkins_active() -> bool:
     """Check whether the jenkins application is active."""
