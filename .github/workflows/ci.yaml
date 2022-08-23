@@ -52,16 +52,16 @@ jobs:
           echo 2
           newgrp lxd
           echo 3
-          lxd init --auto
+          sg lxd lxd init --auto
           echo 4
-          juju bootstrap localhost lxd
+          sg lxd juju bootstrap localhost lxd
           echo Installing selinium for Jenkins configuration
           wget https://github.com/mozilla/geckodriver/releases/download/v0.19.1/geckodriver-v0.19.1-linux64.tar.gz
           tar xvfz geckodriver-v0.19.1-linux64.tar.gz
           mv geckodriver ~/.local/bin
           pip3 install selenium, yaml
           echo Deploying jenkins
-          python3 tests/integration/deploy_jenkins.py
+          sg lxd python3 tests/integration/deploy_jenkins.py
       - name: Checking if output works
         run: |
           echo ${{ steps.vars.outputs.controller_name }}
