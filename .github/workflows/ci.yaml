@@ -47,14 +47,10 @@ jobs:
         run: |
           echo installing and initializing juju
           sudo snap install juju --classic
-          echo 1
           sudo adduser $USER lxd
-          echo 2
           newgrp lxd
-          echo 3
           sudo lxd init --auto
-          echo 4
-          sg lxd -c "juju bootstrap localhost lxd"
+          sg lxd -c "juju bootstrap --debug localhost lxd"
           echo Installing selinium for Jenkins configuration
           wget https://github.com/mozilla/geckodriver/releases/download/v0.19.1/geckodriver-v0.19.1-linux64.tar.gz
           tar xvfz geckodriver-v0.19.1-linux64.tar.gz
