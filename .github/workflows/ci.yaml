@@ -43,19 +43,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Add current user to LXD group
+        run: |
+          sudo usermod --append --groups lxd $(whoami)
       - name: Setup jenkins
         run: |
           echo installing and initializing juju
           sudo snap install juju --classic
           echo 1
-          sudo newgrp lxd
-          echo 2
-          sudo adduser $USER lxd
-          echo 3
-          su - $USER
-          echo 4
           lxd init --auto
-          echo 5
+          echo 2
           juju bootstrap localhost lxd
           echo Installing selinium for Jenkins configuration
           wget https://github.com/mozilla/geckodriver/releases/download/v0.19.1/geckodriver-v0.19.1-linux64.tar.gz
