@@ -150,11 +150,11 @@ def main():
     set_agent_port_to_random(deployment=deployment)
 
     # Writing output parameters to file
-    with open("controller_name.txt", "w") as text_file:
+    with open(file="controller_name.txt", mode="w", encoding="utf-8") as text_file:
         text_file.write(deployment.controller_name)
-    with open("model_name.txt", "w") as text_file:
+    with open(file="model_name.txt", mode="w", encoding="utf-8") as text_file:
         text_file.write(deployment.model_name)
-    with open("unit_number.txt", "w") as text_file:
+    with open(file="unit_number.txt", mode="w", encoding="utf-8") as text_file:
         text_file.write(str(deployment.unit_number))
 
 
