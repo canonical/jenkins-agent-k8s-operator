@@ -97,7 +97,7 @@ async def app(
     # Create the relationship
     jenkins_controller_model_name = f"{jenkins_controller_name}:{jenkins_model_name}"
     await ops_test.model.create_offer(application_name=app_name, endpoint=f"{app_name}:slave")
-    subprocess.run(
+    subprocess.check_output(
         [
             "juju",
             "add-relation",
@@ -105,8 +105,7 @@ async def app(
             f"micro:admin/{ops_test.model_name}.{app_name}",
             "--model",
             jenkins_controller_model_name,
-        ],
-        check=True,
+        ]
     )
     await ops_test.model.wait_for_idle()
 
@@ -151,14 +150,15 @@ def jenkins_cli(jenkins_controller_name: str, jenkins_model_name: str, jenkins_u
             controller_model_name,
         ]
     )
-    result_dict = yaml.safe_load(result)[f"unit-{unit_name.replace('/', '-')}"]["results"]
+    result_dict = yaml.safe_load(result)[f"unit-{jenkins_model_name}-{jenkins_unit_number}"][
+        "results"
+    ]
     username = result_dict["username"]
     password = result_dict["password"]
 
-    # Create cli
-    return jenkins.Jenkins(
-        url=f"http://{public_address}:8080", username=username, password=password
-    )
+    # Handling IPv6 and create cli
+    hostname = f"[{public_address}]" if ":" in public_address else public_address
+    return jenkins.Jenkins(url=f"http://{hostname}:8080", username=username, password=password)
 
 
 @pytest.fixture

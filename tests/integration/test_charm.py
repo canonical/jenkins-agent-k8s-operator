@@ -39,10 +39,13 @@ async def test_build_succeeds(
     jenkins_cli.build_job(jenkins_test_job)
     # Wait for build to finish
     for _ in range(100):
-        if jenkins_cli.get_job_info(jenkins_test_job)['lastCompletedBuild'] is None:
+        if jenkins_cli.get_job_info(jenkins_test_job)["lastCompletedBuild"] is None:
             await asyncio.sleep(1)
 
+    assert (
+        jenkins_cli.get_job_info(jenkins_test_job)["lastCompletedBuild"] is not None
+    ), "job did not run"
     assert "Finished: SUCCESS" in jenkins_cli.get_build_console_output(
         jenkins_test_job,
-        jenkins_cli.get_job_info(jenkins_test_job)['lastCompletedBuild']["number"],
+        jenkins_cli.get_job_info(jenkins_test_job)["lastCompletedBuild"]["number"],
     )
