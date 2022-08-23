@@ -155,7 +155,7 @@ def main():
     with open("model_name.txt", "w") as text_file:
         text_file.write(deployment.model_name)
     with open("unit_number.txt", "w") as text_file:
-        text_file.write(deployment.unit_number)
+        text_file.write(str(deployment.unit_number))
 
 
 if __name__ == "__main__":
