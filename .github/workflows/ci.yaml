@@ -39,7 +39,7 @@ jobs:
   integration-test-microk8s:
     name: Integration tests (microk8s)
     runs-on: ubuntu-22.04
-    needs: [build-jenkins-agent-image, lint, unit-test]
+    # needs: [build-jenkins-agent-image, lint, unit-test]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -47,9 +47,13 @@ jobs:
         run: |
           echo installing and initializing juju
           sudo snap install juju --classic
+          echo 1
           newgrp lxd
+          echo 2
           sudo adduser $USER lxd
+          echo 3
           lxd init --auto
+          echo 4
           juju bootstrap localhost lxd
           echo Installing selinium for Jenkins configuration
           wget https://github.com/mozilla/geckodriver/releases/download/v0.19.1/geckodriver-v0.19.1-linux64.tar.gz
