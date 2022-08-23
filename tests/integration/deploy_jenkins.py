@@ -51,6 +51,8 @@ class JenkinsDeployment:
 
 def jenkins_active() -> bool:
     """Check whether the jenkins application is active."""
+    result = subprocess.check_output(["juju", "status"])
+    LOGGER.info("juju status \n%s", result)
     result = subprocess.check_output(["juju", "status", "--format", "yaml"])
     return (
         yaml.safe_load(result)["applications"]["jenkins"]["application-status"]["current"]
