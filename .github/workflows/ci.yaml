@@ -52,7 +52,7 @@ jobs:
           echo 2
           sudo adduser $USER lxd
           echo 3
-          lxd init --auto
+          sudo lxd init --auto
           echo 4
           juju bootstrap localhost lxd
           echo Installing selinium for Jenkins configuration
