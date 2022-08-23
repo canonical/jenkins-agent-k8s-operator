@@ -52,7 +52,7 @@ jobs:
           echo 2
           newgrp lxd
           echo 3
-          sg lxd lxd init --auto
+          sudo lxd init --auto
           echo 4
           sg lxd juju bootstrap localhost lxd
           echo Installing selinium for Jenkins configuration
