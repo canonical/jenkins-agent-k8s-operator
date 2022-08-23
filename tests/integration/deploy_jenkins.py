@@ -159,7 +159,10 @@ def main():
     deployment = deploy_jenkins()
     print(deployment)
     set_agent_port_to_random(deployment=deployment)
-    print(deployment.generate_github_actions_output())
+
+    # Writing output parameters to file
+    with open("output.txt", "w") as text_file:
+        text_file.write(deployment.generate_github_actions_output())
 
 
 if __name__ == "__main__":
