@@ -62,7 +62,13 @@ def deploy_jenkins() -> JenkinsDeployment:
     """Deploys jenkins to the lxd controller."""
     # Deploy
     LOGGER.info("deploying jenkins")
-    controller_name = "lxd"
+    result = subprocess.check_output(["juju", "controllers", "--format", "yaml"])
+    controller_name = next(
+        filter(
+            lambda item: item[1]["cloud"] == "localhost",
+            yaml.safe_load(result)["controllers"].items(),
+        )
+    )[0]
     model_name = "jenkins"
     subprocess.check_output(["juju", "switch", controller_name])
     subprocess.check_output(["juju", "add-model", model_name, "localhost"])
