@@ -38,7 +38,7 @@ jobs:
           resource-name: jenkins-agent-image
   integration-test-microk8s:
     name: Integration tests (microk8s)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     # needs: [build-jenkins-agent-image, lint, unit-test]
     steps:
       - name: Checkout
