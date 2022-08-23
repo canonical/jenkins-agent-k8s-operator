@@ -52,7 +52,7 @@ class JenkinsDeployment:
 def jenkins_active() -> bool:
     """Check whether the jenkins application is active."""
     result = subprocess.check_output(["juju", "status"])
-    LOGGER.info("juju status \n%s", result)
+    LOGGER.info("juju status \n%s", result.decode("utf-8"))
     result = subprocess.check_output(["juju", "status", "--format", "yaml"])
     return (
         yaml.safe_load(result)["applications"]["jenkins"]["application-status"]["current"]
@@ -157,7 +157,6 @@ def set_agent_port_to_random(deployment: JenkinsDeployment):
 def main():
     """Start jenkins and enable the agent port."""
     deployment = deploy_jenkins()
-    print(deployment)
     set_agent_port_to_random(deployment=deployment)
 
     # Writing output parameters to file

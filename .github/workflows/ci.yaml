@@ -56,7 +56,7 @@ jobs:
           pip3 install selenium pyyaml
           echo Deploying jenkins
           python3 tests/integration/deploy_jenkins.py
-          cat output.txt
+          echo $(cat output.txt)
       - name: Checking if output works
         run: |
           echo ${{ steps.vars.outputs.controller_name }}
