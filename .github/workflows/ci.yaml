@@ -48,6 +48,7 @@ jobs:
         with:
           provider: lxd
       - name: Setup jenkins
+        id: jenkins
         run: |
           echo Installing selinium for Jenkins configuration
           wget https://github.com/mozilla/geckodriver/releases/download/v0.19.1/geckodriver-v0.19.1-linux64.tar.gz
@@ -62,9 +63,9 @@ jobs:
           echo ::set-output name=unit_number::$(cat unit_number.txt)
       - name: Checking if output works
         run: |
-          echo ${{ steps.vars.outputs.controller_name }}
-          echo ${{ steps.vars.outputs.model_name }}
-          echo ${{ steps.vars.outputs.unit_number }}
+          echo ${{ steps.jenkins.outputs.controller_name }}
+          echo ${{ steps.jenkins.outputs.model_name }}
+          echo ${{ steps.jenkins.outputs.unit_number }}
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
