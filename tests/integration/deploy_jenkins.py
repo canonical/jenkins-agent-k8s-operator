@@ -40,6 +40,13 @@ class JenkinsDeployment:
 
     def generate_github_actions_output(self) -> str:
         """Generate the output command for GitHub Actions based on the dpeloyment."""
+        return "\n".join(
+            [
+                f"::set-output name=controller_name::{self.controller_name}",
+                f"::set-output name=model_name::{self.model_name}",
+                f"::set-output name=unit_number::{self.unit_number}",
+            ]
+        )
 
 
 def jenkins_active() -> bool:
@@ -144,6 +151,7 @@ def main():
     deployment = deploy_jenkins()
     print(deployment)
     set_agent_port_to_random(deployment=deployment)
+    print(deployment.generate_github_actions_output())
 
 
 if __name__ == "__main__":

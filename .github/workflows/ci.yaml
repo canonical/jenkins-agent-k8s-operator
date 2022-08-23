@@ -47,6 +47,8 @@ jobs:
         run: |
           echo installing and initializing juju
           sudo snap install juju --classic
+          newgrp lxd
+          sudo adduser $USER lxd
           lxd init --auto
           juju bootstrap localhost lxd
           echo Installing selinium for Jenkins configuration
@@ -56,6 +58,11 @@ jobs:
           pip3 install selenium, yaml
           echo Deploying jenkins
           python3 tests/integration/deploy_jenkins.py
+      - name: Checking if output works
+        run: |
+          echo ${{ steps.vars.outputs.controller_name }}
+          echo ${{ steps.vars.outputs.model_name }}
+          echo ${{ steps.vars.outputs.unit_number }}
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
