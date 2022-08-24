@@ -38,6 +38,8 @@ jobs:
           resource-name: jenkins-agent-image
   integration-test-microk8s:
     name: Integration tests (microk8s)
+    # [20220824] charmed-kubernetes/actions-operator@main does not work on
+    # ubuntu-22.04, hence using 20.04
     runs-on: ubuntu-20.04
     needs: [build-jenkins-agent-image, lint, unit-test]
     steps:
@@ -61,6 +63,11 @@ jobs:
           echo ::set-output name=controller_name::$(cat controller_name.txt)
           echo ::set-output name=model_name::$(cat model_name.txt)
           echo ::set-output name=unit_number::$(cat unit_number.txt)
+      - name: Install microk8s
+        run: |
+          sudo snap install microk8s --classic
+          sudo microk8s status --wait-ready
+          sudo microk8s.enable dns hostpath-storage
       - name: Enable microk8s registry
         run: sudo microk8s.enable registry
       - name: Download all artifacts
@@ -70,8 +77,17 @@ jobs:
           imageId=$(docker load --input jenkins-agent-image/jenkins-agent-image.tar | sed -e "s/^Loaded image ID: //")
           docker tag $imageId localhost:32000/jenkins-agent:latest
           docker push localhost:32000/jenkins-agent:latest
+      - name: Add microk8s as a cloud
+        run: |
+          juju add-k8s micro --controller ${{ steps.jenkins.outputs.controller_name }}
+      # [20220824] charmed-kubernetes/actions-operator@main does not work on
+      # ubuntu-22.04, but charm runs on 22.04 which has Python 3.10, hence
+      # installing Python 3.10 here
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
       - name: Run integration tests
-        run: tox -e integration -- --jenkins-agent-image localhost:32000/jenkins-agent:latest
+        run: tox -e integration -- --jenkins-agent-image localhost:32000/jenkins-agent:latest --jenkins-controller-name ${{ steps.jenkins.outputs.controller_name }} "--jenkins-model-name ${{ steps.jenkins.outputs.model_name }} --jenkins-unit-number ${{ steps.jenkins.outputs.unit_number }} --cloud microk8s
       - name: Dump logs
         uses: canonical/charm-logdump-action@main
         if: failure()
