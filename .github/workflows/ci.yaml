@@ -71,7 +71,7 @@ jobs:
       - name: Enable microk8s registry
         run: |
           sudo microk8s.enable registry
-          echo '{"insecure-registries": ["localhost:32000"]}' > /etc/docker/daemon.json
+          sudo echo '{"insecure-registries": ["localhost:32000"]}' > /etc/docker/daemon.json
       - name: Download all artifacts
         uses: actions/download-artifact@v3
       - name: Push jenkins-agent image to microk8s registry
