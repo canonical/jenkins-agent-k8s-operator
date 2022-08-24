@@ -43,26 +43,26 @@ jobs:
     runs-on: ubuntu-20.04
     needs: [build-jenkins-agent-image, lint, unit-test]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: lxd
-      - name: Setup jenkins
-        id: jenkins
-        run: |
-          echo Installing selinium for Jenkins configuration
-          wget https://github.com/mozilla/geckodriver/releases/download/v0.19.1/geckodriver-v0.19.1-linux64.tar.gz
-          tar xvfz geckodriver-v0.19.1-linux64.tar.gz
-          mv geckodriver ~/.local/bin
-          pip3 install selenium pyyaml
-          echo Deploying jenkins
-          python3 tests/integration/deploy_jenkins.py
-          echo Setting output values
-          echo ::set-output name=controller_name::$(cat controller_name.txt)
-          echo ::set-output name=model_name::$(cat model_name.txt)
-          echo ::set-output name=unit_number::$(cat unit_number.txt)
+      # - name: Checkout
+      #   uses: actions/checkout@v3
+      # - name: Setup operator environment
+      #   uses: charmed-kubernetes/actions-operator@main
+      #   with:
+      #     provider: lxd
+      # - name: Setup jenkins
+      #   id: jenkins
+      #   run: |
+      #     echo Installing selinium for Jenkins configuration
+      #     wget https://github.com/mozilla/geckodriver/releases/download/v0.19.1/geckodriver-v0.19.1-linux64.tar.gz
+      #     tar xvfz geckodriver-v0.19.1-linux64.tar.gz
+      #     mv geckodriver ~/.local/bin
+      #     pip3 install selenium pyyaml
+      #     echo Deploying jenkins
+      #     python3 tests/integration/deploy_jenkins.py
+      #     echo Setting output values
+      #     echo ::set-output name=controller_name::$(cat controller_name.txt)
+      #     echo ::set-output name=model_name::$(cat model_name.txt)
+      #     echo ::set-output name=unit_number::$(cat unit_number.txt)
       - name: Install microk8s
         run: |
           sudo snap install microk8s --classic
@@ -76,6 +76,7 @@ jobs:
         run: |
           imageId=$(docker load --input jenkins-agent-image/jenkins-agent-image.tar | sed -e "s/^Loaded image ID: //")
           docker tag $imageId localhost:32000/jenkins-agent:latest
+          sudo microk8s.inspect
           docker push localhost:32000/jenkins-agent:latest
       - name: Add microk8s as a cloud
         run: |

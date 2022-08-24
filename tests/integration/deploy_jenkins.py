@@ -104,7 +104,7 @@ def deploy_jenkins() -> JenkinsDeployment:
         username=username,
         password=password,
     )
-    LOGGER.info("deployed jenkins: %s", deployment)
+    LOGGER.info("deployed jenkins")
     return deployment
 
 
