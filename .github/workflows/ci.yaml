@@ -45,6 +45,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Setup operator environment
+        uses: charmed-kubernetes/actions-operator@main
+        with:
+          provider: lxd
       - name: Install microk8s
         run: |
           sudo snap install microk8s --classic
@@ -53,10 +57,6 @@ jobs:
       - name: Enable microk8s registry
         run: |
           sudo microk8s.enable registry
-      - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: lxd
       - name: Setup jenkins
         id: jenkins
         run: |
