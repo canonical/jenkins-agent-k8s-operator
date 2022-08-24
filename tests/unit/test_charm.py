@@ -1,13 +1,20 @@
 # Copyright 2022 Canonical Ltd.
 # Licensed under the GPLv3, see LICENCE file for details.
 
+# Disable since testing relies on checking private state of the charm.
+# pylint: disable=protected-access
+# Disable since parametrised testing sometimes requires many arguments.
+# pylint: disable=too-many-arguments
+
+"""Unit tests for the charm."""
+
 import logging
 import os
 from unittest import mock
 
-from ops.testing import Harness
-from ops.model import BlockedStatus, ActiveStatus, Container, MaintenanceStatus
 import pytest
+from ops.model import ActiveStatus, BlockedStatus, Container, MaintenanceStatus
+from ops.testing import Harness
 
 from charm import JenkinsAgentCharm
 
@@ -103,7 +110,7 @@ def test__get_env_config_config_relation(harness: Harness[JenkinsAgentCharm]):
     act: when the environment variables for the charm are generated
     assert: then the environment contains the data from the relation.
     """
-    # Set the configuraton
+    # Set the configuration
     config_jenkins_url = "http://test_config"
     config_jenkins_agent_name = "agent config"
     config_jenkins_agent_token = "token config"
@@ -176,9 +183,7 @@ def test_config_changed(
 
 
 def test_config_changed_pebble_not_ready(
-    harness: Harness[JenkinsAgentCharm],
-    valid_config,
-    monkeypatch: pytest.MonkeyPatch,
+    harness: Harness[JenkinsAgentCharm], valid_config, monkeypatch: pytest.MonkeyPatch
 ):
     """
     arrange: given charm where the pebble is not ready state with valid configuration
@@ -207,7 +212,7 @@ def test_config_changed_no_change(
     arrange: given charm in active state with valid configuration
     act: when the config_changed event occurs
     assert: the charm stays in the active status, the container is not replanned and a log message
-        indicating unchaged configuration is written.
+        indicating unchanged configuration is written.
     """
     # Get container into active state
     harness_pebble_ready.update_config(valid_config)
@@ -236,8 +241,8 @@ def test_config_changed_no_change(
             [],
             {"jenkins_url": "", "jenkins_agent_name": "", "jenkins_agent_token": ""},
             False,
-            ("jenkins_url", "jenkins_agent_name", "jenkins_agent_token"),
-            (),
+            ["jenkins_url", "jenkins_agent_name", "jenkins_agent_token"],
+            [],
             id="relation_configured not set and configuration empty",
         ),
         pytest.param(
@@ -245,8 +250,8 @@ def test_config_changed_no_change(
             ["token"],
             {"jenkins_url": "", "jenkins_agent_name": "", "jenkins_agent_token": ""},
             True,
-            (),
-            (),
+            [],
+            [],
             id="relation_configured set and configuration empty",
         ),
         pytest.param(
@@ -254,8 +259,8 @@ def test_config_changed_no_change(
             [],
             {"jenkins_url": "http://test", "jenkins_agent_name": "", "jenkins_agent_token": ""},
             False,
-            ("jenkins_agent_name", "jenkins_agent_token"),
-            ("jenkins_url",),
+            ["jenkins_agent_name", "jenkins_agent_token"],
+            ["jenkins_url"],
             id="relation_configured not set and configuration empty except jenkins_url set",
         ),
         pytest.param(
@@ -263,8 +268,8 @@ def test_config_changed_no_change(
             [],
             {"jenkins_url": "", "jenkins_agent_name": "agent 1", "jenkins_agent_token": "token 1"},
             False,
-            ("jenkins_url",),
-            ("jenkins_agent_name", "jenkins_agent_token"),
+            ["jenkins_url"],
+            ["jenkins_agent_name", "jenkins_agent_token"],
             id="relation_configured not set and configuration empty except jenkins_agent_name and "
             "jenkins_agent_token set",
         ),
@@ -277,8 +282,8 @@ def test_config_changed_no_change(
                 "jenkins_agent_token": "token 1",
             },
             True,
-            (),
-            (),
+            [],
+            [],
             id="relation_configured not set and configuration valid",
         ),
     ],
@@ -289,8 +294,8 @@ def test__is_valid_config(
     agent_tokens: list[str],
     config,
     expected_validity: bool,
-    expected_message_contents: tuple[str, ...],
-    expected_not_in_message_contents: tuple[str, ...],
+    expected_message_contents: list[str],
+    expected_not_in_message_contents: list[str],
 ):
     """
     arrange: given charm with the given agent_tokens and configuration set
@@ -304,9 +309,6 @@ def test__is_valid_config(
     validity, message = harness.charm._is_valid_config()
 
     assert validity == expected_validity
-    if validity:
-        assert message is None
-        return
     for expected_message_content in expected_message_contents:
         assert expected_message_content in message
     for expected_not_in_message_content in expected_not_in_message_contents:
@@ -325,14 +327,14 @@ def test_on_agent_relation_joined(
         note to the logs.
     """
     # Mock uname and CPU count
-    mock_os_cpu_count = mock.MagicMock()
+    mock_cpu_count = mock.MagicMock()
     cpu_count = 8
-    mock_os_cpu_count.return_value = cpu_count
-    monkeypatch.setattr(os, "cpu_count", mock_os_cpu_count)
-    mock_os_uname = mock.MagicMock()
+    mock_cpu_count.return_value = cpu_count
+    monkeypatch.setattr(os, "cpu_count", mock_cpu_count)
+    mock_uname = mock.MagicMock()
     machine_architecture = "x86_64"
-    mock_os_uname.return_value.machine = machine_architecture
-    monkeypatch.setattr(os, "uname", mock_os_uname)
+    mock_uname.return_value.machine = machine_architecture
+    monkeypatch.setattr(os, "uname", mock_uname)
 
     caplog.set_level(logging.INFO)
     harness.enable_hooks()

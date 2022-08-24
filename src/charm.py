@@ -3,12 +3,19 @@
 # Copyright 2022 Canonical Ltd.
 # Licensed under the GPLv3, see LICENCE file for details.
 
+"""Charm for Jenkins Agent on kubernetes."""
+
 import logging
 import os
 import typing
 
 import yaml
-from ops.charm import CharmBase, ConfigChangedEvent, RelationChangedEvent, RelationJoinedEvent
+from ops.charm import (
+    CharmBase,
+    ConfigChangedEvent,
+    RelationChangedEvent,
+    RelationJoinedEvent,
+)
 from ops.framework import StoredState
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
@@ -18,6 +25,9 @@ logger = logging.getLogger()
 
 class JenkinsAgentCharmStoredState(StoredState):
     """Defines valid attributes of the stored state for the Jenkins Agent."""
+
+    # Disabling since class is used to add type information to the stored state.
+    # pylint: disable=too-few-public-methods
 
     relation_configured: bool | None
     jenkins_url: str | None
@@ -34,10 +44,13 @@ class JenkinsAgentEnvConfig(typing.TypedDict):
 
 
 class JenkinsAgentCharm(CharmBase):
+    """Charm for Jenkins Agent on kubernetes."""
+
     _stored = JenkinsAgentCharmStoredState()
     service_name = "jenkins-agent"
 
     def __init__(self, *args):
+        """Constructor."""
         super().__init__(*args)
         self.framework.observe(self.on.start, self._on_config_changed)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
@@ -104,7 +117,7 @@ class JenkinsAgentCharm(CharmBase):
 
         self.unit.status = ActiveStatus()
 
-    def _is_valid_config(self) -> tuple[True, None] | tuple[False, str]:
+    def _is_valid_config(self) -> tuple[bool, str]:
         """Validate required configuration.
 
         When not configuring the agent through relations (as indicated by relation_configured
@@ -115,18 +128,19 @@ class JenkinsAgentCharm(CharmBase):
         """
         # Check for agent tokens
         if self._stored.relation_configured:
-            return True, None
+            return True, ""
 
         # Retrieve required and non-empty configuration options
         required_options = {"jenkins_url", "jenkins_agent_name", "jenkins_agent_token"}
         non_empty_options = {option for option in required_options if self.model.config[option]}
 
         if required_options.issubset(non_empty_options):
-            return True, None
+            return True, ""
 
         return (
             False,
-            f"Missing required configuration: {' '.join(sorted(required_options - non_empty_options))}",
+            "Missing required configuration: "
+            f"{' '.join(sorted(required_options - non_empty_options))}",
         )
 
     def _on_agent_relation_joined(self, event: RelationJoinedEvent) -> None:
@@ -215,9 +229,9 @@ class JenkinsAgentCharm(CharmBase):
         """
         if self._stored.relation_configured:
             return {
-                "JENKINS_URL": self._stored.jenkins_url,
-                "JENKINS_AGENTS": ":".join(self._stored.agents),
-                "JENKINS_TOKENS": ":".join(self._stored.agent_tokens),
+                "JENKINS_URL": self._stored.jenkins_url or "",
+                "JENKINS_AGENTS": ":".join(self._stored.agents or []),
+                "JENKINS_TOKENS": ":".join(self._stored.agent_tokens or []),
             }
         return {
             "JENKINS_URL": self.config["jenkins_url"],

@@ -1,23 +1,28 @@
 # Copyright 2022 Canonical Ltd.
 # Licensed under the GPLv3, see LICENCE file for details.
 
+# Disable since pytest fixtures require the fixture name as an argument.
+# pylint: disable=redefined-outer-name
+
+"""Fixtures for unit tests."""
+
 import os
+import typing
 from unittest import mock
 
 import pytest
-
 from ops import testing
 
 from charm import JenkinsAgentCharm
-from . import types
 
+from . import types
 
 testing.SIMULATE_CAN_CONNECT = True
 
 
 @pytest.fixture
-def harness() -> testing.Harness[JenkinsAgentCharm]:
-    """Creates test harness for unit tests."""
+def harness() -> typing.Generator[testing.Harness[JenkinsAgentCharm], None, None]:
+    """Create test harness for unit tests."""
     # Create and confifgure harness
     harness = testing.Harness(JenkinsAgentCharm)
     harness.begin()
@@ -38,7 +43,7 @@ def harness() -> testing.Harness[JenkinsAgentCharm]:
 
 @pytest.fixture(scope="module")
 def valid_config():
-    """Valid configuration for the charm."""
+    """Get valid configuration for the charm."""
     return {
         "jenkins_url": "http://test",
         "jenkins_agent_name": "agent-one",
@@ -51,7 +56,7 @@ def harness_pebble_ready(harness: testing.Harness[JenkinsAgentCharm]):
     """Get the charm to the pebble ready state."""
     harness.container_pebble_ready(harness.charm.service_name)
 
-    yield harness
+    return harness
 
 
 @pytest.fixture
@@ -59,7 +64,7 @@ def charm_with_jenkins_relation(
     harness_pebble_ready: testing.Harness[JenkinsAgentCharm],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    """Creates the jenkins agent charm with an existing relation to jenkins."""
+    """Create the jenkins agent charm with an existing relation to jenkins."""
     # Mock uname and CPU count
     mock_os_cpu_count = mock.MagicMock()
     cpu_count = 8
@@ -78,7 +83,7 @@ def charm_with_jenkins_relation(
         relation_id=relation_id, remote_unit_name=remote_unit_name
     )
 
-    yield types.CharmWithJenkinsRelation(
+    return types.CharmWithJenkinsRelation(
         cpu_count=cpu_count,
         machine_architecture=machine_architecture,
         remote_app=remote_app,
