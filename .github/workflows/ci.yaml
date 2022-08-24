@@ -39,7 +39,7 @@ jobs:
   integration-test-microk8s:
     name: Integration tests (microk8s)
     runs-on: ubuntu-20.04
-    # needs: [build-jenkins-agent-image, lint, unit-test]
+    needs: [build-jenkins-agent-image, lint, unit-test]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -61,15 +61,6 @@ jobs:
           echo ::set-output name=controller_name::$(cat controller_name.txt)
           echo ::set-output name=model_name::$(cat model_name.txt)
           echo ::set-output name=unit_number::$(cat unit_number.txt)
-      - name: Checking if output works
-        run: |
-          echo ${{ steps.jenkins.outputs.controller_name }}
-          echo ${{ steps.jenkins.outputs.model_name }}
-          echo ${{ steps.jenkins.outputs.unit_number }}
-      - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: microk8s
       - name: Enable microk8s registry
         run: sudo microk8s.enable registry
       - name: Download all artifacts
