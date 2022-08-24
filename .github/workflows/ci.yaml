@@ -56,6 +56,7 @@ jobs:
           sudo microk8s.enable dns hostpath-storage
           sudo usermod -a -G microk8s $USER
           sudo chown -f -R $USER ~/.kube
+          newgrp microk8s
       - name: Enable microk8s registry
         run: |
           sudo microk8s.enable registry
@@ -88,7 +89,7 @@ jobs:
       - name: Add microk8s as a cloud
         run: |
           sudo microk8s config > ${HOME}/.kube/config
-          juju bootstrap microk8s micro
+          sg microk8s -c "juju bootstrap microk8s micro"
       # [20220824] charmed-kubernetes/actions-operator@main does not work on
       # ubuntu-22.04, but charm runs on 22.04 which has Python 3.10, hence
       # installing Python 3.10 here
