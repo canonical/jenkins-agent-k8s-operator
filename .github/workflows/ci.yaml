@@ -110,7 +110,3 @@ jobs:
         run: |
           juju switch ${{ steps.jenkins.outputs.controller_name }}
           juju destroy-model -y ${{ steps.jenkins.outputs.model_name }} --force --no-wait --destroy-storage
-      - name: Remove jenkins-agent
-        run: |
-          juju switch micro
-          juju destroy-model -y testing --force --no-wait --destroy-storage
