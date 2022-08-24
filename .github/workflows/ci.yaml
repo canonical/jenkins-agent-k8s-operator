@@ -72,6 +72,7 @@ jobs:
       - name: Enable microk8s registry
         run: |
           sudo microk8s.enable registry
+          sudo microk8s kubectl -n container-registry rollout status -w deployment/registry
       - name: Download all artifacts
         uses: actions/download-artifact@v3
       - name: Push jenkins-agent image to microk8s registry
