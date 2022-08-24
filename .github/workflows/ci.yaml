@@ -45,6 +45,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Install microk8s
+        run: |
+          sudo snap install microk8s --classic
+          sudo microk8s status --wait-ready
+          sudo microk8s.enable dns hostpath-storage
+      - name: Enable microk8s registry
+        run: |
+          sudo microk8s.enable registry
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
@@ -63,18 +71,13 @@ jobs:
           echo ::set-output name=controller_name::$(cat controller_name.txt)
           echo ::set-output name=model_name::$(cat model_name.txt)
           echo ::set-output name=unit_number::$(cat unit_number.txt)
-      - name: Install microk8s
-        run: |
-          sudo snap install microk8s --classic
-          sudo microk8s status --wait-ready
-          sudo microk8s.enable dns hostpath-storage
-          sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
-      - name: Enable microk8s registry
-        run: |
-          sudo microk8s.enable registry
-          sudo microk8s kubectl -n container-registry rollout status -w deployment/registry
       - name: Download all artifacts
         uses: actions/download-artifact@v3
+      - name: Ensure microk8s is ready
+        run: |
+          sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
+          sudo microk8s kubectl -n kube-system rollout status -w deployment/coredns
+          sudo microk8s kubectl -n container-registry rollout status -w deployment/registry
       - name: Push jenkins-agent image to microk8s registry
         run: |
           imageId=$(docker load --input jenkins-agent-image/jenkins-agent-image.tar | sed -e "s/^Loaded image ID: //")
@@ -82,6 +85,7 @@ jobs:
           docker push localhost:32000/jenkins-agent:latest
       - name: Add microk8s as a cloud
         run: |
+          sudo microk8s config > ${HOME}/.kube/config
           juju add-k8s micro --controller ${{ steps.jenkins.outputs.controller_name }}
       # [20220824] charmed-kubernetes/actions-operator@main does not work on
       # ubuntu-22.04, but charm runs on 22.04 which has Python 3.10, hence
