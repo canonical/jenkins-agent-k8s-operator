@@ -97,7 +97,9 @@ jobs:
         with:
           python-version: '3.10'
       - name: Run integration tests
-        run: tox -e integration --  --cloud microk8s --model testing --jenkins-agent-image localhost:32000/jenkins-agent:latest --jenkins-controller-name ${{ steps.jenkins.outputs.controller_name }} --jenkins-model-name ${{ steps.jenkins.outputs.model_name }} --jenkins-unit-number ${{ steps.jenkins.outputs.unit_number }}
+        run: |
+          juju add-model testing
+          tox -e integration --  --cloud microk8s --model testing --jenkins-agent-image localhost:32000/jenkins-agent:latest --jenkins-controller-name ${{ steps.jenkins.outputs.controller_name }} --jenkins-model-name ${{ steps.jenkins.outputs.model_name }} --jenkins-unit-number ${{ steps.jenkins.outputs.unit_number }}
       - name: Dump logs
         uses: canonical/charm-logdump-action@main
         if: failure()
