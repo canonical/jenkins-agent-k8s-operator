@@ -36,8 +36,8 @@ jobs:
         with:
           dockerfile: jenkins-agent.Dockerfile
           resource-name: jenkins-agent-image
-  integration-test-microk8s:
-    name: Integration tests (microk8s)
+  integration-test-lxd-microk8s:
+    name: Integration tests (lxd and microk8s)
     # [20220824] charmed-kubernetes/actions-operator@main does not work on
     # ubuntu-22.04, hence using 20.04
     runs-on: ubuntu-20.04
@@ -69,7 +69,9 @@ jobs:
           sudo microk8s status --wait-ready
           sudo microk8s.enable dns hostpath-storage
       - name: Enable microk8s registry
-        run: sudo microk8s.enable registry
+        run: |
+          sudo microk8s.enable registry
+          echo '{"insecure-registries": ["localhost:32000"]}' > /etc/docker/daemon.json
       - name: Download all artifacts
         uses: actions/download-artifact@v3
       - name: Push jenkins-agent image to microk8s registry
@@ -77,6 +79,7 @@ jobs:
           imageId=$(docker load --input jenkins-agent-image/jenkins-agent-image.tar | sed -e "s/^Loaded image ID: //")
           docker tag $imageId localhost:32000/jenkins-agent:latest
           sudo microk8s.inspect
+          sudo microk8s.kubectl get all --all-namespaces
           docker push localhost:32000/jenkins-agent:latest
       - name: Add microk8s as a cloud
         run: |
