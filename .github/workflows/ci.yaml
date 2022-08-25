@@ -39,7 +39,7 @@ jobs:
   integration-test-lxd-microk8s:
     name: Integration tests (lxd and microk8s)
     # [20220824] charmed-kubernetes/actions-operator@main does not work on
-    # ubuntu-22.04, hence using 20.04
+    # ubuntu-22.04 for lxd, hence using Ubuntu version 20.04
     runs-on: ubuntu-20.04
     needs: [build-jenkins-agent-image, lint, unit-test]
     steps:
@@ -49,20 +49,20 @@ jobs:
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: lxd
+      # [20220824] installing microk8s manually since
+      # charmed-kubernetes/actions-operator@main does not support installing
+      # both lxd and microk8s on the same machine
       - name: Install microk8s
         run: |
           sudo snap install microk8s --classic
-          sudo microk8s status --wait-ready
-          sudo microk8s.enable dns hostpath-storage
+          sudo microk8s.status --wait-ready
+          sudo microk8s.enable dns hostpath-storage registry
           sudo usermod -a -G microk8s $USER
           sudo chown -f -R $USER ~/.kube
-      - name: Enable microk8s registry
-        run: |
-          sudo microk8s.enable registry
       - name: Setup jenkins
         id: jenkins
         run: |
-          echo Installing selinium for Jenkins configuration
+          echo Installing selenium for Jenkins configuration
           wget https://github.com/mozilla/geckodriver/releases/download/v0.19.1/geckodriver-v0.19.1-linux64.tar.gz
           tar xvfz geckodriver-v0.19.1-linux64.tar.gz
           mv geckodriver ~/.local/bin
@@ -77,9 +77,9 @@ jobs:
         uses: actions/download-artifact@v3
       - name: Ensure microk8s is ready
         run: |
-          sudo microk8s kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
-          sudo microk8s kubectl -n kube-system rollout status -w deployment/coredns
-          sudo microk8s kubectl -n container-registry rollout status -w deployment/registry
+          sudo microk8s.kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
+          sudo microk8s.kubectl -n kube-system rollout status -w deployment/coredns
+          sudo microk8s.kubectl -n container-registry rollout status -w deployment/registry
       - name: Push jenkins-agent image to microk8s registry
         run: |
           imageId=$(docker load --input jenkins-agent-image/jenkins-agent-image.tar | sed -e "s/^Loaded image ID: //")
