@@ -15,7 +15,7 @@ from ops.model import ActiveStatus
 @pytest.mark.abort_on_fail
 async def test_active(app):
     """
-    arrange: given charm that has been built and deployed
+    arrange: given charm that has been built and deployed and related to jenkins
     act: when the unit status is checked
     assert: then it is in the active state.
     """
@@ -31,10 +31,10 @@ async def test_build_succeeds(
     jenkins_test_job: str,
 ):
     """
-    arrange: given charm that has been built and deployed and a job that has been created in
-        jenkins targeting the agent
+    arrange: given charm that has been built, deployed and related to jenkins and a job that has
+        been created in jenkins targeting the agent
     act: when the build is executed
-    assert: then it finishes successfully.
+    assert: then the build finishes successfully.
     """
     jenkins_cli.build_job(jenkins_test_job)
     # Wait for build to finish
