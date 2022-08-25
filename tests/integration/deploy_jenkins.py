@@ -149,7 +149,7 @@ def main():
     deployment = deploy_jenkins()
     set_agent_port_to_random(deployment=deployment)
 
-    # Writing output parameters to file
+    # Writing output parameters to files
     with open(file="controller_name.txt", mode="w", encoding="utf-8") as text_file:
         text_file.write(deployment.controller_name)
     with open(file="model_name.txt", mode="w", encoding="utf-8") as text_file:
