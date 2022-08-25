@@ -79,6 +79,7 @@ async def app(
     agent_label: str,
 ):
     """Charm used for integration testing.
+
     Builds the charm and deploys it and the relations it depends on.
     """
     # This helps with type hints, it seems model could be None
@@ -165,7 +166,10 @@ def jenkins_cli(jenkins_controller_name: str, jenkins_model_name: str, jenkins_u
 
 @pytest.fixture
 def jenkins_test_job(jenkins_cli: jenkins.Jenkins, agent_label: str):
-    """Create a test job."""
+    """Create a test job.
+
+    The agent_label is used in the job to target the charmed jenkins agent.
+    """
     job_name = f"test-job-{agent_label}"
     job_xml = f"""<?xml version='1.1' encoding='UTF-8'?>
 <project>
