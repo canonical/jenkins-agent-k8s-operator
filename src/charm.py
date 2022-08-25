@@ -50,7 +50,7 @@ class JenkinsAgentCharm(CharmBase):
     _stored = JenkinsAgentCharmStoredState()
     service_name = "jenkins-agent"
 
-    def __init__(self, *args):
+    def __init__(self, *args) -> None:
         """Constructor."""
         super().__init__(*args)
         self.framework.observe(self.on.start, self._on_config_changed)
@@ -166,8 +166,12 @@ class JenkinsAgentCharm(CharmBase):
         event.relation.data[self.model.unit]["labels"] = labels
         event.relation.data[self.model.unit]["slavehost"] = self._stored.relation_agent_name
 
-    def _on_agent_relation_changed(self, event: RelationChangedEvent):
-        """Populate local configuration with data from relation."""
+    def _on_agent_relation_changed(self, event: RelationChangedEvent) -> None:
+        """Populate local configuration with data from relation.
+
+        Args:
+            event: information about the relation changed event.
+        """
         logger.info("Jenkins relation changed")
 
         # Check event data
