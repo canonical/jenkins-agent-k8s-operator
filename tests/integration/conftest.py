@@ -8,8 +8,8 @@
 
 """Fixtures for integration tests."""
 
+import asyncio
 import pathlib
-import subprocess
 
 import jenkins
 import pytest
@@ -100,58 +100,67 @@ async def app(
     # Create the relationship
     jenkins_controller_model_name = f"{jenkins_controller_name}:{jenkins_model_name}"
     await ops_test.model.create_offer(application_name=app_name, endpoint=f"{app_name}:slave")
-    subprocess.check_output(
-        [
-            "juju",
-            "add-relation",
-            "jenkins",
-            f"micro:admin/{ops_test.model_name}.{app_name}",
-            "--model",
-            jenkins_controller_model_name,
-        ]
+    # [2022-08-26] Cannot use native ops_test functions because thet do not support
+    # cross-controller operations
+    await ops_test.juju(
+        "add-relation",
+        "jenkins",
+        f"micro:admin/{ops_test.model_name}.{app_name}",
+        "--model",
+        jenkins_controller_model_name,
+        check=True,
     )
     await ops_test.model.wait_for_idle()
 
     yield application
 
     # Delete relation and saas
-    subprocess.check_output(
-        [
-            "juju",
+    # [2022-08-26] Cannot use native ops_test functions because thet do not support
+    # cross-controller operations
+    await asyncio.gather(
+        ops_test.juju(
             "remove-relation",
             f"{app_name}:slave",
             "jenkins:master",
             "--model",
             jenkins_controller_model_name,
-        ]
-    )
-    subprocess.check_output(
-        ["juju", "remove-saas", app_name, "--model", jenkins_controller_model_name]
+            check=True,
+        ),
+        ops_test.juju(
+            "remove-saas", app_name, "--model", jenkins_controller_model_name, check=True
+        ),
     )
 
 
-@pytest.fixture(scope="module")
-def jenkins_cli(jenkins_controller_name: str, jenkins_model_name: str, jenkins_unit_number: int):
+@pytest_asyncio.fixture(scope="module")
+async def jenkins_cli(
+    ops_test: OpsTest,
+    jenkins_controller_name: str,
+    jenkins_model_name: str,
+    jenkins_unit_number: int,
+):
     """Create cli to jenkins."""
     # Get information about jenkins
     unit_name = f"{jenkins_model_name}/{jenkins_unit_number}"
     controller_model_name = f"{jenkins_controller_name}:{jenkins_model_name}"
-    result = subprocess.check_output(
-        ["juju", "show-unit", unit_name, "--format", "yaml", "--model", controller_model_name]
+    # [2022-08-26] Cannot use native ops_test functions because thet do not support
+    # cross-controller operations
+    _, result, _ = await ops_test.juju(
+        "show-unit", unit_name, "--format", "yaml", "--model", controller_model_name, check=True
     )
     public_address = yaml.safe_load(result)[unit_name]["public-address"]
-    result = subprocess.check_output(
-        [
-            "juju",
-            "run-action",
-            unit_name,
-            "get-admin-credentials",
-            "--wait",
-            "--format",
-            "yaml",
-            "--model",
-            controller_model_name,
-        ]
+    # [2022-08-26] Cannot use native ops_test functions because thet do not support
+    # cross-controller operations
+    _, result, _ = await ops_test.juju(
+        "run-action",
+        unit_name,
+        "get-admin-credentials",
+        "--wait",
+        "--format",
+        "yaml",
+        "--model",
+        controller_model_name,
+        check=True,
     )
     result_dict = yaml.safe_load(result)[f"unit-{jenkins_model_name}-{jenkins_unit_number}"][
         "results"
