@@ -1,6 +1,9 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+[tool.mypy]
+ignore_missing_imports = true
+
 # Testing tools configuration
 [tool.coverage.run]
 branch = true

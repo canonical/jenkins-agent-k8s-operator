@@ -8,6 +8,7 @@
 import logging
 import os
 import typing
+import uuid
 
 import yaml
 from ops.charm import (
@@ -31,8 +32,8 @@ class JenkinsAgentCharmStoredState(StoredState):
 
     relation_configured: bool | None
     jenkins_url: str | None
-    agents: list[str] | None
-    agent_tokens: list[str] | None
+    relation_agent_name: str
+    relation_agent_token: str | None
 
 
 class JenkinsAgentEnvConfig(typing.TypedDict):
@@ -49,7 +50,7 @@ class JenkinsAgentCharm(CharmBase):
     _stored = JenkinsAgentCharmStoredState()
     service_name = "jenkins-agent"
 
-    def __init__(self, *args):
+    def __init__(self, *args) -> None:
         """Constructor."""
         super().__init__(*args)
         self.framework.observe(self.on.start, self._on_config_changed)
@@ -59,7 +60,10 @@ class JenkinsAgentCharm(CharmBase):
         self.framework.observe(self.on.slave_relation_changed, self._on_agent_relation_changed)
 
         self._stored.set_default(
-            relation_configured=False, jenkins_url=None, agents=None, agent_tokens=None
+            relation_configured=False,
+            jenkins_url=None,
+            relation_agent_name=f"{self.unit.name.replace('/', '-')}-{uuid.uuid4()}",
+            relation_agent_token=None,
         )
 
     def _get_pebble_config(self) -> dict:
@@ -152,7 +156,6 @@ class JenkinsAgentCharm(CharmBase):
         logger.info("Jenkins relation joined")
         num_executors = os.cpu_count()
         config_labels = self.model.config.get("jenkins_agent_labels")
-        agent_name = self._gen_agent_name()
 
         if config_labels:
             labels = config_labels
@@ -161,14 +164,15 @@ class JenkinsAgentCharm(CharmBase):
 
         event.relation.data[self.model.unit]["executors"] = str(num_executors)
         event.relation.data[self.model.unit]["labels"] = labels
-        event.relation.data[self.model.unit]["slavehost"] = agent_name
+        event.relation.data[self.model.unit]["slavehost"] = self._stored.relation_agent_name
 
-    def _on_agent_relation_changed(self, event: RelationChangedEvent):
-        """Populate local configuration with data from relation."""
+    def _on_agent_relation_changed(self, event: RelationChangedEvent) -> None:
+        """Populate local configuration with data from relation.
+
+        Args:
+            event: information about the relation changed event.
+        """
         logger.info("Jenkins relation changed")
-        agent_name = self._gen_agent_name()
-        self._stored.agents = [agent_name]
-        self._stored.agent_tokens = self._stored.agent_tokens or []
 
         # Check event data
         try:
@@ -190,7 +194,7 @@ class JenkinsAgentCharm(CharmBase):
             self.model.unit.status = ActiveStatus()
             return
         self._stored.jenkins_url = relation_jenkins_url
-        self._stored.agent_tokens.append(relation_secret)
+        self._stored.relation_agent_token = relation_secret
         self._stored.relation_configured = True
 
         # Check whether jenkins_url has been set
@@ -202,21 +206,6 @@ class JenkinsAgentCharm(CharmBase):
         logger.info("Setting up jenkins via agent relation")
         self.model.unit.status = MaintenanceStatus("Configuring jenkins agent")
         self.on.config_changed.emit()
-
-    def _gen_agent_name(self) -> str:
-        """Generate the agent name or get the one already in use.
-
-        Returns:
-            The agent name.
-        """
-        agent_name = ""
-        if self._stored.agents:
-            name, number = self._stored.agents[-1].rsplit("-", 1)
-            agent_name = f"{name}-{int(number) + 1}"
-        else:
-            agent_name = self.unit.name.replace("/", "-")
-
-        return agent_name
 
     def _get_env_config(self) -> JenkinsAgentEnvConfig:
         """Retrieve the environment configuration.
@@ -230,8 +219,8 @@ class JenkinsAgentCharm(CharmBase):
         if self._stored.relation_configured:
             return {
                 "JENKINS_URL": self._stored.jenkins_url or "",
-                "JENKINS_AGENTS": ":".join(self._stored.agents or []),
-                "JENKINS_TOKENS": ":".join(self._stored.agent_tokens or []),
+                "JENKINS_AGENTS": self._stored.relation_agent_name,
+                "JENKINS_TOKENS": self._stored.relation_agent_token,
             }
         return {
             "JENKINS_URL": self.config["jenkins_url"],

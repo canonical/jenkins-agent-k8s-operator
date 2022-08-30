@@ -1,9 +1,9 @@
-ARG DIST_RELEASE=focal
+ARG DIST_RELEASE=jammy
 FROM ubuntu:${DIST_RELEASE}
 
 ENTRYPOINT /entrypoint.sh
 
-ARG DIST_RELEASE_VERSION=20.04
+ARG DIST_RELEASE_VERSION=22.04
 
 LABEL com.canonical.dist-release=${DIST_RELEASE}
 LABEL com.canonical.dist-release-version=${DIST_RELEASE_VERSION}
@@ -26,12 +26,12 @@ RUN mkdir /var/lib/jenkins \
 	&& mkdir /var/lib/jenkins/agents \
 	&& mkdir /var/log/jenkins \
 	&& chown -Rh ${USER_UID}:${USER_GID} \
-		/var/lib/jenkins \
-		/var/lib/jenkins/agents \
-		/var/log/jenkins \
+	/var/lib/jenkins \
+	/var/lib/jenkins/agents \
+	/var/log/jenkins \
 	&& addgroup --gid ${USER_GID} ${USER} \
 	&& adduser --system --uid ${USER_UID} --gid ${USER_GID} \
-		--home /var/lib/jenkins --shell /bin/bash ${USER}
+	--home /var/lib/jenkins --shell /bin/bash ${USER}
 
 # Do not write on the overlay for the files located in this directory
 VOLUME /var/lib/jenkins
@@ -41,8 +41,8 @@ VOLUME /var/log/jenkins
 # Install runtime requirements
 RUN apt-get update -y \
 	&& apt-get install -y \
-		curl \
-		default-jre-headless
+	curl \
+	default-jre-headless
 
 
 WORKDIR /var/lib/jenkins
