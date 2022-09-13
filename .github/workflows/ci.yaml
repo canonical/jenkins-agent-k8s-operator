@@ -38,9 +38,7 @@ jobs:
           resource-name: jenkins-agent-image
   integration-test-lxd-microk8s:
     name: Integration tests (lxd and microk8s)
-    # [20220824] charmed-kubernetes/actions-operator@main does not work on
-    # ubuntu-22.04 for lxd, hence using Ubuntu version 20.04
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [build-jenkins-agent-image, lint, unit-test]
     steps:
       - name: Checkout
@@ -90,12 +88,6 @@ jobs:
           sudo microk8s config > ${HOME}/.kube/config
           sg microk8s -c "juju bootstrap microk8s micro"
           juju switch micro
-      # [20220824] charmed-kubernetes/actions-operator@main does not work on
-      # ubuntu-22.04, but charm runs on 22.04 which has Python 3.10, hence
-      # installing Python 3.10 here
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
       - name: Run integration tests
         run: |
           juju add-model testing
