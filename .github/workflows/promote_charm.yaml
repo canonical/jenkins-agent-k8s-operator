@@ -1,0 +1,15 @@
+name: Promote charm
+
+on:
+  workflow_run:
+    workflows: ["Test and publish charm"]
+    types:
+      - completed
+
+jobs:
+  promote-charm:
+    uses: canonical/operator-workflows/.github/workflows/promote_charm.yaml@main
+    with:
+      origin-channel: latest/edge
+      destination-channel: latest/stable
+    secrets: inherit
