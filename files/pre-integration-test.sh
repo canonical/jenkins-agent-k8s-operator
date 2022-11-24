@@ -1,6 +1,6 @@
 #!/bin/bash
 
-snap install lxd
+sudo snap install lxd
 lxd init --auto
 pip3 install selenium pyyaml
 echo "Deploying jenkins"
