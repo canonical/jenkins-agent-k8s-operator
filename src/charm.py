@@ -56,8 +56,8 @@ class JenkinsAgentCharm(CharmBase):
         self.framework.observe(self.on.start, self._on_config_changed)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.upgrade_charm, self._on_config_changed)
-        self.framework.observe(self.on.slave_relation_joined, self._on_agent_relation_joined)
-        self.framework.observe(self.on.slave_relation_changed, self._on_agent_relation_changed)
+        self.framework.observe(self.on.agent_relation_joined, self._on_agent_relation_joined)
+        self.framework.observe(self.on.agent_relation_changed, self._on_agent_relation_changed)
 
         self._stored.set_default(
             relation_configured=False,

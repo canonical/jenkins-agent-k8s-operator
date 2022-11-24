@@ -304,8 +304,8 @@ def test_on_agent_relation_joined(
 ):
     """
     arrange: given charm in its initial state
-    act: when the slave_relation_joined event occurs
-    assert: then the agent sets the executors, labels and slave hosts relation data and writes a
+    act: when the agent_relation_joined event occurs
+    assert: then the agent sets the executors, labels and agent hosts relation data and writes a
         note to the logs.
     """
     # Mock uname and CPU count
@@ -320,7 +320,7 @@ def test_on_agent_relation_joined(
 
     caplog.set_level(logging.INFO)
     harness.enable_hooks()
-    relation_id = harness.add_relation(relation_name="slave", remote_app="jenkins")
+    relation_id = harness.add_relation(relation_name="agent", remote_app="jenkins")
     harness.add_relation_unit(relation_id=relation_id, remote_unit_name=harness.charm.unit.name)
 
     assert harness.get_relation_data(
@@ -339,7 +339,7 @@ def test_on_agent_relation_joined_labels(
 ):
     """
     arrange: given charm in its initial state with labels configured
-    act: when the slave_relation_joined occurs
+    act: when the agent_relation_joined occurs
     assert: then the agent sets the labels based on the configuration.
     """
     labels = "label 1,label 2"
@@ -350,7 +350,7 @@ def test_on_agent_relation_joined_labels(
     monkeypatch.setattr(os, "cpu_count", mock.MagicMock())
 
     harness.enable_hooks()
-    relation_id = harness.add_relation(relation_name="slave", remote_app="jenkins")
+    relation_id = harness.add_relation(relation_name="agent", remote_app="jenkins")
     unit_name = "jenkins-agent-k8s/0"
     harness.add_relation_unit(relation_id=relation_id, remote_unit_name=unit_name)
 
