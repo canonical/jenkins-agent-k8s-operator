@@ -104,6 +104,7 @@ def deploy_jenkins() -> JenkinsDeployment:
     LOGGER.info("deployed jenkins")
     return deployment
 
+
 def main():
     """Start jenkins and enable the agent port."""
     deployment = deploy_jenkins()
