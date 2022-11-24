@@ -10,9 +10,6 @@ import sys
 import time
 
 import yaml
-from selenium.webdriver import Firefox, FirefoxOptions
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 
 logging.basicConfig(
     stream=sys.stdout, format="%(levelname)s %(asctime)s - %(message)s", level=logging.INFO
@@ -107,47 +104,9 @@ def deploy_jenkins() -> JenkinsDeployment:
     LOGGER.info("deployed jenkins")
     return deployment
 
-
-def set_agent_port_to_random(deployment: JenkinsDeployment):
-    """Uses a browser to login and set the Jenkins agnt port to random."""
-    LOGGER.info("configuring jenkins")
-
-    LOGGER.info("starting browser")
-    opts = FirefoxOptions()
-    opts.add_argument("--headless")
-    driver = Firefox(options=opts)
-
-    # Login
-    url = f"http://{deployment.hostname}:8080/login"
-    LOGGER.info("logging into jenkins: %s", url)
-    driver.get(url)
-    time.sleep(1)
-    elem = driver.find_element(By.NAME, "j_username")
-    elem.send_keys(deployment.username)
-    elem = driver.find_element(By.NAME, "j_password")
-    elem.send_keys(deployment.password)
-    elem.send_keys(Keys.RETURN)
-    time.sleep(5)
-
-    # Configure the port
-    url = f"http://{deployment.hostname}:8080/configureSecurity/"
-    LOGGER.info("configuring agent port: %s", url)
-    driver.get(url)
-    time.sleep(1)
-    elem = driver.find_element(By.NAME, "slaveAgentPort")
-    random_elem = elem.find_element(By.XPATH, "//*[text()='Random']")
-    driver.execute_script("arguments[0].scrollIntoView();", elem)
-    random_elem.click()
-    elem = driver.find_element(By.XPATH, "//*[text()='Save']")
-    elem.click()
-
-    LOGGER.info("finished configuring jenkins")
-
-
 def main():
     """Start jenkins and enable the agent port."""
     deployment = deploy_jenkins()
-    set_agent_port_to_random(deployment=deployment)
 
     # Writing output parameters to files
     with open(file="controller_name.txt", mode="w", encoding="utf-8") as text_file:

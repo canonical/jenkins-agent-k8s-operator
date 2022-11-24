@@ -51,12 +51,12 @@ download_agent
 touch /var/lib/jenkins/agents/.ready
 
 # Transform the env variables in arrays to iterate through it
-IFS=':' read -r -a AGENTS <<< ${JENKINS_AGENTS}
-IFS=':' read -r -a TOKENS <<< ${JENKINS_TOKENS}
+IFS=':' read -r -a AGENTS <<< "${JENKINS_AGENTS}"
+IFS=':' read -r -a TOKENS <<< "${JENKINS_TOKENS}"
 
-echo ${!AGENTS[@]}
+echo "${!AGENTS[@]}"
 
-for index in ${!AGENTS[@]}; do
+for index in "${!AGENTS[@]}"; do
     echo "About to run ${JAVA}" "${JAVA_ARGS}" -jar "${AGENT_JAR}" -jnlpUrl "${JENKINS_URL}"/computer/"${AGENTS[$index]}"/jenkins-agent.jnlp -workDir "${JENKINS_WORKDIR}" -noReconnect -secret "${TOKENS[$index]}"
-    ${JAVA} ${JAVA_ARGS} -jar ${AGENT_JAR} -jnlpUrl ${JENKINS_URL}/computer/${AGENTS[$index]}/jenkins-agent.jnlp -workDir ${JENKINS_WORKDIR} -noReconnect -secret ${TOKENS[$index]} || echo "Invalid or already used credentials."
+    "${JAVA}" "${JAVA_ARGS}" -jar "${AGENT_JAR}" -jnlpUrl "${JENKINS_URL}/computer/${AGENTS[$index]}/jenkins-agent.jnlp" -workDir "${JENKINS_WORKDIR}" -noReconnect -secret "${TOKENS[$index]}" || echo "Invalid or already used credentials."
 done
