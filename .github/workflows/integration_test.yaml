@@ -6,7 +6,7 @@ on:
 jobs:
   integration-tests:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
-    inputs:
+    with:
       extra-arguments: --cloud microk8s --model testing --jenkins-agent-image localhost:32000/jenkins-agent:latest --jenkins-controller-name $(cat controller_name.txt) --jenkins-model-name $(cat model_name.txt) --jenkins-unit-number $(cat unit_number.txt)
       pre-run-script: files/pre-integration-test.sh
     secrets: inherit
