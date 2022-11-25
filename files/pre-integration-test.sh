@@ -16,5 +16,7 @@ echo "Deploying jenkins"
 sg microk8s -c "python3 tests/integration/deploy_jenkins.py"
 
 echo "Switching to testing model"
+sg microk8s -c "juju bootstrap microk8s micro"
+sg microk8s -c "juju add-model testing"
 sg microk8s -c "juju switch testing"
 sg microk8s -c "microk8s status --wait-ready"
