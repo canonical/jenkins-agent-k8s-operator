@@ -78,7 +78,7 @@ def charm_with_jenkins_relation(
     harness_pebble_ready.enable_hooks()
     remote_app = "jenkins"
     remote_unit_name = f"{remote_app}/0"
-    relation_id = harness_pebble_ready.add_relation(relation_name="agent", remote_app=remote_app)
+    relation_id = harness_pebble_ready.add_relation(relation_name="slave", remote_app=remote_app)
     harness_pebble_ready.add_relation_unit(
         relation_id=relation_id, remote_unit_name=remote_unit_name
     )

@@ -9,7 +9,7 @@ maintainers:
 description: |
   Agent for Jenkins, the leading open source automation server. Jenkins provides hundreds of plugins to support building, deploying and automating any project.
 provides:
-  agent:
+  slave:
     interface: jenkins-slave
 
 containers:
