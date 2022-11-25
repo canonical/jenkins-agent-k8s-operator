@@ -105,7 +105,7 @@ async def app(
     await ops_test.juju(
         "add-relation",
         "jenkins",
-        f"micro:admin/{ops_test.model_name}.{app_name}",
+        f"{ops_test.model_name}.{app_name}",
         "--model",
         jenkins_controller_model_name,
         check=True,
