@@ -100,7 +100,7 @@ async def app(
     # Create the relationship
     jenkins_controller_model_name = f"{jenkins_controller_name}:{jenkins_model_name}"
     await ops_test.model.create_offer(application_name=app_name, endpoint=f"{app_name}:slave")
-    # [2022-08-26] Cannot use native ops_test functions because thet do not support
+    # [2022-08-26] Cannot use native ops_test functions because they do not support
     # cross-controller operations
     await ops_test.juju(
         "add-relation",
@@ -115,7 +115,7 @@ async def app(
     yield application
 
     # Delete relation and saas
-    # [2022-08-26] Cannot use native ops_test functions because thet do not support
+    # [2022-08-26] Cannot use native ops_test functions because they do not support
     # cross-controller operations
     await asyncio.gather(
         ops_test.juju(
@@ -143,13 +143,13 @@ async def jenkins_cli(
     # Get information about jenkins
     unit_name = f"{jenkins_model_name}/{jenkins_unit_number}"
     controller_model_name = f"{jenkins_controller_name}:{jenkins_model_name}"
-    # [2022-08-26] Cannot use native ops_test functions because thet do not support
+    # [2022-08-26] Cannot use native ops_test functions because they do not support
     # cross-controller operations
     _, result, _ = await ops_test.juju(
         "show-unit", unit_name, "--format", "yaml", "--model", controller_model_name, check=True
     )
     public_address = yaml.safe_load(result)[unit_name]["public-address"]
-    # [2022-08-26] Cannot use native ops_test functions because thet do not support
+    # [2022-08-26] Cannot use native ops_test functions because they do not support
     # cross-controller operations
     _, result, _ = await ops_test.juju(
         "run-action",
