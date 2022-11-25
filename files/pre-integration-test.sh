@@ -3,6 +3,8 @@
 # Pre-run script for integration test operator-workflows action.
 # https://github.com/canonical/operator-workflows/blob/main/.github/workflows/integration_test.yaml
 
+# Jenkins charm is deployed on lxd and Jenkins agent charm is deployed on microk8s
+
 # Enure setup of microk8s.
 sudo microk8s status --wait-ready
 sudo usermod -a -G microk8s "$USER"
@@ -19,3 +21,8 @@ juju bootstrap localhost localhost
 
 echo "Deploying jenkins"
 python3 tests/integration/deploy_jenkins.py
+
+echo "bootstraping microk8s juju controller"
+juju bootstrap microk8s micro
+juju add-model testing -c micro
+juju switch micro:admin/testing
