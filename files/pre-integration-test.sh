@@ -29,3 +29,18 @@ juju bootstrap microk8s micro
 juju add-model testing -c micro
 juju switch micro:admin/testing
 sudo microk8s status --wait-ready
+
+echo "Waiting until the outputs files exist"
+until [ -f contorller_name.txt ]
+do
+     sleep 5
+done
+until [ -f model_name.txt ]
+do
+     sleep 5
+done
+until [ -f unit_number.txt ]
+do
+     sleep 5
+done
+echo "Output files found"
