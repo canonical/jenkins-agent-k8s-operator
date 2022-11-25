@@ -61,7 +61,7 @@ def deploy_jenkins() -> JenkinsDeployment:
     model_name = "jenkins"
     subprocess.check_output(["juju", "switch", controller_name])
     subprocess.check_output(["juju", "add-model", model_name, "localhost"])
-    subprocess.check_output(["juju", "deploy", "jenkins", "--series", "jammy"])
+    subprocess.check_output(["juju", "deploy", "jenkins", "--series", "focal"])
 
     # Wait for it to be active
     LOGGER.info("waiting for jenkins to become active")
