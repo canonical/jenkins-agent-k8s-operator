@@ -14,6 +14,7 @@ newgrp microk8s
 sudo microk8s.kubectl -n kube-system rollout status -w deployment/hostpath-provisioner
 sudo microk8s.kubectl -n kube-system rollout status -w deployment/coredns
 sudo microk8s.kubectl -n container-registry rollout status -w deployment/registry
+sudo microk8s status --wait-ready
 
 # lxd should be install and init by a previous step in integration test action.
 echo "bootstraping lxd juju controller"
@@ -26,3 +27,4 @@ echo "bootstraping microk8s juju controller"
 juju bootstrap microk8s micro
 juju add-model testing -c micro
 juju switch micro:admin/testing
+sudo microk8s status --wait-ready
