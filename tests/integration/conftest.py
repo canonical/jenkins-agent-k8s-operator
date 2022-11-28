@@ -101,7 +101,10 @@ async def app(
     juju_model = juju.model.Model()
     await juju_model.connect('testing')
     juju_controller = await juju_model.get_controller()
+    await juju_controller.connect()
     controller_name = juju_controller.controller_name
+
+    assert controller_name is not None
 
     # Create the relationship
     jenkins_controller_model_name = f"{jenkins_controller_name}:{jenkins_model_name}"
