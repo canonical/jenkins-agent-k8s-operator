@@ -8,6 +8,6 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@debug
     with:
       extra-arguments: --cloud microk8s --jenkins-agent-image localhost:32000/jenkins-agent:latest --jenkins-controller-name $(cat controller_name.txt) --jenkins-model-name $(cat model_name.txt) --jenkins-unit-number $(cat unit_number.txt)
-      provider: microk8s
+      provider: 'microk8s'
       pre-run-script: files/pre-integration-test.sh
     secrets: inherit
