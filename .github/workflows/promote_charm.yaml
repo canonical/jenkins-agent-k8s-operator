@@ -2,17 +2,17 @@ name: Promote charm
 
 on:
   workflow_dispatch:
-  inputs:
-    origin-channel:
-      type: choice
-      description: 'Origin Channel'
-      options:
-      - latest/edge
-    destination-channel:
-      type: choice
-      description: 'Destination Channel'
-      options:
-      - latest/stable
+    inputs:
+      origin-channel:
+        type: choice
+        description: 'Origin Channel'
+        options:
+        - latest/edge
+      destination-channel:
+        type: choice
+        description: 'Destination Channel'
+        options:
+        - latest/stable
 
 jobs:
   promote-charm:
