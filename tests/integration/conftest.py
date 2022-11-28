@@ -12,6 +12,7 @@ import asyncio
 import pathlib
 
 import jenkins
+import juju.model
 import pytest
 import pytest_asyncio
 import yaml
@@ -97,6 +98,11 @@ async def app(
     )
     await ops_test.model.wait_for_idle()
 
+    juju_model = juju.model.Model()
+    await juju_model.connect('testing')
+    juju_controller = await juju_model.get_controller()
+    controller_name = juju_controller.controller_name
+
     # Create the relationship
     jenkins_controller_model_name = f"{jenkins_controller_name}:{jenkins_model_name}"
     await ops_test.model.create_offer(application_name=app_name, endpoint=f"{app_name}:slave")
@@ -105,7 +111,7 @@ async def app(
     await ops_test.juju(
         "add-relation",
         "jenkins",
-        f"{ops_test.model_name}.{app_name}",
+        f"{controller_name}:{ops_test.model_name}.{app_name}",
         "--model",
         jenkins_controller_model_name,
         check=True,
