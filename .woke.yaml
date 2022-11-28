@@ -1,0 +1,4 @@
+rules:
+  # [2022.11.28] Ignore "slave" - The relation with Jenkins charm is using this
+  # terminology due to support for older versions of Jenkins.
+  - name: master
