@@ -99,7 +99,7 @@ async def app(
     await ops_test.model.wait_for_idle()
 
     juju_model = juju.model.Model()
-    await juju_model.connect('testing')
+    await juju_model.connect("testing")
     juju_controller = await juju_model.get_controller()
     await juju_controller.connect()
     controller_name = juju_controller.controller_name
