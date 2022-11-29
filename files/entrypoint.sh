@@ -23,9 +23,6 @@ typeset JENKINS_URL="${JENKINS_URL:?"URL of a jenkins server must be provided"}"
 
 typeset JENKINS_WORKDIR="/var/lib/jenkins"
 
-# Arguments to pass to jenkins agent on startup
-typeset -a JENKINS_ARGS
-
 # Path of the agent.jar
 typeset AGENT_JAR=/var/lib/jenkins/agent.jar
 
@@ -51,12 +48,14 @@ download_agent
 touch /var/lib/jenkins/agents/.ready
 
 # Transform the env variables in arrays to iterate through it
-IFS=':' read -r -a AGENTS <<< ${JENKINS_AGENTS}
-IFS=':' read -r -a TOKENS <<< ${JENKINS_TOKENS}
+IFS=':' read -r -a AGENTS <<< "${JENKINS_AGENTS}"
+IFS=':' read -r -a TOKENS <<< "${JENKINS_TOKENS}"
 
-echo ${!AGENTS[@]}
+echo "${!AGENTS[@]}"
 
-for index in ${!AGENTS[@]}; do
+for index in "${!AGENTS[@]}"; do
     echo "About to run ${JAVA}" "${JAVA_ARGS}" -jar "${AGENT_JAR}" -jnlpUrl "${JENKINS_URL}"/computer/"${AGENTS[$index]}"/slave-agent.jnlp -workDir "${JENKINS_WORKDIR}" -noReconnect -secret "${TOKENS[$index]}"
-    ${JAVA} ${JAVA_ARGS} -jar ${AGENT_JAR} -jnlpUrl ${JENKINS_URL}/computer/${AGENTS[$index]}/slave-agent.jnlp -workDir ${JENKINS_WORKDIR} -noReconnect -secret ${TOKENS[$index]} || echo "Invalid or already used credentials."
+    # JAVA_ARGS needs to be split by spaces so the shellcheck is disabled for this line.
+    # shellcheck disable=SC2086
+    ${JAVA} ${JAVA_ARGS} -jar "${AGENT_JAR}" -jnlpUrl "${JENKINS_URL}/computer/${AGENTS[$index]}/slave-agent.jnlp" -workDir "${JENKINS_WORKDIR}" -noReconnect -secret "${TOKENS[$index]}" || echo "Invalid or already used credentials."
 done
