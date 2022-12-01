@@ -11,6 +11,8 @@ description: |
 provides:
   slave:
     interface: jenkins-slave
+assumes:
+  - k8s-api
 
 containers:
   jenkins-agent:
