@@ -23,7 +23,5 @@ jobs:
     with:
       origin-channel: ${{ github.event.inputs.origin-channel }}
       destination-channel: ${{ github.event.inputs.destination-channel }}
-      base-name: 'ubuntu'
       base-channel: '22.04'
-      base-architecture: 'amd64'
     secrets: inherit
