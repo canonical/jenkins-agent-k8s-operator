@@ -23,4 +23,7 @@ jobs:
     with:
       origin-channel: ${{ github.event.inputs.origin-channel }}
       destination-channel: ${{ github.event.inputs.destination-channel }}
+      charm-base-name: 'ubuntu'
+      charm-base-channel: '22.04'
+      charm-base-architecture: 'amd64'
     secrets: inherit
