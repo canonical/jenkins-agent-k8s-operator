@@ -16,8 +16,11 @@ on:
 
 jobs:
   promote-charm:
-    uses: canonical/operator-workflows/.github/workflows/promote_charm.yaml@main
+    uses: canonical/operator-workflows/.github/workflows/promote_charm.yaml@promote-charm-base
     with:
       origin-channel: ${{ github.event.inputs.origin-channel }}
       destination-channel: ${{ github.event.inputs.destination-channel }}
+      base-name: 'ubuntu'
+      base-channel: '22.04'
+      base-architecture: 'amd64'
     secrets: inherit
