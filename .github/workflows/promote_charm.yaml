@@ -13,6 +13,9 @@ on:
         description: 'Destination Channel'
         options:
         - latest/stable
+    secrets:
+      CHARMHUB_TOKEN:
+        required: true
 
 jobs:
   promote-charm:
