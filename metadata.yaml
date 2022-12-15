@@ -1,4 +1,5 @@
 name: jenkins-agent-k8s
+display-name: Jenkins agent
 summary: Agent for Jenkins, the leading open source automation server. Jenkins provides hundreds of plugins to support building, deploying and automating any project.
 docs: https://discourse.charmhub.io/t/jenkins-agent-documentation-overview/3982
 maintainers:
@@ -6,6 +7,7 @@ maintainers:
     - Alexandre Gomes <alexandre.gomes@canonical.com>
     - Benjamin Allot <benjamin.allot@canonical.com>
     - David Andersson <david.andersson@canonical.com>
+issues: https://github.com/canonical/jenkins-agent-k8s-operator/issues
 description: |
   Agent for Jenkins, the leading open source automation server. Jenkins provides hundreds of plugins to support building, deploying and automating any project.
 provides:
