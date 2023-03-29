@@ -68,7 +68,10 @@ class JenkinsAgentCharm(CharmBase):
     service_name = "jenkins-agent"
 
     def __init__(self, *args) -> None:
-        """Initialize the instance."""
+        """Initialize the instance.
+
+        Args:
+            args: Arguments for the CharmBase superclass."""
         super().__init__(*args)
         self.framework.observe(self.on.start, self._on_config_changed)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
