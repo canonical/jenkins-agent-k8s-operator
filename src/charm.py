@@ -68,11 +68,7 @@ class JenkinsAgentCharm(CharmBase):
     service_name = "jenkins-agent"
 
     def __init__(self, *args) -> None:
-        """Constructor.
-
-        Args:
-            args: Arguments.
-        """
+        """Construct."""
         super().__init__(*args)
         self.framework.observe(self.on.start, self._on_config_changed)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
@@ -152,7 +148,8 @@ class JenkinsAgentCharm(CharmBase):
             Whether the configuration is valid, including a reason if it is not.
         """
         # Check for agent tokens
-        if self._stored.relation_configured:
+        # mypy misinterprets this line, reports function overloading
+        if self._stored.relation_configured:  # type: ignore
             return True, ""
 
         # Retrieve required and non-empty configuration options
@@ -197,7 +194,8 @@ class JenkinsAgentCharm(CharmBase):
 
         # Check event data
         try:
-            relation_jenkins_url = event.relation.data[event.unit]["url"]
+            # Right side data type is Union[Unit, Application]
+            relation_jenkins_url = event.relation.data[event.unit]["url"]  # type: ignore
         except KeyError:
             logger.warning(
                 "Expected 'url' key for %s unit in relation data. Skipping setup for now.",
@@ -206,7 +204,8 @@ class JenkinsAgentCharm(CharmBase):
             self.model.unit.status = ActiveStatus()
             return
         try:
-            relation_secret = event.relation.data[event.unit]["secret"]
+            # Right side data type is Union[Unit, Application]
+            relation_secret = event.relation.data[event.unit]["secret"]  # type: ignore
         except KeyError:
             logger.warning(
                 "Expected 'secret' key for %s unit in relation data. Skipping setup for now.",
@@ -237,11 +236,12 @@ class JenkinsAgentCharm(CharmBase):
         Returns:
             A dictionary with the environment variables to be set for the jenkins agent.
         """
-        if self._stored.relation_configured:
+        # mypy misinterprets these lines, reports function overloading
+        if self._stored.relation_configured:  # type: ignore
             return {
-                "JENKINS_URL": self._stored.jenkins_url or "",
-                "JENKINS_AGENTS": self._stored.relation_agent_name,
-                "JENKINS_TOKENS": self._stored.relation_agent_token,
+                "JENKINS_URL": self._stored.jenkins_url or "",  # type: ignore
+                "JENKINS_AGENTS": self._stored.relation_agent_name,  # type: ignore
+                "JENKINS_TOKENS": self._stored.relation_agent_token,  # type: ignore
             }
         return {
             "JENKINS_URL": self.config["jenkins_url"],

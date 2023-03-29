@@ -17,8 +17,6 @@ from src.charm import JenkinsAgentCharm
 
 from . import types
 
-testing.SIMULATE_CAN_CONNECT = True
-
 
 @pytest.fixture
 def harness() -> typing.Generator[testing.Harness[JenkinsAgentCharm], None, None]:
