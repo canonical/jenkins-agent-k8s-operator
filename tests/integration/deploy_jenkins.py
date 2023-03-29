@@ -19,7 +19,17 @@ LOGGER = logging.getLogger()
 
 @dataclasses.dataclass
 class JenkinsDeployment:
-    """Key information about a jenkins deployment."""
+    """Key information about a jenkins deployment.
+
+    Attrs:
+        controller_name: Controller name.
+        model_name: Model name.
+        unit_number: Unit number.
+        public_address: Public address.
+        username: Username.
+        password: Password.
+        hostname: Hostname.
+    """
 
     controller_name: str
     model_name: str
@@ -30,14 +40,22 @@ class JenkinsDeployment:
 
     @property
     def hostname(self) -> str:
-        """Calculate the hostname."""
+        """Calculate the hostname.
+
+        Returns:
+            The hostname.
+        """
         if ":" in self.public_address:
             return f"[{self.public_address}]"
         return self.public_address
 
 
 def jenkins_active() -> bool:
-    """Check whether the jenkins application is active."""
+    """Check whether the jenkins application is active.
+
+    Returns:
+        True if Jenkins is active.
+    """
     result = subprocess.check_output(["juju", "status"])
     LOGGER.info("juju status \n%s", result.decode("utf-8"))
     result = subprocess.check_output(["juju", "status", "--format", "yaml"])
@@ -48,7 +66,11 @@ def jenkins_active() -> bool:
 
 
 def deploy_jenkins() -> JenkinsDeployment:
-    """Deploys jenkins to the lxd controller."""
+    """Deploys jenkins to the lxd controller.
+
+    Returns:
+        Jenkins deployment details.
+    """
     # Deploy
     LOGGER.info("deploying jenkins")
     result = subprocess.check_output(["juju", "controllers", "--format", "yaml"])

@@ -272,7 +272,7 @@ def test_config_changed_no_change(
 )
 def test__is_valid_config(
     harness: Harness[JenkinsAgentCharm],
-    relation_configured,
+    relation_configured: bool,
     agent_tokens: list[str],
     config,
     expected_validity: bool,
@@ -284,8 +284,8 @@ def test__is_valid_config(
     act: when _is_valid_config is called
     assert: then the expected configuration validity and message is returned.
     """
-    harness.charm._stored.relation_configured = relation_configured
-    harness.charm._stored.relation_agent_tokens = agent_tokens
+    harness.charm._stored.relation_configured = relation_configured  # type: ignore
+    harness.charm._stored.relation_agent_tokens = agent_tokens  # type: ignore
     harness.update_config(config)
 
     validity, message = harness.charm._is_valid_config()
@@ -456,7 +456,6 @@ def test_on_agent_relation_changed_new_agent_name(
     act: when the relation data is updated
     assert: then a new agent is stored.
     """
-    harness.charm._stored.relation_agent_name = harness.charm._stored.relation_agent_name
     # Mock config_changed hook
     monkeypatch.setattr(harness.charm.on, "config_changed", mock.MagicMock())
 
