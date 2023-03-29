@@ -7,7 +7,11 @@ from pytest import Parser
 
 
 def pytest_addoption(parser: Parser):
-    """Store command line options."""
+    """Store command line options.
+
+    Args:
+        parser: Argument parser.
+    """
     parser.addoption("--jenkins-agent-image", action="store")
     parser.addoption("--jenkins-controller-name", action="store")
     parser.addoption("--jenkins-model-name", action="store")
