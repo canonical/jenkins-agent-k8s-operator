@@ -23,7 +23,7 @@ description: |
 
   For DevOps or SRE teams this charm will make operating Jenkins Agent simple and
   straightforward through Juju's clean interface. It will allow easy deployment
-  into multiple environments for testing of changes, and supports scaling out for
+  into multiple environments for testing changes, and supports scaling out for
   enterprise deployments.
 provides:
   slave:
