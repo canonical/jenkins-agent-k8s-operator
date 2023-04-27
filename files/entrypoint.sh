@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 set -eu -o pipefail
 
 export LC_ALL=C

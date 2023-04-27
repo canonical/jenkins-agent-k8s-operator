@@ -1,3 +1,5 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
 ARG DIST_RELEASE=jammy
 FROM ubuntu:${DIST_RELEASE}
 
