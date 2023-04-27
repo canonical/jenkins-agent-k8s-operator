@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 # Pre-run script for integration test operator-workflows action.
 # https://github.com/canonical/operator-workflows/blob/main/.github/workflows/integration_test.yaml
 

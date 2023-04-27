@@ -1,2 +1,2 @@
-# Copyright 2022 Canonical Ltd.
-# Licensed under the GPLv3, see LICENCE file for details.
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
