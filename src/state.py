@@ -60,7 +60,7 @@ class JenkinsConfig(BaseModel):
         Returns:
             JenkinsConfig if configuration exists, None otherwise.
         """
-        server_url = config.get("jenkins_master_url", None)
+        server_url = config.get("jenkins_url", None)
         agent_names = config.get("jenkins_agent_name", None)
         agent_tokens = config.get("jenkins_agent_token", None)
         if not server_url and not agent_names and not agent_tokens:
@@ -105,7 +105,7 @@ class State:
         try:
             agent_meta = metadata.Agent(
                 num_executors=os.cpu_count() or 0,
-                labels=charm.model.config.get("jenkins_agent_labels", None) or os.uname().machine,
+                labels=charm.model.config.get("jenkins_agent_labels", "") or os.uname().machine,
                 name=charm.unit.name.replace("/", "-"),
             )
         except ValidationError as exc:

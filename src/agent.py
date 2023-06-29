@@ -43,12 +43,6 @@ class Observer(ops.Object):
         charm.framework.observe(
             charm.on[AGENT_RELATION].relation_changed, self._on_agent_relation_changed
         )
-        charm.framework.observe(
-            charm.on[SLAVE_RELATION].relation_broken, self._on_agent_relation_broken
-        )
-        charm.framework.observe(
-            charm.on[AGENT_RELATION].relation_broken, self._on_agent_relation_broken
-        )
 
     @property
     def _jenkins_agent_container(self) -> ops.Container:
