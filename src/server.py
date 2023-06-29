@@ -138,7 +138,9 @@ def validate_credentials(
     Returns:
         True if credentials and agent_name pairs are valid, False otherwise.
     """
-    time.sleep(random.random())  # IMPORTANT: add random jitter to prevent parallel execution.
+    # IMPORTANT: add random jitter to prevent parallel execution.
+    # It's okay to use random since it's not used for sensitive data.
+    time.sleep(random.random())  # nosec
     proc: ops.pebble.ExecProcess = connectable_container.exec(
         [
             "java",
@@ -177,5 +179,8 @@ def is_registered(connectable_container: ops.Container) -> bool:
 
     Args:
         connectable_container: The Jenkins agent workload container.
+
+    Returns:
+        Whether the Jenkins agent is already registered.
     """
     return connectable_container.exists(str(AGENT_READY_PATH))
