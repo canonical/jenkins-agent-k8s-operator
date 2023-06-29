@@ -1,90 +1,70 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# Disable since pytest fixtures require the fixture name as an argument.
-# pylint: disable=redefined-outer-name
+"""Fixtures for Jenkins-k8s-operator charm unit tests."""
 
-"""Fixtures for unit tests."""
+import secrets
+import unittest.mock
 
-import os
-import typing
-from unittest import mock
-
+import ops
 import pytest
-from ops import testing
+from ops.testing import Harness
 
-from src.charm import JenkinsAgentCharm
+import server
+import state
+from charm import JenkinsAgentCharm
 
-from . import types
 
-
-@pytest.fixture
-def harness() -> typing.Generator[testing.Harness[JenkinsAgentCharm], None, None]:
-    """Create test harness for unit tests."""
-    # Create and confifgure harness
-    harness = testing.Harness(JenkinsAgentCharm)
-    harness.begin()
-    harness.disable_hooks()
-    harness.update_config(
-        {
-            "jenkins_url": "",
-            "jenkins_agent_name": "",
-            "jenkins_agent_token": "",
-            "jenkins_agent_labels": "",
-        }
-    )
+@pytest.fixture(scope="function", name="harness")
+def harness_fixture():
+    """Enable ops test framework harness."""
+    harness = Harness(JenkinsAgentCharm)
 
     yield harness
 
     harness.cleanup()
 
 
-@pytest.fixture(scope="module")
-def valid_config():
-    """Get valid configuration for the charm."""
+@pytest.fixture(scope="function", name="config")
+def config_fixture():
+    """The Jenkins testing configuration values."""
     return {
-        "jenkins_url": "http://test",
-        "jenkins_agent_name": "agent-one",
-        "jenkins_agent_token": "token-one",
+        "jenkins_url": "http://testingurl",
+        "jenkins_agent_name": "testing_agent_name",
+        "jenkins_agent_token": secrets.token_hex(16),
     }
 
 
-@pytest.fixture
-def harness_pebble_ready(harness: testing.Harness[JenkinsAgentCharm]):
-    """Get the charm to the pebble ready state."""
-    harness.container_pebble_ready(harness.charm.service_name)
+@pytest.fixture(scope="function", name="mock_agent_relation_changed_event")
+def mock_agent_relation_changed_event_fixture():
+    mock_relation_data = unittest.mock.MagicMock(spec=ops.RelationData)
+    mock_relation = unittest.mock.MagicMock(spec=ops.Relation)
+    mock_relation.name = state.AGENT_RELATION
+    mock_relation.data = mock_relation_data
+    mock_event = unittest.mock.MagicMock(spec=ops.RelationChangedEvent)
+    mock_event.relation = mock_relation
+    mock_event.unit = "jenkins/0"
+    return mock_event
 
-    return harness
+
+@pytest.fixture(scope="function", name="agent_credentials")
+def agent_credentials_fixture():
+    return server.Credentials(address="http://test-jenkins-url", secret=secrets.token_hex(16))
 
 
-@pytest.fixture
-def charm_with_jenkins_relation(
-    harness_pebble_ready: testing.Harness[JenkinsAgentCharm],
-    monkeypatch: pytest.MonkeyPatch,
-):
-    """Create the jenkins agent charm with an existing relation to jenkins."""
-    # Mock uname and CPU count
-    mock_os_cpu_count = mock.MagicMock()
-    cpu_count = 8
-    mock_os_cpu_count.return_value = cpu_count
-    monkeypatch.setattr(os, "cpu_count", mock_os_cpu_count)
-    mock_os_uname = mock.MagicMock()
-    machine_architecture = "x86_64"
-    mock_os_uname.return_value.machine = machine_architecture
-    monkeypatch.setattr(os, "uname", mock_os_uname)
-    # Setup relation
-    harness_pebble_ready.enable_hooks()
-    remote_app = "jenkins"
-    remote_unit_name = f"{remote_app}/0"
-    relation_id = harness_pebble_ready.add_relation(relation_name="slave", remote_app=remote_app)
-    harness_pebble_ready.add_relation_unit(
-        relation_id=relation_id, remote_unit_name=remote_unit_name
-    )
+@pytest.fixture(scope="function", name="raise_exception")
+def raise_exception_fixture():
+    """The mock function for patching."""
 
-    return types.CharmWithJenkinsRelation(
-        cpu_count=cpu_count,
-        machine_architecture=machine_architecture,
-        remote_app=remote_app,
-        remote_unit_name=remote_unit_name,
-        relation_id=relation_id,
-    )
+    def raise_exception(exception: Exception):
+        """Raise exception function for monkeypatching.
+
+        Args:
+            exception: The exception to raise.
+
+        Raises:
+            exception: .
+        """
+        raise exception
+
+    return raise_exception

@@ -80,13 +80,11 @@ class State:
     Attrs:
         agent_meta: The Jenkins agent metadata to register on Jenkins server.
         jenkins_config: Jenkins configuration value from juju config.
-        oci_image: The Jenkins agent oci-image.
         jenkins_agent_service_name: The Jenkins agent workload container name.
     """
 
     agent_meta: metadata.Agent
     jenkins_config: typing.Optional[JenkinsConfig]
-    oci_image: str
     jenkins_agent_service_name: str = "jenkins-k8s-agent"
 
     @classmethod
@@ -118,8 +116,4 @@ class State:
             logging.error("Invalid jenkins config values, %s", exc)
             raise InvalidStateError("Invalid jenkins config values.") from exc
 
-        oci_image = charm.config.get("image")
-        if not oci_image:
-            raise InvalidStateError("Missing image.")
-
-        return cls(agent_meta=agent_meta, jenkins_config=jenkins_config, oci_image=oci_image)
+        return cls(agent_meta=agent_meta, jenkins_config=jenkins_config)

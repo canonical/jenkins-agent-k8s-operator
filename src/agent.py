@@ -105,12 +105,12 @@ class Observer(ops.Object):
             logger.warning("Given agent already registered. Skipping.")
             return
 
-        server_data: typing.Optional[server.Credentials] = server.get_credentials(
+        credentials: typing.Optional[server.Credentials] = server.get_credentials(
             event.relation.name,
             unit_name=self.state.agent_meta.name,
             databag=event.relation.data.get(typing.cast(ops.Unit, event.unit)),
         )
-        if not server_data:
+        if not credentials:
             self.charm.unit.status = ops.WaitingStatus("Waiting for complete relation data.")
             logger.info("Waiting for complete relation data.")
             return
@@ -118,24 +118,26 @@ class Observer(ops.Object):
         self.charm.unit.status = ops.MaintenanceStatus("Downloading Jenkins agent executable.")
         try:
             server.download_jenkins_agent(
-                server_url=server_data.address, connectable_container=self._jenkins_agent_container
+                server_url=credentials.address, connectable_container=self._jenkins_agent_container
             )
         except server.AgentJarDownloadError as exc:
             logger.error("Failed to download Jenkins agent executable, %s", exc)
             self.charm.unit.status = ops.BlockedStatus(
                 "Failed to download Jenkins agent executable."
             )
+            return
 
         self.charm.unit.status = ops.MaintenanceStatus("Validating credentials.")
         if not server.validate_credentials(
             agent_name=self.state.agent_meta.name,
-            credentials=server_data,
+            credentials=credentials,
             connectable_container=self._jenkins_agent_container,
         ):
             logger.warning("Failed credential for agent %s", self.state.agent_meta.name)
+            self.charm.unit.status = ops.WaitingStatus("Waiting for credentials.")
             return
 
         self.pebble_service.reconcile(
-            server_url=server_data.address,
-            agent_token_pairs=((self.state.agent_meta.name, server_data.secret),),
+            server_url=credentials.address,
+            agent_token_pairs=((self.state.agent_meta.name, credentials.secret),),
         )
