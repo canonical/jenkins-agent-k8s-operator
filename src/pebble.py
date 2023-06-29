@@ -1,5 +1,5 @@
 # Copyright 2023 Canonical Ltd.
-# Licensed under the GPLv3, see LICENCE file for details.
+# See LICENSE file for licensing details.
 
 """The agent pebble service module."""
 
@@ -45,8 +45,6 @@ class PebbleService(ops.Object):
         Returns:
             The pebble layer defining Jenkins service layer.
         """
-        # convert exhaustive iterable to tuple
-        pairs = tuple(agent_token_pairs)
         layer: ops.pebble.LayerDict = {
             "summary": "Jenkins k8s agent layer",
             "description": "pebble config layer for Jenkins k8s agent.",
@@ -57,8 +55,8 @@ class PebbleService(ops.Object):
                     "command": str(server.ENTRYSCRIPT_PATH),
                     "environment": {
                         "JENKINS_URL": server_url,
-                        "JENKINS_AGENTS": ":".join(pair[0] for pair in pairs),
-                        "JENKINS_TOKENS": ":".join(pair[1] for pair in pairs),
+                        "JENKINS_AGENTS": ":".join(pair[0] for pair in agent_token_pairs),
+                        "JENKINS_TOKENS": ":".join(pair[1] for pair in agent_token_pairs),
                     },
                     "startup": "enabled",
                     "user": server.USER,

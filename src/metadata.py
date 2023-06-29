@@ -1,5 +1,5 @@
 # Copyright 2023 Canonical Ltd.
-# Licensed under the GPLv3, see LICENCE file for details.
+# See LICENSE file for licensing details.
 
 """The module for handling agent metadata."""
 
