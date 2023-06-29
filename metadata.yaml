@@ -1,13 +1,10 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 name: jenkins-agent-k8s
-display-name: Jenkins agent
-summary: Agent for Jenkins, the OSS automation server.
-docs: https://discourse.charmhub.io/t/jenkins-agent-documentation-overview/3982
+display-name: Jenkins k8s Agent
+summary: Agent for Jenkins for Kubernetes.
 maintainers:
-    - launchpad.net/~canonical-is-devops
-issues: https://github.com/canonical/jenkins-agent-k8s-operator/issues
-source: https://github.com/canonical/jenkins-agent-k8s-operator
+  - IS DevOps <launchpad.net/~canonical-is-devops>
 description: |
   A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators)
   deploying and managing [Jenkins](https://www.jenkins.io/) Agent on Kubernetes, 
@@ -27,18 +24,23 @@ description: |
   straightforward through Juju's clean interface. It will allow easy deployment
   into multiple environments for testing changes, and supports scaling out for
   enterprise deployments.
+docs: https://discourse.charmhub.io/t/jenkins-agent-documentation-overview/3982
+issues: https://github.com/canonical/jenkins-agent-k8s-operator/issues
+source: https://github.com/canonical/jenkins-agent-k8s-operator
+tags:
+  - application_development
+  - ops
+assumes:
+  - k8s-api
+containers:
+  jenkins-k8s-agent:
+    resource: jenkins-agent-k8s-image
+resources:
+  jenkins-agent-k8s-image:
+    type: oci-image
+    description: OCI image for Jenkins k8s agent
 provides:
   slave:
     interface: jenkins-slave
-assumes:
-  - k8s-api
-
-containers:
-  jenkins-agent:
-    resource: jenkins-agent-image
-
-resources:
-  jenkins-agent-image:
-    type: oci-image
-    description: OCI image for jenkins-agent
-    auto-fetch: true
+  agent:
+    interface: jenkins_agent_v0

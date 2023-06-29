@@ -1,0 +1,39 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+name: jenkins-agent-k8s
+summary: Jenkins-agent-k8s rock
+description: Jenkins-agent-k8s OCI image for the Jenkins-agent-k8s charm
+version: "1.0"
+base: ubuntu:22.04
+build-base: ubuntu:22.04
+license: Apache-2.0
+platforms:
+  amd64:
+parts:
+  add-user:
+    plugin: nil
+    overlay-script: |
+      mkdir -p $CRAFT_OVERLAY/var/{lib/jenkins,lib/jenkins/agents,log/jenkins}
+      chmod 755 $CRAFT_OVERLAY/var/{lib/jenkins,lib/jenkins/agents,log/jenkins}
+      groupadd -R $CRAFT_OVERLAY --gid 2000 jenkins
+      useradd -R $CRAFT_OVERLAY --system --gid 2000 --uid 2000 --home /var/lib/jenkins jenkins
+  jenkins:
+    plugin: nil
+    overlay-packages:
+      - bash
+      - ca-certificates-java
+      - default-jre-headless
+    override-prime: |
+      craftctl default  
+      /bin/bash -c "mkdir -p --mode=775 var/{lib/jenkins,lib/jenkins/agents,log/jenkins}"
+      /bin/bash -c "chown -R 2000:2000 var/{lib/jenkins,lib/jenkins/agents,log/jenkins}"
+  entrypoint:
+    plugin: dump
+    source: files
+    organize:
+      entrypoint.sh: /var/lib/jenkins/entrypoint.sh
+    override-prime: |
+      craftctl default
+      /bin/bash -c "chmod +x var/lib/jenkins/entrypoint.sh"
+      /bin/bash -c "chown -R 2000:2000 var/lib/jenkins/entrypoint.sh"
