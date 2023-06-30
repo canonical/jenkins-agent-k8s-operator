@@ -3,25 +3,24 @@
 
 """Jenkins-k8s-agent state module tests."""
 
+# Need access to protected functions for testing
+# pylint:disable=protected-access
+
 import os
-import secrets
 import typing
 import unittest.mock
 
 import ops
 import ops.testing
 import pytest
-import requests
 
-import server
 import state
-from charm import JenkinsAgentCharm
 
 
 def test_from_charm_invalid_agent_data(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given an invalid os cpu_count data.
-    act: when the state is intialized from_charm.
+    act: when the state is initialized from_charm.
     assert: InvalidStateError is raised.
     """
     monkeypatch.setattr(os, "cpu_count", lambda: 0)
@@ -33,7 +32,7 @@ def test_from_charm_invalid_agent_data(monkeypatch: pytest.MonkeyPatch):
 def test_from_charm_invalid_charm_config(harness: ops.testing.Harness):
     """
     arrange: given an invalid charm configuration data.
-    act: when the state is intialized from_charm.
+    act: when the state is initialized from_charm.
     assert: InvalidStateError is raised.
     """
     harness.update_config(
@@ -48,7 +47,7 @@ def test_from_charm_invalid_charm_config(harness: ops.testing.Harness):
 def test_from_charm_vailid_config(harness: ops.testing.Harness, config: typing.Dict[str, str]):
     """
     arrange: given valid charm configuration data.
-    act: when thes tate is initialized from_charm.
+    act: when the state is initialized from_charm.
     assert: valid charm state is returned.
     """
     harness.update_config(config)

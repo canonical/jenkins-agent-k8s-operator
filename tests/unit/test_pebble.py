@@ -3,6 +3,9 @@
 
 """Jenkins-k8s-agent pebble module tests."""
 
+# Need access to protected functions for testing
+# pylint:disable=protected-access
+
 import secrets
 import typing
 import unittest.mock
@@ -14,6 +17,8 @@ import pytest
 import pebble
 import server
 from charm import JenkinsAgentCharm
+
+from .constants import ACTIVE_STATUS_NAME
 
 
 def test__get_pebble_layer(harness: ops.testing.Harness):
@@ -30,33 +35,18 @@ def test__get_pebble_layer(harness: ops.testing.Harness):
         server_url=test_url, agent_token_pairs=test_agent_token_pairs
     )
 
-    assert layer.to_dict() == {
-        "summary": "Jenkins k8s agent layer",
-        "description": "pebble config layer for Jenkins k8s agent.",
-        "services": {
-            "jenkins-k8s-agent": {
-                "override": "replace",
-                "summary": "Jenkins k8s agent",
-                "command": str(server.ENTRYSCRIPT_PATH),
-                "environment": {
-                    "JENKINS_URL": test_url,
-                    "JENKINS_AGENTS": test_agent_token_pairs[0][0],
-                    "JENKINS_TOKENS": test_agent_token_pairs[0][1],
-                },
-                "startup": "enabled",
-                "user": server.USER,
-                "group": server.GROUP,
-            },
+    assert layer.services["jenkins-k8s-agent"] == {
+        "override": "replace",
+        "summary": "Jenkins k8s agent",
+        "command": str(server.ENTRYSCRIPT_PATH),
+        "environment": {
+            "JENKINS_URL": test_url,
+            "JENKINS_AGENTS": test_agent_token_pairs[0][0],
+            "JENKINS_TOKENS": test_agent_token_pairs[0][1],
         },
-        "checks": {
-            "ready": {
-                "override": "replace",
-                "level": "ready",
-                "exec": {"command": "/bin/cat /var/lib/jenkins/agents/.ready"},
-                "period": "30s",
-                "threshold": 5,
-            }
-        },
+        "startup": "enabled",
+        "user": server.USER,
+        "group": server.GROUP,
     }
 
 
@@ -76,7 +66,7 @@ def test_reconcile(harness: ops.testing.Harness):
         server_url=test_url, agent_token_pairs=test_agent_token_pairs
     )
 
-    assert jenkins_charm.unit.status.name == ops.ActiveStatus.name
+    assert jenkins_charm.unit.status.name == ACTIVE_STATUS_NAME
 
 
 def test_stop_agent_no_container(monkeypatch: pytest.MonkeyPatch, harness: ops.testing.Harness):

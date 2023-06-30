@@ -3,6 +3,9 @@
 
 """Jenkins-k8s-agent agent module tests."""
 
+# Need access to protected functions for testing
+# pylint:disable=protected-access
+
 import typing
 import unittest.mock
 
@@ -13,6 +16,8 @@ import pebble
 import server
 import state
 from charm import JenkinsAgentCharm
+
+from .constants import ACTIVE_STATUS_NAME, BLOCKED_STATUS_NAME, WAITING_STATUS_NAME
 
 
 def test_agent_relation_joined_config_priority(
@@ -150,13 +155,13 @@ def test_agent_relation_changed_incomplete_relation_data(
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm.agent_observer._on_agent_relation_changed(mock_agent_relation_changed_event)
 
-    assert jenkins_charm.unit.status.name == ops.WaitingStatus.name
+    assert jenkins_charm.unit.status.name == WAITING_STATUS_NAME
 
 
 def test_agent_relation_changed_download_jenkins_agent_fail(
     monkeypatch: pytest.MonkeyPatch,
     harness: ops.testing.Harness,
-    raise_exception: typing.Callable[[], None],
+    raise_exception: typing.Callable,
     agent_credentials: server.Credentials,
     mock_agent_relation_changed_event: unittest.mock.MagicMock,
 ):
@@ -166,8 +171,9 @@ def test_agent_relation_changed_download_jenkins_agent_fail(
     assert: the unit falls into BlockedStatus.
     """
     monkeypatch.setattr(server, "get_credentials", lambda *_args, **_kwargs: agent_credentials)
+    # The monkeypatched attribute download_jenkins_agent is used across unit tests.
     monkeypatch.setattr(
-        server,
+        server,  # pylint: disable=duplicate-code
         "download_jenkins_agent",
         lambda *_args, **_kwargs: raise_exception(server.AgentJarDownloadError),
     )
@@ -177,7 +183,7 @@ def test_agent_relation_changed_download_jenkins_agent_fail(
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm.agent_observer._on_agent_relation_changed(mock_agent_relation_changed_event)
 
-    assert jenkins_charm.unit.status.name == ops.BlockedStatus.name
+    assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
 
 
 def test_agent_relation_changed_validate_credentials_fail(
@@ -200,7 +206,7 @@ def test_agent_relation_changed_validate_credentials_fail(
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm.agent_observer._on_agent_relation_changed(mock_agent_relation_changed_event)
 
-    assert jenkins_charm.unit.status.name == ops.WaitingStatus.name
+    assert jenkins_charm.unit.status.name == WAITING_STATUS_NAME
 
 
 def test_agent_relation_changed(
@@ -223,7 +229,7 @@ def test_agent_relation_changed(
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm.agent_observer._on_agent_relation_changed(mock_agent_relation_changed_event)
 
-    assert jenkins_charm.unit.status.name == ops.ActiveStatus.name
+    assert jenkins_charm.unit.status.name == ACTIVE_STATUS_NAME
 
 
 def test_agent_relation_departed(monkeypatch: pytest.MonkeyPatch, harness: ops.testing.Harness):
@@ -240,4 +246,4 @@ def test_agent_relation_departed(monkeypatch: pytest.MonkeyPatch, harness: ops.t
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm.agent_observer._on_agent_relation_departed(mock_event)
 
-    assert jenkins_charm.unit.status.name == ops.BlockedStatus.name
+    assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME

@@ -148,7 +148,7 @@ class Observer(ops.Object):
             agent_token_pairs=((self.state.agent_meta.name, credentials.secret),),
         )
 
-    def _on_agent_relation_departed(self, _: ops.RelationDepartedEvent):
+    def _on_agent_relation_departed(self, _: ops.RelationDepartedEvent) -> None:
         """Handle agent relation departed event."""
         self.pebble_service.stop_agent()
         self.charm.unit.status = ops.BlockedStatus("Waiting for config/relation.")

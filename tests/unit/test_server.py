@@ -3,6 +3,8 @@
 
 """Jenkins-k8s-agent server module tests."""
 
+# Need access to protected functions for testing
+# pylint:disable=protected-access
 
 import secrets
 import typing
@@ -33,6 +35,7 @@ def test_credentials_from_jenkins_slave_interface_dict_partial(harness: ops.test
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     relation = jenkins_charm.model.get_relation(state.SLAVE_RELATION, relation_id=relation_id)
+    assert relation, "relation should not be empty"
     jenkins_unit = jenkins_charm.model.get_unit("jenkins/0")
     relation_data = relation.data.get(jenkins_unit)
     assert relation_data, "relation data with jenkins unit should not be None."
@@ -60,6 +63,7 @@ def test_credentials_from_jenkins_slave_interface_dict(harness: ops.testing.Harn
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     relation = jenkins_charm.model.get_relation(state.SLAVE_RELATION, relation_id=relation_id)
+    assert relation, "relation should not be empty"
     jenkins_unit = jenkins_charm.model.get_unit("jenkins/0")
     relation_data = relation.data.get(jenkins_unit)
     assert relation_data, "relation data with jenkins unit should not be None."
@@ -83,6 +87,7 @@ def test_credentials_from_jenkins_agent_interface_dict_partial(harness: ops.test
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     relation = jenkins_charm.model.get_relation(state.AGENT_RELATION, relation_id=relation_id)
+    assert relation, "relation should not be empty"
     jenkins_unit = jenkins_charm.model.get_unit("jenkins/0")
     relation_data = relation.data.get(jenkins_unit)
     assert relation_data, "relation data with jenkins unit should not be None."
@@ -110,6 +115,7 @@ def test_credentials_from_jenkins_agent_interface_dict(harness: ops.testing.Harn
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     relation = jenkins_charm.model.get_relation(state.AGENT_RELATION, relation_id=relation_id)
+    assert relation, "relation should not be empty"
     jenkins_unit = jenkins_charm.model.get_unit("jenkins/0")
     relation_data = relation.data.get(jenkins_unit)
     assert relation_data, "relation data with jenkins unit should not be None."

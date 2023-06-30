@@ -37,6 +37,7 @@ def config_fixture():
 
 @pytest.fixture(scope="function", name="mock_agent_relation_changed_event")
 def mock_agent_relation_changed_event_fixture():
+    """Relation changed event with name, data and unit data."""
     mock_relation_data = unittest.mock.MagicMock(spec=ops.RelationData)
     mock_relation = unittest.mock.MagicMock(spec=ops.Relation)
     mock_relation.name = state.AGENT_RELATION
@@ -49,6 +50,7 @@ def mock_agent_relation_changed_event_fixture():
 
 @pytest.fixture(scope="function", name="agent_credentials")
 def agent_credentials_fixture():
+    """Credentials from the Jenkins server charm."""
     return server.Credentials(address="http://test-jenkins-url", secret=secrets.token_hex(16))
 
 

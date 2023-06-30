@@ -95,7 +95,7 @@ class PebbleService(ops.Object):
         self._jenkins_agent_container.replan()
         self.charm.unit.status = ops.ActiveStatus()
 
-    def stop_agent(self):
+    def stop_agent(self) -> None:
         """Stop Jenkins agent."""
         if not self._jenkins_agent_container.can_connect():
             return

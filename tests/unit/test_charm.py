@@ -3,6 +3,9 @@
 
 """Jenkins-k8s-agent charm module tests."""
 
+# Need access to protected functions for testing
+# pylint:disable=protected-access
+
 import typing
 import unittest.mock
 
@@ -14,12 +17,14 @@ import server
 import state
 from charm import JenkinsAgentCharm
 
+from .constants import ACTIVE_STATUS_NAME, BLOCKED_STATUS_NAME
+
 
 def test___init___invalid_state(
     harness: ops.testing.Harness, monkeypatch: pytest.MonkeyPatch, raise_exception: typing.Callable
 ):
     """
-    arrange: given a monkeypatched State.from_charm that rasies an InvalidState Error.
+    arrange: given a monkeypatched State.from_charm that raises an InvalidState Error.
     act: when the JenkinsAgentCharm is initialized.
     assert: The agent falls into BlockedStatus.
     """
@@ -32,7 +37,7 @@ def test___init___invalid_state(
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
 
-    assert jenkins_charm.unit.status.name == ops.BlockedStatus.name
+    assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
 
 
 def test__register_agent_from_config_container_not_ready(harness: ops.testing.Harness):
@@ -64,7 +69,7 @@ def test__register_agent_from_config_no_config_state(harness: ops.testing.Harnes
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm._register_agent_from_config(mock_event)
 
-    assert jenkins_charm.unit.status.name == ops.BlockedStatus.name
+    assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
 
 
 def test__register_agent_from_config_use_relation(harness: ops.testing.Harness):
@@ -91,7 +96,7 @@ def test__register_agent_from_config_download_agent_error(
     config: typing.Dict[str, str],
 ):
     """
-    arrange: given a charm with monkeypatched download_jenkins_agent that raises an excetion.
+    arrange: given a charm with monkeypatched download_jenkins_agent that raises an exception.
     act: when _register_agent_from_config is called.
     assert: unit falls into BlockedStatus.
     """
@@ -108,7 +113,7 @@ def test__register_agent_from_config_download_agent_error(
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm._register_agent_from_config(mock_event)
 
-    assert jenkins_charm.unit.status.name == ops.BlockedStatus.name
+    assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
 
 
 def test__register_agent_from_config_no_valid_credentials(
@@ -131,7 +136,7 @@ def test__register_agent_from_config_no_valid_credentials(
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm._register_agent_from_config(mock_event)
 
-    assert jenkins_charm.unit.status.name == ops.BlockedStatus.name
+    assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
 
 
 def test__register_agent_from_config(
@@ -154,4 +159,4 @@ def test__register_agent_from_config(
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm._register_agent_from_config(mock_event)
 
-    assert jenkins_charm.unit.status.name == ops.ActiveStatus.name
+    assert jenkins_charm.unit.status.name == ACTIVE_STATUS_NAME
