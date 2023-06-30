@@ -9,7 +9,7 @@ import typing
 from dataclasses import dataclass
 
 import ops
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 import metadata
 
@@ -28,7 +28,7 @@ class CharmStateBaseError(Exception):
 class InvalidStateError(CharmStateBaseError):
     """Exception raised when state configuration is invalid."""
 
-    def __init__(self, msg: str):
+    def __init__(self, msg: str = ""):
         """Initialize a new instance of the InvalidStateError exception.
 
         Args:
@@ -46,9 +46,9 @@ class JenkinsConfig(BaseModel):
         agent_tokens: Tokens used to register Jenkins agent to Jenkins server.
     """
 
-    server_url: str
-    agent_names: typing.List[str]
-    agent_tokens: typing.List[str]
+    server_url: str = Field(..., min_length=1)
+    agent_names: typing.List[str] = Field(..., min_items=1)
+    agent_tokens: typing.List[str] = Field(..., min_items=1)
 
     @classmethod
     def from_charm_config(cls, config: ops.ConfigData) -> typing.Optional["JenkinsConfig"]:

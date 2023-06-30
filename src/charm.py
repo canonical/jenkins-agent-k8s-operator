@@ -56,7 +56,7 @@ class JenkinsAgentCharm(ops.CharmBase):
             event: The base hook event.
         """
         container = self._jenkins_agent_container
-        if not container or not container.can_connect():
+        if not container.can_connect():
             logger.warning("Jenkins agent container not yet ready. Deferring.")
             event.defer()
             return
@@ -70,7 +70,6 @@ class JenkinsAgentCharm(ops.CharmBase):
             return
 
         if not self.state.jenkins_config:
-            logger.info("Using Jenkins from relation.")
             return
 
         try:

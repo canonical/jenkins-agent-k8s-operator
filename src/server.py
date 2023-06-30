@@ -88,7 +88,7 @@ def get_credentials(
     Returns:
         Credentials if databag contains valid metadata. None if partial or no metadata found.
     """
-    if not databag:
+    if databag is None:
         return None
     if relation_name == state.SLAVE_RELATION:
         return Credentials.from_jenkins_slave_interface_dict(databag)
@@ -122,7 +122,9 @@ def download_jenkins_agent(server_url: str, connectable_container: ops.Container
             "Failed to download agent JAR executable from server."
         ) from exc
 
-    connectable_container.push(path=AGENT_JAR_PATH, source=res.content, user=USER, group=GROUP)
+    connectable_container.push(
+        path=AGENT_JAR_PATH, make_dirs=True, source=res.content, user=USER, group=GROUP
+    )
 
 
 def validate_credentials(

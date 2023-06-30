@@ -43,6 +43,12 @@ class Observer(ops.Object):
         charm.framework.observe(
             charm.on[AGENT_RELATION].relation_changed, self._on_agent_relation_changed
         )
+        charm.framework.observe(
+            charm.on[SLAVE_RELATION].relation_departed, self._on_agent_relation_departed
+        )
+        charm.framework.observe(
+            charm.on[AGENT_RELATION].relation_departed, self._on_agent_relation_departed
+        )
 
     @property
     def _jenkins_agent_container(self) -> ops.Container:
@@ -141,3 +147,8 @@ class Observer(ops.Object):
             server_url=credentials.address,
             agent_token_pairs=((self.state.agent_meta.name, credentials.secret),),
         )
+
+    def _on_agent_relation_departed(self, _: ops.RelationDepartedEvent):
+        """Handle agent relation departed event."""
+        self.pebble_service.stop_agent()
+        self.charm.unit.status = ops.BlockedStatus("Waiting for config/relation.")
