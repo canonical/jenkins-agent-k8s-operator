@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 set -eu -o pipefail
 
 export LC_ALL=C
@@ -22,9 +25,6 @@ typeset JAVA_ARGS=${JAVA_ARGS:-""}
 typeset JENKINS_URL="${JENKINS_URL:?"URL of a jenkins server must be provided"}"
 
 typeset JENKINS_WORKDIR="/var/lib/jenkins"
-
-# Arguments to pass to jenkins agent on startup
-typeset -a JENKINS_ARGS
 
 # Path of the agent.jar
 typeset AGENT_JAR=/var/lib/jenkins/agent.jar
