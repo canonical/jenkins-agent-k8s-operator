@@ -6,8 +6,6 @@
 import secrets
 import typing
 
-import ops
-import ops.testing
 import pytest
 import pytest_asyncio
 from juju.application import Application
@@ -16,7 +14,7 @@ from pytest_operator.plugin import OpsTest
 
 
 @pytest.fixture(scope="module", name="model")
-def model_fixture(ops_test: OpsTest) -> ops.Model:
+def model_fixture(ops_test: OpsTest) -> Model:
     """The testing model."""
     assert ops_test.model
     return ops_test.model
@@ -26,9 +24,10 @@ def model_fixture(ops_test: OpsTest) -> ops.Model:
 def agent_image_fixture(request: pytest.FixtureRequest) -> str:
     """The OCI image for jenkins-agent-k8s charm."""
     agent_k8s_image = request.config.getoption("--jenkins-agent-k8s-image")
-    assert (
-        agent_k8s_image
-    ), "--jenkins-agent-k8s-image argument is required which should contain the name of the OCI image."
+    assert agent_k8s_image, (
+        "--jenkins-agent-k8s-image argument is required which should contain the name of the OCI "
+        "image."
+    )
     return agent_k8s_image
 
 
