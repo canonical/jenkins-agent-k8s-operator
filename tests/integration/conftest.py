@@ -3,6 +3,7 @@
 
 """Fixtures for Jenkins-agent-k8s-operator charm integration tests."""
 
+import logging
 import secrets
 import typing
 
@@ -15,6 +16,8 @@ from juju.client._definitions import FullStatus, UnitStatus
 from juju.model import Controller, Model
 from juju.unit import Unit
 from pytest_operator.plugin import OpsTest
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module", name="model")
@@ -44,9 +47,9 @@ async def application_fixture(
     charm = await ops_test.build_charm(".")
     resources = {"jenkins-agent-k8s-image": agent_image}
 
-    # Deploy the charm and wait for active/idle status
+    # Deploy the charm and wait for blocked status
     application = await model.deploy(charm, resources=resources, series="jammy")
-    await model.wait_for_idle(apps=[application.name], status="active", raise_on_blocked=True)
+    await model.wait_for_idle(apps=[application.name], status="blocked")
 
     yield application
 
@@ -70,6 +73,7 @@ async def machine_model_fixture(
 ) -> typing.AsyncGenerator[Model, None]:
     """The machine model for jenkins machine charm."""
     machine_model_name = f"jenkins-server-machine-{secrets.token_hex(2)}"
+    logger.info(f"Adding model {machine_model_name} on cloud localhost")
     model = await machine_controller.add_model(machine_model_name)
 
     yield model
@@ -80,8 +84,8 @@ async def machine_model_fixture(
 @pytest_asyncio.fixture(scope="module", name="jenkins_machine_server")
 async def jenkins_machine_server_fixture(machine_model: Model) -> Application:
     """The jenkins machine server."""
-    app = await machine_model.deploy("jenkins", channel="latest/edge", series="focal")
-    await machine_model.wait_for_idle(apps=[app.name], status="blocked", timeout=1200)
+    app = await machine_model.deploy("jenkins", series="focal")
+    await machine_model.wait_for_idle(apps=[app.name], timeout=1200, raise_on_error=False)
 
     return app
 
@@ -94,16 +98,16 @@ async def server_unit_ip_fixture(machine_model: Model, jenkins_machine_server: A
         unit_status: UnitStatus = next(
             iter(status.applications[jenkins_machine_server.name].units.values())
         )
-        assert unit_status.address, "Invalid unit address"
-        return unit_status.address
+        assert unit_status.public_address, "Invalid unit address"
+        return unit_status.public_address
     except StopIteration as exc:
         raise StopIteration("Invalid unit status") from exc
 
 
 @pytest_asyncio.fixture(scope="module", name="web_address")
-async def web_address_fixture(unit_ip: str):
+async def web_address_fixture(server_unit_ip: str):
     """Get Jenkins machine server charm web address."""
-    return f"http://{unit_ip}:8080"
+    return f"http://{server_unit_ip}:8080"
 
 
 @pytest_asyncio.fixture(scope="module", name="jenkins_client")

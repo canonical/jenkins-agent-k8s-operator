@@ -3,10 +3,13 @@
 
 """Integration tests for jenkins-agent-k8s-operator charm."""
 
+import logging
 
 import jenkinsapi.jenkins
 from juju.application import Application
 from juju.model import Model
+
+logger = logging.getLogger()
 
 
 async def test_agent_relation(
@@ -20,11 +23,15 @@ async def test_agent_relation(
     assert: the relation succeeds and agents become active.
     """
     machine_model: Model = jenkins_machine_server.model
-    machine_model.create_offer(f"{jenkins_machine_server.name}:master")
+    logger.info(f"Creating offer {jenkins_machine_server.name}:master")
+    await machine_model.create_offer(f"{jenkins_machine_server.name}:master")
     model: Model = application.model
+    logger.info(
+        f"Relating {application.name}:agent localhost:admin/{machine_model.name}.{jenkins_machine_server.name}"
+    )
     await model.relate(
-        f"{application.name}:agent",
-        f"localhost:admin/{machine_model.name}.{application.name}",
+        f"{application.name}:slave",
+        f"localhost:admin/{machine_model.name}.{jenkins_machine_server.name}",
     )
     await model.wait_for_idle(status="active", timeout=1200)
 
