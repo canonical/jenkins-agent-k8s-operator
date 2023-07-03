@@ -33,8 +33,8 @@ typeset AGENT_JAR=/var/lib/jenkins/agent.jar
 touch /var/lib/jenkins/agents/.ready
 
 # Start Jenkins agent
-echo ${JENKINS_AGENT}
-${JAVA} ${JAVA_ARGS} -jar ${AGENT_JAR} -jnlpUrl ${JENKINS_URL}/computer/${JENKINS_AGENT}/slave-agent.jnlp -workDir ${JENKINS_WORKDIR} -noReconnect -secret ${JENKINS_TOKEN} || echo "Invalid or already used credentials."
+echo "${JENKINS_AGENT}"
+${JAVA} "${JAVA_ARGS}" -jar ${AGENT_JAR} -jnlpUrl "${JENKINS_URL}"/computer/"${JENKINS_AGENT}"/slave-agent.jnlp -workDir "${JENKINS_WORKDIR}" -noReconnect -secret "${JENKINS_TOKEN}" || echo "Invalid or already used credentials."
 
 # Remove ready mark if unsuccessful
 rm /var/lib/jenkins/agents/.ready
