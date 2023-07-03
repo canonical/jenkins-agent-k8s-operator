@@ -73,7 +73,7 @@ async def machine_model_fixture(
 ) -> typing.AsyncGenerator[Model, None]:
     """The machine model for jenkins machine charm."""
     machine_model_name = f"jenkins-server-machine-{secrets.token_hex(2)}"
-    logger.info(f"Adding model {machine_model_name} on cloud localhost")
+    logger.info("Adding model %s on cloud localhost", machine_model_name)
     model = await machine_controller.add_model(machine_model_name)
 
     yield model

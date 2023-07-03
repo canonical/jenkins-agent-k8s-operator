@@ -27,7 +27,10 @@ async def test_agent_relation(
     await machine_model.create_offer(f"{jenkins_machine_server.name}:master")
     model: Model = application.model
     logger.info(
-        f"Relating {application.name}:agent localhost:admin/{machine_model.name}.{jenkins_machine_server.name}"
+        "Relating %s:agent localhost:admin/%s.%s",
+        application.name,
+        machine_model.name,
+        jenkins_machine_server.name,
     )
     await model.relate(
         f"{application.name}:slave",
