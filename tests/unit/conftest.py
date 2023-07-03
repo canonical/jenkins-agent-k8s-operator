@@ -70,3 +70,60 @@ def raise_exception_fixture():
         raise exception
 
     return raise_exception
+
+
+@pytest.fixture(scope="function", name="jenkins_error_log")
+def jenkins_error_log_fixture():
+    """The logs produced by Jenkins agent on failed connection."""
+    return """<TIME_REDACTED> org.jenkinsci.remoting.engine.WorkDirManager initializeWorkDir
+INFO: Using /var/lib/jenkins/remoting as a remoting work directory
+<TIME_REDACTED> org.jenkinsci.remoting.engine.WorkDirManager setupLogging
+INFO: Both error and output logs will be printed to /var/lib/jenkins/remoting
+[Fatal Error] :1:1: Invalid byte 1 of 1-byte UTF-8 sequence.
+Exception in thread "main" org.xml.sax.SAXParseException; lineNumber: 1; columnNumber: 1; Invalid byte 1 of 1-byte UTF-8 sequence.
+    """
+
+
+@pytest.fixture(scope="function", name="jenkins_used_credential_log")
+def jenkins_used_credential_log_fixture():
+    """The logs produced by Jenkins agent on using an already registered credential."""
+    return "Given agent already registered. Skipping."
+
+
+@pytest.fixture(scope="function", name="jenkins_connection_log")
+def jenkins_connection_log_fixture():
+    """The logs produced by Jenkins on successful connection."""
+    return """<TIME_REDACTED> hudson.remoting.jnlp.Main createEngine
+INFO: Setting up agent: jenkins-agent-k8s-0
+<TIME_REDACTED> hudson.remoting.Engine startEngine
+INFO: Using Remoting version: 3107.v665000b_51092
+<TIME_REDACTED> org.jenkinsci.remoting.engine.WorkDirManager initializeWorkDir
+INFO: Using /var/lib/jenkins/remoting as a remoting work directory
+<TIME_REDACTED> hudson.remoting.jnlp.Main$CuiListener status
+INFO: Locating server among [<IP_REDACTED>]
+<TIME_REDACTED> org.jenkinsci.remoting.engine.JnlpAgentEndpointResolver resolve
+INFO: Remoting server accepts the following protocols: [JNLP4-connect, Ping]
+<TIME_REDACTED> hudson.remoting.jnlp.Main$CuiListener status
+INFO: Agent discovery successful
+  Agent address: <IP_REDACTED>
+  Agent port:    <PORT_REDACTED>
+  Identity:      <IP_REDACTED>
+<TIME_REDACTED> hudson.remoting.jnlp.Main$CuiListener status
+INFO: Handshaking
+<TIME_REDACTED> hudson.remoting.jnlp.Main$CuiListener status
+INFO: Connecting to <IP_REDACTED>:<PORT_REDACTED>
+<TIME_REDACTED> hudson.remoting.jnlp.Main$CuiListener status
+INFO: Trying protocol: JNLP4-connect
+<TIME_REDACTED> org.jenkinsci.remoting.protocol.impl.BIONetworkLayer$Reader run
+INFO: Waiting for ProtocolStack to start.
+<TIME_REDACTED> hudson.remoting.jnlp.Main$CuiListener status
+INFO: Remote identity confirmed: <IP_REDACTED>
+<TIME_REDACTED> hudson.remoting.jnlp.Main$CuiListener status
+INFO: Connected
+"""
+
+
+@pytest.fixture(scope="function", name="jenkins_terminated_connection_log")
+def jenkins_terminated_connection_log_fixture(jenkins_connection_log: str):
+    """The logs produced by Jenkins on terminated connection."""
+    return jenkins_connection_log + "INFO: Terminated"
