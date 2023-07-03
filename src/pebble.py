@@ -34,13 +34,13 @@ class PebbleService(ops.Object):
         return self.charm.unit.get_container(self.state.jenkins_agent_service_name)
 
     def _get_pebble_layer(
-        self, server_url: str, agent_token_pairs: typing.Iterable[typing.Tuple[str, str]]
+        self, server_url: str, agent_token_pair: typing.Tuple[str, str]
     ) -> ops.pebble.Layer:
         """Return a dictionary representing a Pebble layer.
 
         Args:
             server_url: The Jenkins server address.
-            agent_token_pairs: Matching pairs of agent name to agent token.
+            agent_token_pair: Matching pair of agent name to agent token.
 
         Returns:
             The pebble layer defining Jenkins service layer.
@@ -55,8 +55,8 @@ class PebbleService(ops.Object):
                     "command": str(server.ENTRYSCRIPT_PATH),
                     "environment": {
                         "JENKINS_URL": server_url,
-                        "JENKINS_AGENTS": ":".join(pair[0] for pair in agent_token_pairs),
-                        "JENKINS_TOKENS": ":".join(pair[1] for pair in agent_token_pairs),
+                        "JENKINS_AGENT": agent_token_pair[0],
+                        "JENKINS_TOKEN": agent_token_pair[1],
                     },
                     "startup": "enabled",
                     "user": server.USER,
@@ -75,19 +75,17 @@ class PebbleService(ops.Object):
         }
         return ops.pebble.Layer(layer)
 
-    def reconcile(
-        self, server_url: str, agent_token_pairs: typing.Iterable[typing.Tuple[str, str]]
-    ) -> None:
+    def reconcile(self, server_url: str, agent_token_pair: typing.Tuple[str, str]) -> None:
         """Reconcile the Jenkins agent service.
 
         Args:
             server_url: The Jenkins server address.
-            agent_token_pairs: Matching pairs of agent name to agent token.
+            agent_token_pair: Matching pair of agent name to agent token.
         """
         self.charm.unit.status = ops.MaintenanceStatus("Starting agent pebble service.")
 
         agent_layer = self._get_pebble_layer(
-            server_url=server_url, agent_token_pairs=agent_token_pairs
+            server_url=server_url, agent_token_pair=agent_token_pair
         )
         self._jenkins_agent_container.add_layer(
             label=self.state.jenkins_agent_service_name, layer=agent_layer, combine=True

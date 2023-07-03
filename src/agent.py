@@ -145,7 +145,7 @@ class Observer(ops.Object):
 
         self.pebble_service.reconcile(
             server_url=credentials.address,
-            agent_token_pairs=((self.state.agent_meta.name, credentials.secret),),
+            agent_token_pair=(self.state.agent_meta.name, credentials.secret),
         )
 
     def _on_agent_relation_departed(self, _: ops.RelationDepartedEvent) -> None:

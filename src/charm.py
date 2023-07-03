@@ -106,7 +106,7 @@ class JenkinsAgentCharm(ops.CharmBase):
             return
 
         self.pebble_service.reconcile(
-            server_url=self.state.jenkins_config.server_url, agent_token_pairs=(valid_agent_token,)
+            server_url=self.state.jenkins_config.server_url, agent_token_pair=valid_agent_token
         )
 
 

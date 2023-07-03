@@ -28,11 +28,11 @@ def test__get_pebble_layer(harness: ops.testing.Harness):
     assert: a pebble layer with jenkins agent service is returned.
     """
     test_url = "http://test-url"
-    test_agent_token_pairs = (("agent-1", secrets.token_hex(16)),)
+    test_agent_token_pair = ("agent-1", secrets.token_hex(16))
     harness.begin()
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     layer = jenkins_charm.pebble_service._get_pebble_layer(
-        server_url=test_url, agent_token_pairs=test_agent_token_pairs
+        server_url=test_url, agent_token_pair=test_agent_token_pair
     )
 
     assert layer.services["jenkins-k8s-agent"] == {
@@ -41,8 +41,8 @@ def test__get_pebble_layer(harness: ops.testing.Harness):
         "command": str(server.ENTRYSCRIPT_PATH),
         "environment": {
             "JENKINS_URL": test_url,
-            "JENKINS_AGENTS": test_agent_token_pairs[0][0],
-            "JENKINS_TOKENS": test_agent_token_pairs[0][1],
+            "JENKINS_AGENT": test_agent_token_pair[0],
+            "JENKINS_TOKEN": test_agent_token_pair[1],
         },
         "startup": "enabled",
         "user": server.USER,
@@ -57,13 +57,13 @@ def test_reconcile(harness: ops.testing.Harness):
     assert: pebble service is initialized and the unit status becomes Active.
     """
     test_url = "http://test-url"
-    test_agent_token_pairs = (("agent-1", secrets.token_hex(16)),)
+    test_agent_token_pair = ("agent-1", secrets.token_hex(16))
     harness.set_can_connect("jenkins-k8s-agent", True)
     harness.begin()
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm.pebble_service.reconcile(
-        server_url=test_url, agent_token_pairs=test_agent_token_pairs
+        server_url=test_url, agent_token_pair=test_agent_token_pair
     )
 
     assert jenkins_charm.unit.status.name == ACTIVE_STATUS_NAME

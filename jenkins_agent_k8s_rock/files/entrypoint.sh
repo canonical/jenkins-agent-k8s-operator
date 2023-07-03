@@ -32,27 +32,9 @@ typeset AGENT_JAR=/var/lib/jenkins/agent.jar
 # Specify the pod as ready
 touch /var/lib/jenkins/agents/.ready
 
-# Transform the env variables in arrays to iterate through it
-IFS=':' read -r -a AGENTS <<< ${JENKINS_AGENTS}
-IFS=':' read -r -a TOKENS <<< ${JENKINS_TOKENS}
-
-echo ${!AGENTS[@]}
-
-# Find matching agent w/ unit hostname if possible
-# HOSTNAME environment variable container <unit-name>-<unit-number>, e.g. jenkins-agent-k8s-0
-for index in ${!AGENTS[@]}; do
-    if [[ "${AGENTS[$index]}" != "${HOSTNAME}" ]]; then
-        continue
-    fi
-    echo "Matched ${AGENTS[$index]}"
-    ${JAVA} ${JAVA_ARGS} -jar ${AGENT_JAR} -jnlpUrl ${JENKINS_URL}/computer/${AGENTS[$index]}/slave-agent.jnlp -workDir ${JENKINS_WORKDIR} -noReconnect -secret ${TOKENS[$index]} || echo "Invalid or already used credentials."
-done
-
-# Fallback to brute-force matching
-for index in ${!AGENTS[@]}; do
-    echo "About to run ${JAVA}" "${JAVA_ARGS}" -jar "${AGENT_JAR}" -jnlpUrl "${JENKINS_URL}"/computer/"${AGENTS[$index]}"/slave-agent.jnlp -workDir "${JENKINS_WORKDIR}" -noReconnect -secret "${TOKENS[$index]}"
-    ${JAVA} ${JAVA_ARGS} -jar ${AGENT_JAR} -jnlpUrl ${JENKINS_URL}/computer/${AGENTS[$index]}/slave-agent.jnlp -workDir ${JENKINS_WORKDIR} -noReconnect -secret ${TOKENS[$index]} || echo "Invalid or already used credentials."
-done
+# Start Jenkins agent
+echo ${JENKINS_AGENT}
+${JAVA} ${JAVA_ARGS} -jar ${AGENT_JAR} -jnlpUrl ${JENKINS_URL}/computer/${JENKINS_AGENT}/slave-agent.jnlp -workDir ${JENKINS_WORKDIR} -noReconnect -secret ${JENKINS_TOKEN} || echo "Invalid or already used credentials."
 
 # Remove ready mark if unsuccessful
 rm /var/lib/jenkins/agents/.ready
