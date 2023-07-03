@@ -4,6 +4,7 @@
 """Integration tests for jenkins-agent-k8s-operator charm."""
 
 
+import jenkinsapi.jenkins
 from juju.application import Application
 from juju.model import Model
 
@@ -11,6 +12,7 @@ from juju.model import Model
 async def test_agent_relation(
     jenkins_machine_server: Application,
     application: Application,
+    jenkins_client: jenkinsapi.jenkins.Jenkins,
 ):
     """
     arrange: given a cross controller cross model jenkins machine agent.
@@ -25,3 +27,6 @@ async def test_agent_relation(
         f"localhost:admin/{machine_model.name}.{application.name}",
     )
     await model.wait_for_idle(status="active", timeout=1200)
+
+    nodes = jenkins_client.get_nodes()
+    assert all(node.is_online() for node in nodes.values())

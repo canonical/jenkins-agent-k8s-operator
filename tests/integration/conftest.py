@@ -6,10 +6,14 @@
 import secrets
 import typing
 
+import jenkinsapi.jenkins
 import pytest
 import pytest_asyncio
+from juju.action import Action
 from juju.application import Application
+from juju.client._definitions import FullStatus, UnitStatus
 from juju.model import Controller, Model
+from juju.unit import Unit
 from pytest_operator.plugin import OpsTest
 
 
@@ -65,7 +69,7 @@ async def machine_model_fixture(
     machine_controller: Controller,
 ) -> typing.AsyncGenerator[Model, None]:
     """The machine model for jenkins machine charm."""
-    machine_model_name = f"jenkins-agent-machine-{secrets.token_hex(2)}"
+    machine_model_name = f"jenkins-server-machine-{secrets.token_hex(2)}"
     model = await machine_controller.add_model(machine_model_name)
 
     yield model
@@ -76,7 +80,45 @@ async def machine_model_fixture(
 @pytest_asyncio.fixture(scope="module", name="jenkins_machine_server")
 async def jenkins_machine_server_fixture(machine_model: Model) -> Application:
     """The jenkins machine server."""
-    app = await machine_model.deploy("jenkins", channel="latest/stable", series="focal")
+    app = await machine_model.deploy("jenkins", channel="latest/edge", series="focal")
     await machine_model.wait_for_idle(apps=[app.name], status="blocked", timeout=1200)
 
     return app
+
+
+@pytest_asyncio.fixture(scope="module", name="server_unit_ip")
+async def server_unit_ip_fixture(machine_model: Model, jenkins_machine_server: Application):
+    """Get Jenkins machine server charm unit IP."""
+    status: FullStatus = await machine_model.get_status([jenkins_machine_server.name])
+    try:
+        unit_status: UnitStatus = next(
+            iter(status.applications[jenkins_machine_server.name].units.values())
+        )
+        assert unit_status.address, "Invalid unit address"
+        return unit_status.address
+    except StopIteration as exc:
+        raise StopIteration("Invalid unit status") from exc
+
+
+@pytest_asyncio.fixture(scope="module", name="web_address")
+async def web_address_fixture(unit_ip: str):
+    """Get Jenkins machine server charm web address."""
+    return f"http://{unit_ip}:8080"
+
+
+@pytest_asyncio.fixture(scope="module", name="jenkins_client")
+async def jenkins_client_fixture(
+    jenkins_machine_server: Application,
+    web_address: str,
+) -> jenkinsapi.jenkins.Jenkins:
+    """The Jenkins API client."""
+    jenkins_unit: Unit = jenkins_machine_server.units[0]
+    action: Action = await jenkins_unit.run_action("get-admin-credentials")
+    await action.wait()
+    password = action.results["password"]
+
+    # Initialization of the jenkins client will raise an exception if unable to connect to the
+    # server.
+    return jenkinsapi.jenkins.Jenkins(
+        baseurl=web_address, username="admin", password=password, timeout=60
+    )
