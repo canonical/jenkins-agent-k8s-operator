@@ -23,7 +23,7 @@ async def test_agent_relation(
     assert: the relation succeeds and agents become active.
     """
     machine_model: Model = jenkins_machine_server.model
-    logger.info(f"Creating offer {jenkins_machine_server.name}:master")
+    logger.info("Creating offer %s:master", jenkins_machine_server.name)
     await machine_model.create_offer(f"{jenkins_machine_server.name}:master")
     model: Model = application.model
     logger.info(
