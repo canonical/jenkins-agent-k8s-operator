@@ -11,9 +11,9 @@
 
 TESTING_MODEL="$(juju switch)"
 
-# lxd should be install and init by a previous step in integration test action.
-echo "bootstrapping lxd juju controller"
 sg microk8s -c "microk8s status --wait-ready"
+# lxd should be installed and inited by a previous step in integration test action.
+echo "bootstrapping lxd juju controller"
 sg microk8s -c "juju bootstrap localhost localhost"
 
 echo "Switching to testing model"
