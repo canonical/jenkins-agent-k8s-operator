@@ -247,3 +247,20 @@ def test_agent_relation_departed(monkeypatch: pytest.MonkeyPatch, harness: ops.t
     jenkins_charm.agent_observer._on_agent_relation_departed(mock_event)
 
     assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
+
+
+def test_slave_relation_departed(monkeypatch: pytest.MonkeyPatch, harness: ops.testing.Harness):
+    """
+    arrange: given a monkeypatched pebble service and an agent that is departing the relation.
+    act: when _on_slave_relation_departed is called.
+    assert: the unit falls into BlockedStatus.
+    """
+    monkeypatch.setattr(pebble.PebbleService, "stop_agent", lambda *_args, **_kwargs: None)
+    mock_event = unittest.mock.MagicMock(spec=ops.RelationDepartedEvent)
+    harness.set_can_connect("jenkins-k8s-agent", True)
+    harness.begin()
+
+    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
+    jenkins_charm.agent_observer._on_slave_relation_departed(mock_event)
+
+    assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME

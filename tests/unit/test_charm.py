@@ -51,7 +51,7 @@ def test__register_agent_from_config_container_not_ready(harness: ops.testing.Ha
     mock_event = unittest.mock.MagicMock(spec=ops.HookEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm._register_agent_from_config(mock_event)
+    jenkins_charm._on_config_changed(mock_event)
 
     mock_event.defer.assert_called_once()
 
@@ -67,7 +67,7 @@ def test__register_agent_from_config_no_config_state(harness: ops.testing.Harnes
     mock_event = unittest.mock.MagicMock(spec=ops.HookEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm._register_agent_from_config(mock_event)
+    jenkins_charm._on_config_changed(mock_event)
 
     assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
 
@@ -84,7 +84,7 @@ def test__register_agent_from_config_use_relation(harness: ops.testing.Harness):
     mock_event = unittest.mock.MagicMock(spec=ops.HookEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm._register_agent_from_config(mock_event)
+    jenkins_charm._on_config_changed(mock_event)
 
     mock_event.defer.assert_not_called()
 
@@ -111,7 +111,7 @@ def test__register_agent_from_config_download_agent_error(
     mock_event = unittest.mock.MagicMock(spec=ops.HookEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm._register_agent_from_config(mock_event)
+    jenkins_charm._on_config_changed(mock_event)
 
     assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
 
@@ -123,7 +123,7 @@ def test__register_agent_from_config_no_valid_credentials(
 ):
     """
     arrange: given a charm with monkeypatched validate_credentials that returns false.
-    act: when _register_agent_from_config is called.
+    act: when _on_config_changed is called.
     assert: unit falls into BlockedStatus.
     """
     monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
@@ -134,7 +134,47 @@ def test__register_agent_from_config_no_valid_credentials(
     mock_event = unittest.mock.MagicMock(spec=ops.HookEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm._register_agent_from_config(mock_event)
+    jenkins_charm._on_config_changed(mock_event)
+
+    assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
+
+
+def test__register_agent_from_config_fallback_relation_slave(
+    harness: ops.testing.Harness,
+):
+    """
+    arrange: given a charm with reset config values and a slave relation.
+    act: when _on_config_changed is called.
+    assert: unit falls into BlockedStatus since slave relation cannot be established in reverse.
+    """
+    harness.set_can_connect("jenkins-k8s-agent", True)
+    harness.update_config({})
+    harness.add_relation(state.SLAVE_RELATION, "jenkins")
+    harness.begin()
+
+    mock_event = unittest.mock.MagicMock(spec=ops.HookEvent)
+    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
+    jenkins_charm._on_config_changed(mock_event)
+
+    assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
+
+
+def test__register_agent_from_config_fallback_relation_agent(
+    harness: ops.testing.Harness,
+):
+    """
+    arrange: given a charm with reset config values and a agent relation.
+    act: when _on_config_changed is called.
+    assert: unit falls into BlockedStatus, this should support fallback relation later.
+    """
+    harness.set_can_connect("jenkins-k8s-agent", True)
+    harness.update_config({})
+    harness.add_relation(state.AGENT_RELATION, "jenkins")
+    harness.begin()
+
+    mock_event = unittest.mock.MagicMock(spec=ops.HookEvent)
+    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
+    jenkins_charm._on_config_changed(mock_event)
 
     assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
 
@@ -154,9 +194,30 @@ def test__register_agent_from_config(
     harness.set_can_connect("jenkins-k8s-agent", True)
     harness.update_config(config)
     harness.begin()
-    mock_event = unittest.mock.MagicMock(spec=ops.HookEvent)
+    mock_event = unittest.mock.MagicMock(spec=ops.ConfigChangedEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm._register_agent_from_config(mock_event)
+    jenkins_charm._on_config_changed(mock_event)
+
+    assert jenkins_charm.unit.status.name == ACTIVE_STATUS_NAME
+
+
+def test__on_upgrade_charm(
+    monkeypatch: pytest.MonkeyPatch, harness: ops.testing.Harness, config: typing.Dict[str, str]
+):
+    """
+    arrange: given a charm with monkeypatched server functions that returns passing values.
+    act: when _on_upgrade_charm is called.
+    assert: unit falls into ActiveStatus.
+    """
+    monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(server, "validate_credentials", lambda *_args, **_kwargs: True)
+    harness.set_can_connect("jenkins-k8s-agent", True)
+    harness.update_config(config)
+    harness.begin()
+    mock_event = unittest.mock.MagicMock(spec=ops.UpgradeCharmEvent)
+
+    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
+    jenkins_charm._on_upgrade_charm(mock_event)
 
     assert jenkins_charm.unit.status.name == ACTIVE_STATUS_NAME

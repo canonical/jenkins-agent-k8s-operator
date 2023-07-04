@@ -32,10 +32,13 @@ class Observer(ops.Object):
         self.pebble_service = pebble_service
 
         charm.framework.observe(
-            charm.on[SLAVE_RELATION].relation_joined, self._on_agent_relation_joined
+            charm.on[SLAVE_RELATION].relation_joined, self._on_slave_relation_joined
         )
         charm.framework.observe(
-            charm.on[SLAVE_RELATION].relation_changed, self._on_agent_relation_changed
+            charm.on[SLAVE_RELATION].relation_changed, self._on_slave_relation_changed
+        )
+        charm.framework.observe(
+            charm.on[SLAVE_RELATION].relation_departed, self._on_slave_relation_departed
         )
         charm.framework.observe(
             charm.on[AGENT_RELATION].relation_joined, self._on_agent_relation_joined
@@ -44,16 +47,29 @@ class Observer(ops.Object):
             charm.on[AGENT_RELATION].relation_changed, self._on_agent_relation_changed
         )
         charm.framework.observe(
-            charm.on[SLAVE_RELATION].relation_departed, self._on_agent_relation_departed
-        )
-        charm.framework.observe(
             charm.on[AGENT_RELATION].relation_departed, self._on_agent_relation_departed
         )
 
-    @property
-    def _jenkins_agent_container(self) -> ops.Container:
-        """The Jenkins workload container."""
-        return self.charm.unit.get_container(self.state.jenkins_agent_service_name)
+    def _on_slave_relation_joined(self, event: ops.RelationJoinedEvent) -> None:
+        """Handle slave relation joined event.
+
+        Args:
+            event: The event fired when an agent has joined the "slave" relation.
+        """
+        if self.state.jenkins_config:
+            logger.warning(
+                "Jenkins configuration already exists. Ignoring %s relation.", event.relation.name
+            )
+            return
+
+        logger.info("%s relation joined.", event.relation.name)
+        self.charm.unit.status = ops.MaintenanceStatus(
+            f"Setting up '{event.relation.name}' relation."
+        )
+
+        relation_data = self.state.agent_meta.get_jenkins_slave_interface_dict()
+        logger.info("Slave relation data set: %s", relation_data)
+        event.relation.data[self.charm.unit].update(relation_data)
 
     def _on_agent_relation_joined(self, event: ops.RelationJoinedEvent) -> None:
         """Handle agent relation joined event.
@@ -68,31 +84,19 @@ class Observer(ops.Object):
             return
 
         logger.info("%s relation joined.", event.relation.name)
-        self.charm.unit.status = ops.MaintenanceStatus("Setting up relation.")
-
-        # handle slave relation for backwards compatibility.
-        if event.relation.name == SLAVE_RELATION:
-            logger.info(
-                "Slave relation data set: %s",
-                self.state.agent_meta.get_jenkins_slave_interface_dict(),
-            )
-            event.relation.data[self.charm.unit].update(
-                self.state.agent_meta.get_jenkins_slave_interface_dict()
-            )
-            return
-        logger.info(
-            "Agent relation data set: %s",
-            self.state.agent_meta.get_jenkins_slave_interface_dict(),
-        )
-        event.relation.data[self.charm.unit].update(
-            self.state.agent_meta.get_jenkins_agent_v0_interface_dict()
+        self.charm.unit.status = ops.MaintenanceStatus(
+            f"Setting up '{event.relation.name}' relation."
         )
 
-    def _on_agent_relation_changed(self, event: ops.RelationChangedEvent) -> None:
-        """Handle agent relation changed event.
+        relation_data = self.state.agent_meta.get_jenkins_agent_v0_interface_dict()
+        logger.info("Agent relation data set: %s", relation_data)
+        event.relation.data[self.charm.unit].update(relation_data)
+
+    def _on_slave_relation_changed(self, event: ops.RelationChangedEvent) -> None:
+        """Handle slave relation changed event.
 
         Args:
-            event: The event fired when the event relation data has changed.
+            event: The event fired when slave relation data has changed.
         """
         logger.info("%s relation changed.", event.relation.name)
 
@@ -102,12 +106,63 @@ class Observer(ops.Object):
             )
             return
 
-        if not self._jenkins_agent_container.can_connect():
+        container = self.charm.unit.get_container(self.state.jenkins_agent_service_name)
+        if not container.can_connect():
             logger.warning("Jenkins agent container not yet ready. Deferring.")
             event.defer()
             return
 
-        if server.is_registered(self._jenkins_agent_container):
+        if server.is_registered(container):
+            logger.warning("Given agent already registered. Skipping.")
+            return
+
+        credentials: typing.Optional[server.Credentials] = server.get_credentials(
+            event.relation.name,
+            unit_name=self.state.agent_meta.name,
+            databag=event.relation.data.get(typing.cast(ops.Unit, event.unit)),
+        )
+        if not credentials:
+            self.charm.unit.status = ops.WaitingStatus("Waiting for complete relation data.")
+            logger.info("Waiting for complete relation data.")
+            return
+
+        self.charm.unit.status = ops.MaintenanceStatus("Validating credentials.")
+        if not server.validate_credentials(
+            agent_name=self.state.agent_meta.name,
+            credentials=credentials,
+            container=container,
+            add_random_delay=True,
+        ):
+            logger.warning("Failed credential for agent %s", self.state.agent_meta.name)
+            self.charm.unit.status = ops.WaitingStatus("Waiting for credentials.")
+            return
+
+        self.pebble_service.reconcile(
+            server_url=credentials.address,
+            agent_token_pair=(self.state.agent_meta.name, credentials.secret),
+        )
+
+    def _on_agent_relation_changed(self, event: ops.RelationChangedEvent) -> None:
+        """Handle agent relation changed event.
+
+        Args:
+            event: The event fired when the agent relation data has changed.
+        """
+        logger.info("%s relation changed.", event.relation.name)
+
+        if self.state.jenkins_config:
+            logger.warning(
+                "Jenkins configuration already exists. Ignoring %s relation.", event.relation.name
+            )
+            return
+
+        container = self.charm.unit.get_container(self.state.jenkins_agent_service_name)
+        if not container.can_connect():
+            logger.warning("Jenkins agent container not yet ready. Deferring.")
+            event.defer()
+            return
+
+        if server.is_registered(container):
             logger.warning("Given agent already registered. Skipping.")
             return
 
@@ -123,9 +178,7 @@ class Observer(ops.Object):
 
         self.charm.unit.status = ops.MaintenanceStatus("Downloading Jenkins agent executable.")
         try:
-            server.download_jenkins_agent(
-                server_url=credentials.address, connectable_container=self._jenkins_agent_container
-            )
+            server.download_jenkins_agent(server_url=credentials.address, container=container)
         except server.AgentJarDownloadError as exc:
             logger.error("Failed to download Jenkins agent executable, %s", exc)
             self.charm.unit.status = ops.BlockedStatus(
@@ -137,7 +190,7 @@ class Observer(ops.Object):
         if not server.validate_credentials(
             agent_name=self.state.agent_meta.name,
             credentials=credentials,
-            connectable_container=self._jenkins_agent_container,
+            container=container,
         ):
             logger.warning("Failed credential for agent %s", self.state.agent_meta.name)
             self.charm.unit.status = ops.WaitingStatus("Waiting for credentials.")
@@ -148,7 +201,18 @@ class Observer(ops.Object):
             agent_token_pair=(self.state.agent_meta.name, credentials.secret),
         )
 
+    def _on_slave_relation_departed(self, _: ops.RelationDepartedEvent) -> None:
+        """Handle slave relation departed event."""
+        container = self.charm.unit.get_container(self.state.jenkins_agent_service_name)
+        if not container.can_connect():
+            return
+        self.pebble_service.stop_agent()
+        self.charm.unit.status = ops.BlockedStatus("Waiting for config/relation.")
+
     def _on_agent_relation_departed(self, _: ops.RelationDepartedEvent) -> None:
         """Handle agent relation departed event."""
+        container = self.charm.unit.get_container(self.state.jenkins_agent_service_name)
+        if not container.can_connect():
+            return
         self.pebble_service.stop_agent()
         self.charm.unit.status = ops.BlockedStatus("Waiting for config/relation.")

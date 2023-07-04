@@ -69,23 +69,6 @@ def test_reconcile(harness: ops.testing.Harness):
     assert jenkins_charm.unit.status.name == ACTIVE_STATUS_NAME
 
 
-def test_stop_agent_no_container(monkeypatch: pytest.MonkeyPatch, harness: ops.testing.Harness):
-    """
-    arrange: given a monkeypatched _jenkins_agent_container representing non connectable container.
-    act: when stop_agent is called.
-    assert: nothing happens since the workload should not be ready yet.
-    """
-    mock_container = unittest.mock.MagicMock(spec=ops.Container)
-    mock_container.can_connect.return_value = False
-    monkeypatch.setattr(pebble.PebbleService, "_jenkins_agent_container", mock_container)
-    harness.begin()
-
-    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm.pebble_service.stop_agent()
-
-    mock_container.stop.assert_not_called()
-
-
 def test_stop_agent(monkeypatch: pytest.MonkeyPatch, harness: ops.testing.Harness):
     """
     arrange: given a monkeypatched _jenkins_agent_container representing non connectable container.

@@ -175,9 +175,7 @@ def test_download_jenkins_agent_download_error(
     monkeypatch.setattr(requests, "get", lambda *_args, **_kwargs: raise_exception(exception))
     mock_contaier = unittest.mock.MagicMock(spec=ops.Container)
     with pytest.raises(server.AgentJarDownloadError):
-        server.download_jenkins_agent(
-            server_url="http://test-url", connectable_container=mock_contaier
-        )
+        server.download_jenkins_agent(server_url="http://test-url", container=mock_contaier)
 
 
 def test_download_jenkins_agent_download(
@@ -195,19 +193,10 @@ def test_download_jenkins_agent_download(
     harness.set_can_connect("jenkins-k8s-agent", True)
     harness.begin()
 
-    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    server.download_jenkins_agent(
-        server_url="http://test-url", connectable_container=jenkins_charm._jenkins_agent_container
-    )
+    container = harness.model.unit.get_container("jenkins-k8s-agent")
+    server.download_jenkins_agent(server_url="http://test-url", container=container)
 
-    assert (
-        str(
-            jenkins_charm._jenkins_agent_container.pull(
-                server.AGENT_JAR_PATH, encoding="utf-8"
-            ).read()
-        )
-        == response_content
-    )
+    assert str(container.pull(server.AGENT_JAR_PATH, encoding="utf-8").read()) == response_content
 
 
 @pytest.mark.parametrize(
@@ -232,11 +221,18 @@ def test_validate_credentials_fail(failed_log_fixture: str, request: pytest.Fixt
     assert not server.validate_credentials(
         agent_name="test-agent",
         credentials=server.Credentials(address="http://test-url", secret=secrets.token_hex(16)),
-        connectable_container=mock_container,
+        container=mock_container,
     )
 
 
-def test_validate_credentials(jenkins_connection_log: str):
+@pytest.mark.parametrize(
+    "random_delay",
+    [
+        pytest.param(True, id="Add delay"),
+        pytest.param(False, id="No delay"),
+    ],
+)
+def test_validate_credentials(jenkins_connection_log: str, random_delay: bool):
     """
     arrange: given a mock container that returns unsuccessful jenkins slave connection logs.
     act: when validate_credentials is called.
@@ -250,7 +246,8 @@ def test_validate_credentials(jenkins_connection_log: str):
     assert server.validate_credentials(
         agent_name="test-agent",
         credentials=server.Credentials(address="http://test-url", secret=secrets.token_hex(16)),
-        connectable_container=mock_container,
+        container=mock_container,
+        add_random_delay=random_delay,
     )
 
 
@@ -261,11 +258,11 @@ def test_is_registered_no_pebble_servce(harness: ops.testing.Harness):
     assert: False is returned.
     """
     harness.set_can_connect("jenkins-k8s-agent", True)
+
     harness.begin()
 
-    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-
-    assert not server.is_registered(connectable_container=jenkins_charm._jenkins_agent_container)
+    container = harness.model.unit.get_container("jenkins-k8s-agent")
+    assert not server.is_registered(container=container)
 
 
 def test_is_registered(harness: ops.testing.Harness):
@@ -275,11 +272,8 @@ def test_is_registered(harness: ops.testing.Harness):
     assert: True is returned.
     """
     harness.set_can_connect("jenkins-k8s-agent", True)
-    harness.model.unit.get_container("jenkins-k8s-agent").push(
-        server.AGENT_READY_PATH, "content", encoding="utf-8", make_dirs=True
-    )
+    container = harness.model.unit.get_container("jenkins-k8s-agent")
+    container.push(server.AGENT_READY_PATH, "content", encoding="utf-8", make_dirs=True)
     harness.begin()
 
-    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-
-    assert server.is_registered(connectable_container=jenkins_charm._jenkins_agent_container)
+    assert server.is_registered(container=container)

@@ -103,12 +103,12 @@ class AgentJarDownloadError(ServerBaseError):
     """Represents an error downloading agent JAR executable."""
 
 
-def download_jenkins_agent(server_url: str, connectable_container: ops.Container) -> None:
+def download_jenkins_agent(server_url: str, container: ops.Container) -> None:
     """Download Jenkins agent JAR executable from server.
 
     Args:
         server_url: The Jenkins server URL address.
-        connectable_container: The connectable agent container.
+        container: The connectable agent container.
 
     Raises:
         AgentJarDownloadError: If an error occurred downloading the JAR executable.
@@ -122,28 +122,32 @@ def download_jenkins_agent(server_url: str, connectable_container: ops.Container
             "Failed to download agent JAR executable from server."
         ) from exc
 
-    connectable_container.push(
-        path=AGENT_JAR_PATH, make_dirs=True, source=res.content, user=USER, group=GROUP
-    )
+    container.push(path=AGENT_JAR_PATH, make_dirs=True, source=res.content, user=USER, group=GROUP)
 
 
 def validate_credentials(
-    agent_name: str, credentials: Credentials, connectable_container: ops.Container
+    agent_name: str,
+    credentials: Credentials,
+    container: ops.Container,
+    add_random_delay: bool = False,
 ) -> bool:
     """Check if the credentials can be used to register to the server.
 
     Args:
         agent_name: The Jenkins agent name.
         credentials: Server credentials required to register to Jenkins server.
-        connectable_container: The Jenkins agent workload container.
+        container: The Jenkins agent workload container.
+        add_random_delay: Whether random delay should be added to prevent parallel registration on
+            server.
 
     Returns:
         True if credentials and agent_name pairs are valid, False otherwise.
     """
-    # IMPORTANT: add random jitter to prevent parallel execution.
-    # It's okay to use random since it's not used for sensitive data.
-    time.sleep(random.random())  # nosec
-    proc: ops.pebble.ExecProcess = connectable_container.exec(
+    # IMPORTANT: add random delay to prevent parallel execution.
+    if add_random_delay:
+        # It's okay to use random since it's not used for sensitive data.
+        time.sleep(random.random())  # nosec
+    proc: ops.pebble.ExecProcess = container.exec(
         [
             "java",
             "-jar",
@@ -176,13 +180,41 @@ def validate_credentials(
     return connected and not terminated
 
 
-def is_registered(connectable_container: ops.Container) -> bool:
+def find_valid_credentials(
+    agent_name_token_pairs: typing.Iterable[typing.Tuple[str, str]],
+    server_url: str,
+    container: ops.Container,
+) -> typing.Optional[typing.Tuple[str, str]]:
+    """Find credentials that can be applied if available.
+
+    Args:
+        agent_name_token_pairs: Matching agent name and token pair to check.
+        server_url: The jenkins server url address.
+        container: The Jenkins agent workload container.
+
+    Returns:
+        Agent name and token pair that can be used. None if no pair is available.
+    """
+    for agent_name, agent_token in agent_name_token_pairs:
+        logger.debug("Validating %s", agent_name)
+        if not validate_credentials(
+            agent_name=agent_name,
+            credentials=Credentials(address=server_url, secret=agent_token),
+            container=container,
+        ):
+            logger.debug("agent %s validation failed.", agent_name)
+            continue
+        return (agent_name, agent_token)
+    return None
+
+
+def is_registered(container: ops.Container) -> bool:
     """Check if the given agent instance is already up and running.
 
     Args:
-        connectable_container: The Jenkins agent workload container.
+        container: The Jenkins agent workload container.
 
     Returns:
         Whether the Jenkins agent is already registered.
     """
-    return connectable_container.exists(str(AGENT_READY_PATH))
+    return container.exists(str(AGENT_READY_PATH))
