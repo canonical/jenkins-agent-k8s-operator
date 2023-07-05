@@ -23,6 +23,8 @@ typeset JAVA_ARGS=${JAVA_ARGS:-""}
 # Not specifying this parameter will stop the agent
 # job from running.
 typeset JENKINS_URL="${JENKINS_URL:?"URL of a jenkins server must be provided"}"
+typeset JENKINS_AGENT="${JENKINS_AGENT:?"Jenkins agent name must be provided"}"
+typeset JENKINS_TOKEN="${JENKINS_TOKEN:?"Jenkins agent token must be provided"}"
 
 typeset JENKINS_WORKDIR="/var/lib/jenkins"
 
