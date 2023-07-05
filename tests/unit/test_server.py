@@ -249,31 +249,3 @@ def test_validate_credentials(jenkins_connection_log: str, random_delay: bool):
         container=mock_container,
         add_random_delay=random_delay,
     )
-
-
-def test_is_registered_no_pebble_servce(harness: ops.testing.Harness):
-    """
-    arrange: given a container with no pebble workload that has set AGENT_READY_PATH.
-    act: when is_registered is called.
-    assert: False is returned.
-    """
-    harness.set_can_connect("jenkins-k8s-agent", True)
-
-    harness.begin()
-
-    container = harness.model.unit.get_container("jenkins-k8s-agent")
-    assert not server.is_registered(container=container)
-
-
-def test_is_registered(harness: ops.testing.Harness):
-    """
-    arrange: given a container with AGENT_READY_PATH set by pebble workload.
-    act: when is_registered is called.
-    assert: True is returned.
-    """
-    harness.set_can_connect("jenkins-k8s-agent", True)
-    container = harness.model.unit.get_container("jenkins-k8s-agent")
-    container.push(server.AGENT_READY_PATH, "content", encoding="utf-8", make_dirs=True)
-    harness.begin()
-
-    assert server.is_registered(container=container)

@@ -35,7 +35,7 @@ class JenkinsAgentCharm(ops.CharmBase):
             self.unit.status = ops.BlockedStatus(exc.msg)
             return
 
-        self.pebble_service = pebble.PebbleService(self, self.state)
+        self.pebble_service = pebble.PebbleService(self.state)
         self.agent_observer = agent.Observer(self, self.state, self.pebble_service)
 
         self.framework.observe(self.on.config_changed, self._on_config_changed)
@@ -71,7 +71,7 @@ class JenkinsAgentCharm(ops.CharmBase):
                 return
             # Support fallback relation to AGENT_RELATION.
             self.model.unit.status = ops.BlockedStatus(
-                "Please remove and re-relate slave relation."
+                "Please remove and re-relate agent relation."
             )
             return
 
@@ -99,9 +99,13 @@ class JenkinsAgentCharm(ops.CharmBase):
             )
             return
 
+        self.model.unit.status = ops.MaintenanceStatus("Starting agent pebble service.")
         self.pebble_service.reconcile(
-            server_url=self.state.jenkins_config.server_url, agent_token_pair=valid_agent_token
+            server_url=self.state.jenkins_config.server_url,
+            agent_token_pair=valid_agent_token,
+            container=container,
         )
+        self.model.unit.status = ops.ActiveStatus()
 
     def _on_config_changed(self, event: ops.ConfigChangedEvent) -> None:
         """Handle config changed event.

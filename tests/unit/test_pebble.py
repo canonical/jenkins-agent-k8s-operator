@@ -16,9 +16,8 @@ import pytest
 
 import pebble
 import server
+import state
 from charm import JenkinsAgentCharm
-
-from .constants import ACTIVE_STATUS_NAME
 
 
 def test__get_pebble_layer(harness: ops.testing.Harness):
@@ -50,38 +49,37 @@ def test__get_pebble_layer(harness: ops.testing.Harness):
     }
 
 
-def test_reconcile(harness: ops.testing.Harness):
+def test_reconcile():
     """
     arrange: given a server url, and an agent_token pair.
     act: when reconcile is called.
     assert: pebble service is initialized and the unit status becomes Active.
     """
-    test_url = "http://test-url"
-    test_agent_token_pair = ("agent-1", secrets.token_hex(16))
-    harness.set_can_connect("jenkins-k8s-agent", True)
-    harness.begin()
+    mock_state = unittest.mock.MagicMock(spec=state.State)
+    mock_container = unittest.mock.MagicMock(spec=ops.Container)
+    pebble_service = pebble.PebbleService(state=mock_state)
 
-    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm.pebble_service.reconcile(
-        server_url=test_url, agent_token_pair=test_agent_token_pair
+    pebble_service.reconcile(
+        server_url="test_url",
+        agent_token_pair=("test_agent", secrets.token_hex(16)),
+        container=mock_container,
     )
 
-    assert jenkins_charm.unit.status.name == ACTIVE_STATUS_NAME
+    mock_container.add_layer.assert_called_once()
+    mock_container.replan.assert_called_once()
 
 
-def test_stop_agent(monkeypatch: pytest.MonkeyPatch, harness: ops.testing.Harness):
+def test_stop_agent():
     """
     arrange: given a monkeypatched _jenkins_agent_container representing non connectable container.
     act: when stop_agent is called.
     assert: nothing happens since the workload should not be ready yet.
     """
+    mock_state = unittest.mock.MagicMock(spec=state.State)
     mock_container = unittest.mock.MagicMock(spec=ops.Container)
-    mock_container.can_connect.return_value = True
-    monkeypatch.setattr(pebble.PebbleService, "_jenkins_agent_container", mock_container)
-    harness.begin()
+    pebble_service = pebble.PebbleService(state=mock_state)
 
-    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm.pebble_service.stop_agent()
+    pebble_service.stop_agent(container=mock_container)
 
     mock_container.stop.assert_called_once()
     mock_container.remove_path.assert_called_once()

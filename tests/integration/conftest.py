@@ -58,7 +58,7 @@ async def application_fixture(
 
 @pytest_asyncio.fixture(scope="module", name="machine_controller")
 async def machine_controller_fixture() -> typing.AsyncGenerator[Controller, None]:
-    """The lxd controller."""
+    """The juju controller on LXC local cloud."""
     controller = Controller()
     await controller.connect_controller("localhost")
 
@@ -119,6 +119,7 @@ async def jenkins_client_fixture(
     jenkins_unit: Unit = jenkins_machine_server.units[0]
     action: Action = await jenkins_unit.run_action("get-admin-credentials")
     await action.wait()
+    assert action.status == "completed", "Failed to get credentials."
     password = action.results["password"]
 
     # Initialization of the jenkins client will raise an exception if unable to connect to the

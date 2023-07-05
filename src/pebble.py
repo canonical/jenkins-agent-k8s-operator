@@ -14,24 +14,16 @@ from state import State
 logger = logging.getLogger(__name__)
 
 
-class PebbleService(ops.Object):
+class PebbleService:
     """The charm pebble service manager."""
 
-    def __init__(self, charm: ops.CharmBase, state: State):
+    def __init__(self, state: State):
         """Initialize the pebble service.
 
         Args:
-            charm: The parent Jenkins k8s agent charm.
             state: The Jenkins k8s agent state.
         """
-        super().__init__(charm, "pebble-service")
-        self.charm = charm
         self.state = state
-
-    @property
-    def _jenkins_agent_container(self) -> ops.Container:
-        """The Jenkins workload container."""
-        return self.charm.unit.get_container(self.state.jenkins_agent_service_name)
 
     def _get_pebble_layer(
         self, server_url: str, agent_token_pair: typing.Tuple[str, str]
@@ -75,25 +67,29 @@ class PebbleService(ops.Object):
         }
         return ops.pebble.Layer(layer)
 
-    def reconcile(self, server_url: str, agent_token_pair: typing.Tuple[str, str]) -> None:
+    def reconcile(
+        self, server_url: str, agent_token_pair: typing.Tuple[str, str], container: ops.Container
+    ) -> None:
         """Reconcile the Jenkins agent service.
 
         Args:
             server_url: The Jenkins server address.
             agent_token_pair: Matching pair of agent name to agent token.
+            container: The agent workload container.
         """
-        self.charm.unit.status = ops.MaintenanceStatus("Starting agent pebble service.")
-
         agent_layer = self._get_pebble_layer(
             server_url=server_url, agent_token_pair=agent_token_pair
         )
-        self._jenkins_agent_container.add_layer(
+        container.add_layer(
             label=self.state.jenkins_agent_service_name, layer=agent_layer, combine=True
         )
-        self._jenkins_agent_container.replan()
-        self.charm.unit.status = ops.ActiveStatus()
+        container.replan()
 
-    def stop_agent(self) -> None:
-        """Stop Jenkins agent."""
-        self._jenkins_agent_container.stop(self.state.jenkins_agent_service_name)
-        self._jenkins_agent_container.remove_path(str(server.AGENT_READY_PATH))
+    def stop_agent(self, container: ops.Container) -> None:
+        """Stop Jenkins agent.
+
+        Args:
+            container: The agent workload container.
+        """
+        container.stop(self.state.jenkins_agent_service_name)
+        container.remove_path(str(server.AGENT_READY_PATH))

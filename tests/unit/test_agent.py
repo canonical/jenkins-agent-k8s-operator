@@ -127,17 +127,17 @@ def test_agent_relation_changed_container_not_ready(
 
 
 def test_agent_relation_changed_service_running(
-    monkeypatch: pytest.MonkeyPatch,
     harness: ops.testing.Harness,
     mock_agent_relation_changed_event: unittest.mock.MagicMock,
 ):
     """
-    arrange: given an agent with an monkeypatched workload service that is already registered.
+    arrange: given a workload container with existing $JENKINS_HOME/agents/.ready file.
     act: when relation changed event is triggered.
     assert: nothing happens since the agent is already registered.
     """
-    monkeypatch.setattr(server, "is_registered", lambda *_args, **_kwargs: True)
     harness.set_can_connect("jenkins-k8s-agent", True)
+    container = harness.model.unit.get_container("jenkins-k8s-agent")
+    container.push(server.AGENT_READY_PATH, "test", encoding="utf-8", make_dirs=True)
     harness.begin()
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
@@ -176,7 +176,7 @@ def test_agent_relation_changed_download_jenkins_agent_fail(
     """
     arrange: given a monkeypatched download_jenkins_agent that raises AgentJarDownloadError.
     act: when _on_agent_relation_changed is called.
-    assert: the unit falls into BlockedStatus.
+    assert: the unit falls into ErroredStatus.
     """
     monkeypatch.setattr(server, "get_credentials", lambda *_args, **_kwargs: agent_credentials)
     # The monkeypatched attribute download_jenkins_agent is used across unit tests.
@@ -192,6 +192,7 @@ def test_agent_relation_changed_download_jenkins_agent_fail(
     jenkins_charm.agent_observer._on_agent_relation_changed(mock_agent_relation_changed_event)
 
     assert jenkins_charm.unit.status.name == ERRORED_STATUS_NAME
+    assert jenkins_charm.unit.status.message == "Failed to download Jenkins agent executable."
 
 
 def test_agent_relation_changed_validate_credentials_fail(
@@ -201,9 +202,9 @@ def test_agent_relation_changed_validate_credentials_fail(
     mock_agent_relation_changed_event: unittest.mock.MagicMock,
 ):
     """
-    arrange: given a monkeypatched download_jenkins_agent that raises AgentJarDownloadError.
+    arrange: given a monkeypatched validate_credentials that fails.
     act: when _on_agent_relation_changed is called.
-    assert: the unit falls into BlockedStatus.
+    assert: the unit falls into WaitingStatus.
     """
     monkeypatch.setattr(server, "get_credentials", lambda *_args, **_kwargs: agent_credentials)
     monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
@@ -215,6 +216,7 @@ def test_agent_relation_changed_validate_credentials_fail(
     jenkins_charm.agent_observer._on_agent_relation_changed(mock_agent_relation_changed_event)
 
     assert jenkins_charm.unit.status.name == WAITING_STATUS_NAME
+    assert jenkins_charm.unit.status.message == "Waiting for credentials."
 
 
 def test_agent_relation_changed(
@@ -224,9 +226,9 @@ def test_agent_relation_changed(
     mock_agent_relation_changed_event: unittest.mock.MagicMock,
 ):
     """
-    arrange: given a monkeypatched download_jenkins_agent that raises AgentJarDownloadError.
+    arrange: given a monkeypatched server actions that pass.
     act: when _on_agent_relation_changed is called.
-    assert: the unit falls into BlockedStatus.
+    assert: the unit falls into ActiveStatus.
     """
     monkeypatch.setattr(server, "get_credentials", lambda *_args, **_kwargs: agent_credentials)
     monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
@@ -255,6 +257,7 @@ def test_agent_relation_departed(monkeypatch: pytest.MonkeyPatch, harness: ops.t
     jenkins_charm.agent_observer._on_agent_relation_departed(mock_event)
 
     assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
+    assert jenkins_charm.unit.status.message == "Waiting for config/relation."
 
 
 def test_slave_relation_departed(monkeypatch: pytest.MonkeyPatch, harness: ops.testing.Harness):
@@ -272,3 +275,4 @@ def test_slave_relation_departed(monkeypatch: pytest.MonkeyPatch, harness: ops.t
     jenkins_charm.agent_observer._on_slave_relation_departed(mock_event)
 
     assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
+    assert jenkins_charm.unit.status.message == "Waiting for config/relation."

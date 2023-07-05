@@ -68,7 +68,7 @@ class Observer(ops.Object):
         )
 
         relation_data = self.state.agent_meta.get_jenkins_slave_interface_dict()
-        logger.info("Slave relation data set: %s", relation_data)
+        logger.debug("Slave relation data set: %s", relation_data)
         event.relation.data[self.charm.unit].update(relation_data)
 
     def _on_agent_relation_joined(self, event: ops.RelationJoinedEvent) -> None:
@@ -89,7 +89,7 @@ class Observer(ops.Object):
         )
 
         relation_data = self.state.agent_meta.get_jenkins_agent_v0_interface_dict()
-        logger.info("Agent relation data set: %s", relation_data)
+        logger.debug("Agent relation data set: %s", relation_data)
         event.relation.data[self.charm.unit].update(relation_data)
 
     def _on_slave_relation_changed(self, event: ops.RelationChangedEvent) -> None:
@@ -100,7 +100,7 @@ class Observer(ops.Object):
         """
         logger.info("%s relation changed.", event.relation.name)
 
-        if self.state.jenkins_config:
+        if self.state.jenkins_config or self.state.agent_relation_credentials:
             logger.warning(
                 "Jenkins configuration already exists. Ignoring %s relation.", event.relation.name
             )
@@ -112,16 +112,12 @@ class Observer(ops.Object):
             event.defer()
             return
 
-        if server.is_registered(container):
+        # Check if the pebble service has started and set agent ready.
+        if container.exists(str(server.AGENT_READY_PATH)):
             logger.warning("Given agent already registered. Skipping.")
             return
 
-        credentials: typing.Optional[server.Credentials] = server.get_credentials(
-            event.relation.name,
-            unit_name=self.state.agent_meta.name,
-            databag=event.relation.data.get(typing.cast(ops.Unit, event.unit)),
-        )
-        if not credentials:
+        if not self.state.slave_relation_credentials:
             self.charm.unit.status = ops.WaitingStatus("Waiting for complete relation data.")
             logger.info("Waiting for complete relation data.")
             return
@@ -129,18 +125,30 @@ class Observer(ops.Object):
         self.charm.unit.status = ops.MaintenanceStatus("Validating credentials.")
         if not server.validate_credentials(
             agent_name=self.state.agent_meta.name,
-            credentials=credentials,
+            credentials=self.state.slave_relation_credentials,
             container=container,
             add_random_delay=True,
         ):
-            logger.warning("Failed credential for agent %s", self.state.agent_meta.name)
+            # The jenkins server sets credentials one by one, if some other agent unit in the
+            # relation took this credential first, it the agent unit should wait for the next
+            # secret update and try grabbing that.
+            logger.warning(
+                "Failed credential for agent %s, will wait for next credentials to be set",
+                self.state.agent_meta.name,
+            )
             self.charm.unit.status = ops.WaitingStatus("Waiting for credentials.")
             return
 
+        self.charm.unit.status = ops.MaintenanceStatus("Starting agent pebble service.")
         self.pebble_service.reconcile(
-            server_url=credentials.address,
-            agent_token_pair=(self.state.agent_meta.name, credentials.secret),
+            server_url=self.state.slave_relation_credentials.address,
+            agent_token_pair=(
+                self.state.agent_meta.name,
+                self.state.slave_relation_credentials.secret,
+            ),
+            container=container,
         )
+        self.charm.unit.status = ops.ActiveStatus()
 
     def _on_agent_relation_changed(self, event: ops.RelationChangedEvent) -> None:
         """Handle agent relation changed event.
@@ -162,23 +170,21 @@ class Observer(ops.Object):
             event.defer()
             return
 
-        if server.is_registered(container):
+        # Check if the pebble service has started and set agent ready.
+        if container.exists(str(server.AGENT_READY_PATH)):
             logger.warning("Given agent already registered. Skipping.")
             return
 
-        credentials: typing.Optional[server.Credentials] = server.get_credentials(
-            event.relation.name,
-            unit_name=self.state.agent_meta.name,
-            databag=event.relation.data.get(typing.cast(ops.Unit, event.unit)),
-        )
-        if not credentials:
+        if not self.state.agent_relation_credentials:
             self.charm.unit.status = ops.WaitingStatus("Waiting for complete relation data.")
             logger.info("Waiting for complete relation data.")
             return
 
         self.charm.unit.status = ops.MaintenanceStatus("Downloading Jenkins agent executable.")
         try:
-            server.download_jenkins_agent(server_url=credentials.address, container=container)
+            server.download_jenkins_agent(
+                server_url=self.state.agent_relation_credentials.address, container=container
+            )
         except server.AgentJarDownloadError as exc:
             logger.error("Failed to download Jenkins agent executable, %s", exc)
             self.charm.unit.status = ops.ErrorStatus(
@@ -189,24 +195,36 @@ class Observer(ops.Object):
         self.charm.unit.status = ops.MaintenanceStatus("Validating credentials.")
         if not server.validate_credentials(
             agent_name=self.state.agent_meta.name,
-            credentials=credentials,
+            credentials=self.state.agent_relation_credentials,
             container=container,
         ):
-            logger.warning("Failed credential for agent %s", self.state.agent_meta.name)
+            # The jenkins server sets credentials one by one, hence if the current credentials are
+            # not for this particular agent, the agent operator should wait until it receives one
+            # designated for it.
+            logger.warning(
+                "Failed credential for agent %s, will wait for next credentials to be set",
+                self.state.agent_meta.name,
+            )
             self.charm.unit.status = ops.WaitingStatus("Waiting for credentials.")
             return
 
+        self.charm.unit.status = ops.MaintenanceStatus("Starting agent pebble service.")
         self.pebble_service.reconcile(
-            server_url=credentials.address,
-            agent_token_pair=(self.state.agent_meta.name, credentials.secret),
+            server_url=self.state.agent_relation_credentials.address,
+            agent_token_pair=(
+                self.state.agent_meta.name,
+                self.state.agent_relation_credentials.secret,
+            ),
+            container=container,
         )
+        self.charm.unit.status = ops.ActiveStatus()
 
     def _on_slave_relation_departed(self, _: ops.RelationDepartedEvent) -> None:
         """Handle slave relation departed event."""
         container = self.charm.unit.get_container(self.state.jenkins_agent_service_name)
         if not container.can_connect():
             return
-        self.pebble_service.stop_agent()
+        self.pebble_service.stop_agent(container=container)
         self.charm.unit.status = ops.BlockedStatus("Waiting for config/relation.")
 
     def _on_agent_relation_departed(self, _: ops.RelationDepartedEvent) -> None:
@@ -214,5 +232,5 @@ class Observer(ops.Object):
         container = self.charm.unit.get_container(self.state.jenkins_agent_service_name)
         if not container.can_connect():
             return
-        self.pebble_service.stop_agent()
+        self.pebble_service.stop_agent(container=container)
         self.charm.unit.status = ops.BlockedStatus("Waiting for config/relation.")

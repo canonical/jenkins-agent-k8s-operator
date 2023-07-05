@@ -28,16 +28,18 @@ def test___init___invalid_state(
     act: when the JenkinsAgentCharm is initialized.
     assert: The agent falls into BlockedStatus.
     """
+    invalid_state_message = "Invalid executor message"
     monkeypatch.setattr(
         state.State,
         "from_charm",
-        lambda *_args, **_kwargs: raise_exception(state.InvalidStateError),
+        lambda *_args, **_kwargs: raise_exception(state.InvalidStateError(invalid_state_message)),
     )
     harness.begin_with_initial_hooks()
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
 
     assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
+    assert jenkins_charm.unit.status.message == invalid_state_message
 
 
 def test__register_agent_from_config_container_not_ready(harness: ops.testing.Harness):
@@ -70,6 +72,7 @@ def test__register_agent_from_config_no_config_state(harness: ops.testing.Harnes
     jenkins_charm._on_config_changed(mock_event)
 
     assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
+    assert jenkins_charm.unit.status.message == "Waiting for config/relation."
 
 
 def test__register_agent_from_config_use_relation(harness: ops.testing.Harness):
@@ -114,6 +117,7 @@ def test__register_agent_from_config_download_agent_error(
     jenkins_charm._on_config_changed(mock_event)
 
     assert jenkins_charm.unit.status.name == ERRORED_STATUS_NAME
+    assert jenkins_charm.unit.status.message == "Failed to download Agent JAR executable."
 
 
 def test__register_agent_from_config_no_valid_credentials(
@@ -137,6 +141,7 @@ def test__register_agent_from_config_no_valid_credentials(
     jenkins_charm._on_config_changed(mock_event)
 
     assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
+    assert jenkins_charm.unit.status.message == "Additional valid agent-token pairs required."
 
 
 def test__register_agent_from_config_fallback_relation_slave(
@@ -157,6 +162,7 @@ def test__register_agent_from_config_fallback_relation_slave(
     jenkins_charm._on_config_changed(mock_event)
 
     assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
+    assert jenkins_charm.unit.status.message == "Please remove and re-relate slave relation."
 
 
 def test__register_agent_from_config_fallback_relation_agent(
@@ -177,6 +183,7 @@ def test__register_agent_from_config_fallback_relation_agent(
     jenkins_charm._on_config_changed(mock_event)
 
     assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
+    assert jenkins_charm.unit.status.message == "Please remove and re-relate agent relation."
 
 
 def test__register_agent_from_config(

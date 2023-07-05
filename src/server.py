@@ -37,63 +37,6 @@ class Credentials(BaseModel):
     address: str
     secret: str
 
-    @classmethod
-    def from_jenkins_slave_interface_dict(
-        cls, server_unit_databag: ops.RelationDataContent
-    ) -> typing.Optional["Credentials"]:
-        """Import server metadata from databag in slave relation.
-
-        Args:
-            server_unit_databag: The relation databag content from slave relation.
-
-        Returns:
-            Metadata if complete values(url, secret) are set. None otherwise.
-        """
-        address = server_unit_databag.get("url")
-        secret = server_unit_databag.get("secret")
-        if not address or not secret:
-            return None
-        return Credentials(address=address, secret=secret)
-
-    @classmethod
-    def from_jenkins_agent_v0_interface_dict(
-        cls, server_unit_databag: ops.RelationDataContent, unit_name: str
-    ) -> typing.Optional["Credentials"]:
-        """Import server metadata from databag in agent relation.
-
-        Args:
-            server_unit_databag: The relation databag content from agent relation.
-            unit_name: The agent unit name.
-
-        Returns:
-            Metadata if complete values(url, secret) are set. None otherwise.
-        """
-        address = server_unit_databag.get("url")
-        secret = server_unit_databag.get(f"{unit_name}_secret")
-        if not address or not secret:
-            return None
-        return Credentials(address=address, secret=secret)
-
-
-def get_credentials(
-    relation_name: str, unit_name: str, databag: typing.Optional[ops.RelationDataContent]
-) -> typing.Optional["Credentials"]:
-    """Get credentials from databag.
-
-    Args:
-        relation_name: The relation name of the databag. Either "slave" or "agent".
-        unit_name: The agent unit name.
-        databag: The relation databag for given relation.
-
-    Returns:
-        Credentials if databag contains valid metadata. None if partial or no metadata found.
-    """
-    if databag is None:
-        return None
-    if relation_name == state.SLAVE_RELATION:
-        return Credentials.from_jenkins_slave_interface_dict(databag)
-    return Credentials.from_jenkins_agent_v0_interface_dict(databag, unit_name=unit_name)
-
 
 class ServerBaseError(Exception):
     """Represents errors with interacting with Jenkins server."""
@@ -108,7 +51,7 @@ def download_jenkins_agent(server_url: str, container: ops.Container) -> None:
 
     Args:
         server_url: The Jenkins server URL address.
-        container: The connectable agent container.
+        container: The agent workload container.
 
     Raises:
         AgentJarDownloadError: If an error occurred downloading the JAR executable.
@@ -206,15 +149,3 @@ def find_valid_credentials(
             continue
         return (agent_name, agent_token)
     return None
-
-
-def is_registered(container: ops.Container) -> bool:
-    """Check if the given agent instance is already up and running.
-
-    Args:
-        container: The Jenkins agent workload container.
-
-    Returns:
-        Whether the Jenkins agent is already registered.
-    """
-    return container.exists(str(AGENT_READY_PATH))
