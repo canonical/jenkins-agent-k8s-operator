@@ -181,7 +181,7 @@ class Observer(ops.Object):
             server.download_jenkins_agent(server_url=credentials.address, container=container)
         except server.AgentJarDownloadError as exc:
             logger.error("Failed to download Jenkins agent executable, %s", exc)
-            self.charm.unit.status = ops.BlockedStatus(
+            self.charm.unit.status = ops.ErrorStatus(
                 "Failed to download Jenkins agent executable."
             )
             return

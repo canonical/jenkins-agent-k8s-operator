@@ -82,7 +82,7 @@ class JenkinsAgentCharm(ops.CharmBase):
             )
         except server.AgentJarDownloadError as exc:
             logger.error("Failed to download Agent JAR executable, %s", exc)
-            self.model.unit.status = ops.BlockedStatus("Failed to download Agent JAR executable.")
+            self.model.unit.status = ops.ErrorStatus("Failed to download Agent JAR executable.")
             return
 
         valid_agent_token = server.find_valid_credentials(

@@ -17,7 +17,12 @@ import server
 import state
 from charm import JenkinsAgentCharm
 
-from .constants import ACTIVE_STATUS_NAME, BLOCKED_STATUS_NAME, WAITING_STATUS_NAME
+from .constants import (
+    ACTIVE_STATUS_NAME,
+    BLOCKED_STATUS_NAME,
+    ERRORED_STATUS_NAME,
+    WAITING_STATUS_NAME,
+)
 
 
 def test_agent_relation_joined_config_priority(
@@ -32,8 +37,11 @@ def test_agent_relation_joined_config_priority(
     harness.add_relation_unit(relation_id, "jenkins/0")
     harness.update_config(config)
     harness.begin_with_initial_hooks()
+    relation = harness.model.get_relation(state.AGENT_RELATION, relation_id)
+    assert relation, "Relation cannot be None"
+    jenkins_unit = next(iter(relation.units))
     mock_relation_data_content = unittest.mock.MagicMock(spec=ops.RelationDataContent)
-    mock_relation_data = unittest.mock.MagicMock(spec=ops.RelationData)
+    mock_relation_data = {jenkins_unit: mock_relation_data_content}
     mock_relation = unittest.mock.MagicMock(spec=ops.Relation)
     mock_relation.name = state.AGENT_RELATION
     mock_relation.data = mock_relation_data
@@ -43,7 +51,7 @@ def test_agent_relation_joined_config_priority(
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm.agent_observer._on_agent_relation_changed(mock_relation_joined_event)
 
-    mock_relation_data_content.assert_not_called()
+    mock_relation_data_content.update.assert_not_called()
 
 
 def test_agent_relation_joined_slave_relation(harness: ops.testing.Harness):
@@ -183,7 +191,7 @@ def test_agent_relation_changed_download_jenkins_agent_fail(
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm.agent_observer._on_agent_relation_changed(mock_agent_relation_changed_event)
 
-    assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
+    assert jenkins_charm.unit.status.name == ERRORED_STATUS_NAME
 
 
 def test_agent_relation_changed_validate_credentials_fail(
