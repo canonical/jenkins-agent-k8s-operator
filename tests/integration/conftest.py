@@ -38,9 +38,15 @@ def agent_image_fixture(request: pytest.FixtureRequest) -> str:
     return agent_k8s_image
 
 
+@pytest.fixture(scope="module", name="num_agents")
+def num_agents_fixture() -> int:
+    """The number of agents to deploy."""
+    return 3
+
+
 @pytest_asyncio.fixture(scope="module", name="application")
 async def application_fixture(
-    ops_test: OpsTest, model: Model, agent_image: str
+    ops_test: OpsTest, model: Model, agent_image: str, num_agents: int
 ) -> typing.AsyncGenerator[Application, None]:
     """Build and deploy the charm."""
     # Build and deploy charm from local source folder
@@ -48,12 +54,14 @@ async def application_fixture(
     resources = {"jenkins-agent-k8s-image": agent_image}
 
     # Deploy the charm and wait for blocked status
-    application = await model.deploy(charm, resources=resources, series="jammy")
+    application = await model.deploy(
+        charm, resources=resources, series="jammy", num_units=num_agents
+    )
     await model.wait_for_idle(apps=[application.name], status="blocked")
 
     yield application
 
-    await model.remove_application(application.name, block_until_done=True)
+    await model.remove_application(application.name, block_until_done=True, force=True)
 
 
 @pytest_asyncio.fixture(scope="module", name="machine_controller")

@@ -4,7 +4,6 @@
 """The agent relation observer module."""
 
 import logging
-import typing
 
 import ops
 
@@ -120,6 +119,18 @@ class Observer(ops.Object):
         if not self.state.slave_relation_credentials:
             self.charm.unit.status = ops.WaitingStatus("Waiting for complete relation data.")
             logger.info("Waiting for complete relation data.")
+            return
+
+        self.charm.unit.status = ops.MaintenanceStatus("Downloading Jenkins agent executable.")
+        try:
+            server.download_jenkins_agent(
+                server_url=self.state.slave_relation_credentials.address, container=container
+            )
+        except server.AgentJarDownloadError as exc:
+            logger.error("Failed to download Jenkins agent executable, %s", exc)
+            self.charm.unit.status = ops.ErrorStatus(
+                "Failed to download Jenkins agent executable."
+            )
             return
 
         self.charm.unit.status = ops.MaintenanceStatus("Validating credentials.")

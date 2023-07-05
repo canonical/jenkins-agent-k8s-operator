@@ -13,8 +13,6 @@ import ops
 import requests
 from pydantic import BaseModel
 
-import state
-
 logger = logging.getLogger(__name__)
 
 JENKINS_WORKDIR = Path("/var/lib/jenkins")

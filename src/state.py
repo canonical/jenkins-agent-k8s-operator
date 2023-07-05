@@ -75,6 +75,64 @@ class JenkinsConfig(BaseModel):
         )
 
 
+def _get_jenkins_unit(
+    all_units: typing.Set[ops.Unit], current_app_name: str
+) -> typing.Optional[ops.Unit]:
+    """Get the Jenkins charm unit in a relation.
+
+    Args:
+        all_units: All units in a relation.
+        current_app_name: The Jenkins-agent-k8s applictation name.
+
+    Returns:
+        The Jenkins server application unit in the relation if found. None otherwise.
+    """
+    for unit in all_units:
+        # if the unit's application name is the same, this is peer unit. Otherwise, it is the
+        # Jenkins server unit.
+        if unit.app.name == current_app_name:
+            continue
+        return unit
+    return None
+
+
+def _get_credentials_from_slave_relation(
+    server_unit_databag: ops.RelationDataContent,
+) -> typing.Optional[server.Credentials]:
+    """Import server metadata from databag in slave relation.
+
+    Args:
+        server_unit_databag: The relation databag content from slave relation.
+
+    Returns:
+        Metadata if complete values(url, secret) are set. None otherwise.
+    """
+    address = server_unit_databag.get("url")
+    secret = server_unit_databag.get("secret")
+    if not address or not secret:
+        return None
+    return server.Credentials(address=address, secret=secret)
+
+
+def _get_credentials_from_agent_relation(
+    server_unit_databag: ops.RelationDataContent, unit_name: str
+) -> typing.Optional[server.Credentials]:
+    """Import server metadata from databag in agent relation.
+
+    Args:
+        server_unit_databag: The relation databag content from agent relation.
+        unit_name: The agent unit name.
+
+    Returns:
+        Metadata if complete values(url, secret) are set. None otherwise.
+    """
+    address = server_unit_databag.get("url")
+    secret = server_unit_databag.get(f"{unit_name}_secret")
+    if not address or not secret:
+        return None
+    return server.Credentials(address=address, secret=secret)
+
+
 @dataclass
 class State:
     """The k8s Jenkins agent state.
@@ -82,6 +140,10 @@ class State:
     Attrs:
         agent_meta: The Jenkins agent metadata to register on Jenkins server.
         jenkins_config: Jenkins configuration value from juju config.
+        slave_relation_credentials: The full set of credentials from the slave relation. None if
+            partial data is set.
+        agent_relation_credentials: The full set of credentials from the agent relation. None if
+            partial data is set or the credentials do not belong to current agent.
         jenkins_agent_service_name: The Jenkins agent workload container name.
     """
 
@@ -123,18 +185,18 @@ class State:
         slave_relation = charm.model.get_relation(SLAVE_RELATION)
         slave_relation_credentials: typing.Optional[server.Credentials] = None
         if slave_relation and (
-            slave_relation_jenkins_unit := get_jenkins_unit(slave_relation.units, charm.app.name)
+            slave_relation_jenkins_unit := _get_jenkins_unit(slave_relation.units, charm.app.name)
         ):
-            slave_relation_credentials = get_credentials_from_slave_relation(
+            slave_relation_credentials = _get_credentials_from_slave_relation(
                 slave_relation.data[slave_relation_jenkins_unit]
             )
         agent_relation = charm.model.get_relation(AGENT_RELATION)
         agent_relation_credentials: typing.Optional[server.Credentials] = None
         if agent_relation and (
-            agent_relation_jenkins_unit := get_jenkins_unit(agent_relation.units, charm.app.name)
+            agent_relation_jenkins_unit := _get_jenkins_unit(agent_relation.units, charm.app.name)
         ):
-            agent_relation_credentials = get_credentials_from_agent_relation(
-                agent_relation_jenkins_unit, charm.unit.name
+            agent_relation_credentials = _get_credentials_from_agent_relation(
+                agent_relation.data[agent_relation_jenkins_unit], agent_meta.name
             )
 
         return cls(
@@ -143,60 +205,3 @@ class State:
             slave_relation_credentials=slave_relation_credentials,
             agent_relation_credentials=agent_relation_credentials,
         )
-
-
-def get_jenkins_unit(
-    all_units: typing.Set[ops.Unit], current_app_name: str
-) -> typing.Optional[ops.Unit]:
-    """Get the Jenkins charm unit in a relation.
-
-    Args:
-        all_units: All units in a relation.
-
-    Returns:
-        The Jenkins server application unit in the relation if found. None otherwise.
-    """
-    for unit in all_units:
-        # if the unit's application name is the same, this is peer unit. Otherwise, it is the
-        # Jenkins server unit.
-        if unit.app.name == current_app_name:
-            continue
-        return unit
-    return None
-
-
-def get_credentials_from_slave_relation(
-    server_unit_databag: ops.RelationDataContent,
-) -> typing.Optional[server.Credentials]:
-    """Import server metadata from databag in slave relation.
-
-    Args:
-        server_unit_databag: The relation databag content from slave relation.
-
-    Returns:
-        Metadata if complete values(url, secret) are set. None otherwise.
-    """
-    address = server_unit_databag.get("url")
-    secret = server_unit_databag.get("secret")
-    if not address or not secret:
-        return None
-    return server.Credentials(address=address, secret=secret)
-
-
-def get_credentials_from_agent_relation(
-    server_unit_databag: ops.RelationDataContent, unit_name: str
-) -> typing.Optional[server.Credentials]:
-    """Import server metadata from databag in agent relation.
-
-    Args:
-        server_unit_databag: The relation databag content from agent relation.
-        unit_name: The agent unit name.
-
-    Returns:
-        Metadata if complete values(url, secret) are set. None otherwise.
-    """
-    address = server_unit_databag.get("url")
-    secret = server_unit_databag.get(f"{unit_name}_secret")
-    if not address or not secret:
-        return None
-    return server.Credentials(address=address, secret=secret)

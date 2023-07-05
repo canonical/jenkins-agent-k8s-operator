@@ -4,6 +4,7 @@
 """Fixtures for Jenkins-k8s-operator charm unit tests."""
 
 import secrets
+import typing
 import unittest.mock
 
 import ops
@@ -35,17 +36,73 @@ def config_fixture():
     }
 
 
-@pytest.fixture(scope="function", name="mock_agent_relation_changed_event")
-def mock_agent_relation_changed_event_fixture():
+@pytest.fixture(scope="function", name="get_mock_relation_changed_event")
+def get_mock_relation_changed_event_fixture():
     """Relation changed event with name, data and unit data."""
-    mock_relation_data = unittest.mock.MagicMock(spec=ops.RelationData)
-    mock_relation = unittest.mock.MagicMock(spec=ops.Relation)
-    mock_relation.name = state.AGENT_RELATION
-    mock_relation.data = mock_relation_data
-    mock_event = unittest.mock.MagicMock(spec=ops.RelationChangedEvent)
-    mock_event.relation = mock_relation
-    mock_event.unit = "jenkins/0"
-    return mock_event
+
+    def get_mock_relation_changed_event(relation: str):
+        """Create a new mock relation changed event.
+
+        Args:
+            relation: The target relation name.
+
+        Returns:
+            The mock relation event with Jenkins server.
+        """
+        mock_relation_data = unittest.mock.MagicMock(spec=ops.RelationData)
+        mock_relation = unittest.mock.MagicMock(spec=ops.Relation)
+        mock_relation.name = relation
+        mock_relation.data = mock_relation_data
+        mock_event = unittest.mock.MagicMock(spec=ops.RelationChangedEvent)
+        mock_event.relation = mock_relation
+        mock_event.unit = "jenkins/0"
+        return mock_event
+
+    return get_mock_relation_changed_event
+
+
+@pytest.fixture(scope="function", name="get_valid_relation_data")
+def get_valid_relation_data_fixture():
+    """Relation changed event with name, data and unit data."""
+
+    def get_valid_relation_data(relation: str):
+        """Create a new mock relation changed event.
+
+        Args:
+            relation: The target relation name.
+
+        Returns:
+            The relation data for given relation.
+        """
+        if relation == state.AGENT_RELATION:
+            return {"url": "test_url", "jenkins-agent-k8s-0_secret": secrets.token_hex(16)}
+        return {"url": "test_url", "secret": secrets.token_hex(16)}
+
+    return get_valid_relation_data
+
+
+@pytest.fixture(scope="function", name="get_event_relation_data")
+def get_event_relation_data_fixture(
+    get_mock_relation_changed_event: typing.Callable[[str], unittest.mock.MagicMock],
+    get_valid_relation_data: typing.Callable[[str], typing.Dict[str, str]],
+):
+    """A wrapper to reduce fixgure arguments to get mock event and relation data."""
+
+    def wrap_event_relation_data(relation: str):
+        """Wrap mock event and relation data.
+
+        Args:
+            relation: The target relation name.
+
+        Returns:
+            A tuple wrapping mock relation changed event and relation data.
+        """
+        return (
+            get_mock_relation_changed_event(relation),
+            get_valid_relation_data(relation),
+        )
+
+    return wrap_event_relation_data
 
 
 @pytest.fixture(scope="function", name="agent_credentials")

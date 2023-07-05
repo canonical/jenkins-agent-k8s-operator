@@ -16,6 +16,7 @@ async def test_agent_relation(
     jenkins_machine_server: Application,
     application: Application,
     jenkins_client: jenkinsapi.jenkins.Jenkins,
+    num_agents: int,
 ):
     """
     arrange: given a cross controller cross model jenkins machine agent.
@@ -40,3 +41,5 @@ async def test_agent_relation(
 
     nodes = jenkins_client.get_nodes()
     assert all(node.is_online() for node in nodes.values())
+    # One of the nodes is the server node.
+    assert len(nodes.values()) == num_agents + 1

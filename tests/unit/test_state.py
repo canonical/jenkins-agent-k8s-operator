@@ -17,6 +17,38 @@ import pytest
 import state
 
 
+def test__get_jenkins_unit():
+    """
+    arrange: given a set of units in a relation.
+    act: when _get_jenkins_units is called.
+    assert: the Jenkins server unit is returned.
+    """
+    agent_app_name = "jenkins-agent-k8s"
+    mock_agent_unit = unittest.mock.MagicMock(spec=ops.Unit)
+    mock_agent_unit_2 = unittest.mock.MagicMock(spec=ops.Unit)
+    mock_agent_app = unittest.mock.MagicMock(spec=ops.Application)
+    mock_agent_app.name = agent_app_name
+    mock_agent_unit.app = mock_agent_app
+    mock_agent_unit_2.app = mock_agent_app
+    mock_server_unit = unittest.mock.MagicMock(spec=ops.Unit)
+    mock_server_app = unittest.mock.MagicMock(spec=ops.Application)
+    mock_server_unit.app = mock_server_app
+    mock_server_app.name = "jenkins"
+
+    assert (
+        state._get_jenkins_unit(
+            set(
+                (
+                    mock_agent_unit,
+                    mock_server_unit,
+                )
+            ),
+            current_app_name=agent_app_name,
+        )
+        == mock_server_unit
+    )
+
+
 def test_from_charm_invalid_agent_data(monkeypatch: pytest.MonkeyPatch):
     """
     arrange: given an invalid os cpu_count data.
