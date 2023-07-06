@@ -14,10 +14,6 @@ export TERM=xterm
 # location of java
 typeset JAVA=/usr/bin/java
 
-# arguments to pass to java - optional
-# Just set this variable with whatever you want to add as an environment variable
-# i.e JAVA_ARGS="-Xms 256m"
-typeset JAVA_ARGS=${JAVA_ARGS:-""}
 
 # URL of jenkins server to connect to
 # Not specifying this parameter will stop the agent
@@ -36,7 +32,7 @@ touch /var/lib/jenkins/agents/.ready
 
 # Start Jenkins agent
 echo "${JENKINS_AGENT}"
-${JAVA} "${JAVA_ARGS}" -jar ${AGENT_JAR} -jnlpUrl "${JENKINS_URL}"/computer/"${JENKINS_AGENT}"/slave-agent.jnlp -workDir "${JENKINS_WORKDIR}" -noReconnect -secret "${JENKINS_TOKEN}" || echo "Invalid or already used credentials."
+${JAVA} -jar ${AGENT_JAR} -jnlpUrl "${JENKINS_URL}/computer/${JENKINS_AGENT}/slave-agent.jnlp" -workDir "${JENKINS_WORKDIR}" -noReconnect -secret "${JENKINS_TOKEN}" || echo "Invalid or already used credentials."
 
 # Remove ready mark if unsuccessful
 rm /var/lib/jenkins/agents/.ready
