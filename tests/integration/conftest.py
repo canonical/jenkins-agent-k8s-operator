@@ -41,7 +41,7 @@ def agent_image_fixture(request: pytest.FixtureRequest) -> str:
 @pytest.fixture(scope="module", name="num_agents")
 def num_agents_fixture() -> int:
     """The number of agents to deploy."""
-    return 1
+    return 3
 
 
 @pytest_asyncio.fixture(scope="module", name="application")
