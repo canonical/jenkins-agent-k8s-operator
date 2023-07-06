@@ -89,7 +89,7 @@ def validate_credentials(
         time.sleep(random.random())  # nosec
     proc: ops.pebble.ExecProcess = container.exec(
         [
-            "java",
+            "/usr/lib/jvm/java-8-openjdk-amd64/bin/java",
             "-jar",
             str(AGENT_JAR_PATH),
             "-jnlpUrl",
@@ -109,13 +109,16 @@ def validate_credentials(
     # Check for successful connection log from the stdout.
     connected = False
     terminated = False
+    lines = ""
     # The proc.stdout is iterable according to process.exec documentation
     for line in proc.stdout:  # type: ignore
+        lines += line
         if "INFO: Connected" in line:
             connected = True
         if "INFO: Terminated" in line:
             terminated = True
 
+    logger.warning(lines)
     return connected and not terminated
 
 

@@ -14,10 +14,12 @@ run-user: _daemon_
 parts:
   jenkins:
     plugin: nil
+    stage-packages:
+      - openjdk-8-jre-headless
     overlay-packages:
       - bash
-      - ca-certificates-java
-      - default-jre-headless
+      # - ca-certificates-java
+      # - default-jre-headless
     override-prime: |
       craftctl default  
       /bin/bash -c "mkdir -p --mode=775 var/{lib/jenkins,lib/jenkins/agents,log/jenkins}"

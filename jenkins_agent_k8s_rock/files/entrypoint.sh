@@ -12,7 +12,7 @@ export TERM=xterm
 # system
 
 # location of java
-typeset JAVA=/usr/bin/java
+typeset JAVA=/usr/lib/jvm/java-8-openjdk-amd64/bin/java
 
 
 # URL of jenkins server to connect to
