@@ -43,13 +43,11 @@ class JenkinsConfig(BaseModel):
 
     Attrs:
         server_url: The Jenkins server url.
-        agent_names: Custom Jenkins agent names.
-        agent_tokens: Tokens used to register Jenkins agent to Jenkins server.
+        agent_name_token_pairs: Jenkins agent names paired with corresponding token value.
     """
 
     server_url: str = Field(..., min_length=1)
-    agent_names: typing.List[str] = Field(..., min_items=1)
-    agent_tokens: typing.List[str] = Field(..., min_items=1)
+    agent_name_token_pairs: typing.List[typing.Tuple[str, str]] = Field(..., min_items=1)
 
     @classmethod
     def from_charm_config(cls, config: ops.ConfigData) -> typing.Optional["JenkinsConfig"]:
@@ -62,17 +60,16 @@ class JenkinsConfig(BaseModel):
             JenkinsConfig if configuration exists, None otherwise.
         """
         server_url = config.get("jenkins_url", None)
-        agent_names = config.get("jenkins_agent_name", None)
-        agent_tokens = config.get("jenkins_agent_token", None)
+        agent_name_config = config.get("jenkins_agent_name", None)
+        agent_token_config = config.get("jenkins_agent_token", None)
         # None represents an unset Jenkins configuration values, meaning configuration values from
         # relation would be used.
-        if not server_url and not agent_names and not agent_tokens:
+        if not server_url and not agent_name_config and not agent_token_config:
             return None
-        return cls(
-            server_url=server_url or "",
-            agent_names=agent_names.split(":") if agent_names else [],
-            agent_tokens=agent_tokens.split(":") if agent_tokens else [],
-        )
+        agent_names = agent_name_config.split(":") if agent_name_config else []
+        agent_tokens = agent_token_config.split(":") if agent_token_config else []
+        agent_name_token_pairs = list(zip(agent_names, agent_tokens))
+        return cls(server_url=server_url or "", agent_name_token_pairs=agent_name_token_pairs)
 
 
 def _get_jenkins_unit(

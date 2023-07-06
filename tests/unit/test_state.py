@@ -88,5 +88,6 @@ def test_from_charm_vailid_config(harness: ops.testing.Harness, config: typing.D
     charm_state = state.State.from_charm(harness.charm)
     assert charm_state.jenkins_config, "Config should not be None."
     assert charm_state.jenkins_config.server_url == config["jenkins_url"]
-    assert charm_state.jenkins_config.agent_names == [config["jenkins_agent_name"]]
-    assert charm_state.jenkins_config.agent_tokens == [config["jenkins_agent_token"]]
+    assert charm_state.jenkins_config.agent_name_token_pairs == [
+        (config["jenkins_agent_name"], config["jenkins_agent_token"])
+    ]

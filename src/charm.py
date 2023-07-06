@@ -86,9 +86,7 @@ class JenkinsAgentCharm(ops.CharmBase):
             return
 
         valid_agent_token = server.find_valid_credentials(
-            agent_name_token_pairs=zip(
-                self.state.jenkins_config.agent_names, self.state.jenkins_config.agent_tokens
-            ),
+            agent_name_token_pairs=self.state.jenkins_config.agent_name_token_pairs,
             server_url=self.state.jenkins_config.server_url,
             container=container,
         )

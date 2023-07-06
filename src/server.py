@@ -86,7 +86,7 @@ def validate_credentials(
     # IMPORTANT: add random delay to prevent parallel execution.
     if add_random_delay:
         # It's okay to use random since it's not used for sensitive data.
-        time.sleep(random.random() * 2)  # nosec
+        time.sleep(random.random())  # nosec
     proc: ops.pebble.ExecProcess = container.exec(
         [
             "java",
