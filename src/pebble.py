@@ -52,7 +52,6 @@ class PebbleService:
                     },
                     "startup": "enabled",
                     "user": server.USER,
-                    "group": server.GROUP,
                 },
             },
             "checks": {

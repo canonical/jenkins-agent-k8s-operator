@@ -10,14 +10,8 @@ build-base: ubuntu:22.04
 license: Apache-2.0
 platforms:
   amd64:
+run-user: _daemon_
 parts:
-  add-user:
-    plugin: nil
-    overlay-script: |
-      mkdir -p $CRAFT_OVERLAY/var/{lib/jenkins,lib/jenkins/agents,log/jenkins}
-      chmod 755 $CRAFT_OVERLAY/var/{lib/jenkins,lib/jenkins/agents,log/jenkins}
-      groupadd -R $CRAFT_OVERLAY --gid 2000 jenkins
-      useradd -R $CRAFT_OVERLAY --system --gid 2000 --uid 2000 --home /var/lib/jenkins jenkins
   jenkins:
     plugin: nil
     overlay-packages:
@@ -27,7 +21,7 @@ parts:
     override-prime: |
       craftctl default  
       /bin/bash -c "mkdir -p --mode=775 var/{lib/jenkins,lib/jenkins/agents,log/jenkins}"
-      /bin/bash -c "chown -R 2000:2000 var/{lib/jenkins,lib/jenkins/agents,log/jenkins}"
+      /bin/bash -c "chown -R 584792 var/{lib/jenkins,lib/jenkins/agents,log/jenkins}"
   entrypoint:
     plugin: dump
     source: files
@@ -36,4 +30,4 @@ parts:
     override-prime: |
       craftctl default
       /bin/bash -c "chmod +x var/lib/jenkins/entrypoint.sh"
-      /bin/bash -c "chown -R 2000:2000 var/lib/jenkins/entrypoint.sh"
+      /bin/bash -c "chown -R 584792 var/lib/jenkins/entrypoint.sh"

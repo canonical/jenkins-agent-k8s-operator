@@ -20,8 +20,7 @@ AGENT_JAR_PATH = Path(JENKINS_WORKDIR / "agent.jar")
 AGENT_READY_PATH = Path(JENKINS_WORKDIR / "agents/.ready")
 ENTRYSCRIPT_PATH = Path(JENKINS_WORKDIR / "entrypoint.sh")
 
-USER = "jenkins"
-GROUP = "jenkins"
+USER = "_daemon_"
 
 
 class Credentials(BaseModel):
@@ -63,7 +62,7 @@ def download_jenkins_agent(server_url: str, container: ops.Container) -> None:
             "Failed to download agent JAR executable from server."
         ) from exc
 
-    container.push(path=AGENT_JAR_PATH, make_dirs=True, source=res.content, user=USER, group=GROUP)
+    container.push(path=AGENT_JAR_PATH, make_dirs=True, source=res.content, user=USER)
 
 
 def validate_credentials(
@@ -103,7 +102,6 @@ def validate_credentials(
         ],
         timeout=5,
         user=USER,
-        group=GROUP,
         working_dir=str(JENKINS_WORKDIR),
         combine_stderr=True,
     )

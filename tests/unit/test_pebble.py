@@ -44,7 +44,6 @@ def test__get_pebble_layer(harness: ops.testing.Harness):
         },
         "startup": "enabled",
         "user": server.USER,
-        "group": server.GROUP,
     }
 
 
