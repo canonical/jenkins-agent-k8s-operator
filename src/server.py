@@ -117,17 +117,7 @@ def validate_credentials(
             connected = True
         if "INFO: Terminated" in line:
             terminated = True
-    try:
-        proc.wait()
-    except ops.pebble.ExecError as exc:
-        logger.error("Validate credential exec error: %s, %s", lines, exc.exit_code)
-        return False
-    except ops.pebble.ChangeError as exc:
-        logger.error("Validate credential change error: %s %s", lines, exc.err)
-    except ops.pebble.TimeoutError:
-        # The long running process can timeout.
-        pass
-
+    logger.debug(lines)
     return connected and not terminated
 
 

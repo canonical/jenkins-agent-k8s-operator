@@ -8,5 +8,4 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     with:
       pre-run-script: tests/integration/pre_run_script.sh
-      tmate-debug: true
     secrets: inherit
