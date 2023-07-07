@@ -32,7 +32,18 @@ touch /var/lib/jenkins/agents/.ready
 
 # Start Jenkins agent
 echo "${JENKINS_AGENT}"
-${JAVA} -jar ${AGENT_JAR} -jnlpUrl "${JENKINS_URL}/computer/${JENKINS_AGENT}/slave-agent.jnlp" -workDir "${JENKINS_WORKDIR}" -noReconnect -secret "${JENKINS_TOKEN}" || echo "Invalid or already used credentials."
+
+MAX_RETRIES=3
+RETRY_COUNT=0
+DELAY=1
+
+until [ $RETRY_COUNT -ge $MAX_RETRIES ]
+do
+    ${JAVA} -jar ${AGENT_JAR} -jnlpUrl "${JENKINS_URL}/computer/${JENKINS_AGENT}/slave-agent.jnlp" -workDir "${JENKINS_WORKDIR}" -noReconnect -secret "${JENKINS_TOKEN}" || echo "Invalid or already used credentials."
+    RETRY_COUNT=$((RETRY_COUNT+1))
+    DELAY=$((DELAY*2))
+    sleep $DELAY
+done
 
 # Remove ready mark if unsuccessful
 rm /var/lib/jenkins/agents/.ready

@@ -37,7 +37,7 @@ async def test_agent_relation(
         f"{application.name}:slave",
         f"localhost:admin/{machine_model.name}.{jenkins_machine_server.name}",
     )
-    await model.wait_for_idle(status="active", timeout=1200)
+    await model.wait_for_idle(status="active")
 
     nodes = jenkins_client.get_nodes()
     assert all(node.is_online() for node in nodes.values())
