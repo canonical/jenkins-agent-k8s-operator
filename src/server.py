@@ -120,8 +120,10 @@ def validate_credentials(
     try:
         proc.wait()
     except ops.pebble.ExecError as exc:
-        logger.error("Validate credential error: %s, %s", lines, exc.exit_code)
+        logger.error("Validate credential exec error: %s, %s", lines, exc.exit_code)
         return False
+    except ops.pebble.ChangeError as exc:
+        logger.error("Validate credential change error: %s %s", lines, exc.err)
     except ops.pebble.TimeoutError:
         # The long running process can timeout.
         pass
