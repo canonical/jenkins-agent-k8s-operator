@@ -1,4 +1,4 @@
-name: Test and publish charm
+name: Publish to edge
 
 # On push to a "special" branch, we:
 # * always publish to charmhub at latest/edge/branchname
@@ -14,10 +14,8 @@ on:
       - main
 
 jobs:
-  test-and-publish-charm:
-    uses: canonical/operator-workflows/.github/workflows/test_and_publish_charm.yaml@main
-    with:
-      integration-test-extra-arguments: --cloud microk8s --jenkins-controller-name $(cat controller_name.txt) --jenkins-model-name $(cat model_name.txt) --jenkins-unit-number $(cat unit_number.txt)
-      integration-test-provider: 'microk8s'
-      integration-test-pre-run-script: files/pre-integration-test.sh
+  publish-to-edge:
+    uses: canonical/operator-workflows/.github/workflows/publish_charm.yaml@main
     secrets: inherit
+    with:
+      channel: latest/edge
