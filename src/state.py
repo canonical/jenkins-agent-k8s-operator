@@ -59,9 +59,9 @@ class JenkinsConfig(BaseModel):
         Returns:
             JenkinsConfig if configuration exists, None otherwise.
         """
-        server_url = config.get("jenkins_url", None)
-        agent_name_config = config.get("jenkins_agent_name", None)
-        agent_token_config = config.get("jenkins_agent_token", None)
+        server_url = config.get("jenkins_url")
+        agent_name_config = config.get("jenkins_agent_name")
+        agent_token_config = config.get("jenkins_agent_token")
         # None represents an unset Jenkins configuration values, meaning configuration values from
         # relation would be used.
         if not server_url and not agent_name_config and not agent_token_config:
