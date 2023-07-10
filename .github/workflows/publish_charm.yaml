@@ -1,11 +1,9 @@
 name: Publish to edge
 
-# On push to a "special" branch, we:
-# * always publish to charmhub at latest/edge/branchname
-# * always run tests
-# where a "special" branch is one of main/master or track/**, as
-# by convention these branches are the source for a corresponding
-# charmhub edge channel.
+# On push to the main branch, the workflow will:
+# * draft publish docs if the docs directory exists
+# * publish resource images
+# * publish charm to latest/edge channel
 
 on:
   workflow_dispatch:
