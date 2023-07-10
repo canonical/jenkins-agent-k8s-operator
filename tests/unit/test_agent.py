@@ -17,12 +17,7 @@ import server
 import state
 from charm import JenkinsAgentCharm
 
-from .constants import (
-    ACTIVE_STATUS_NAME,
-    BLOCKED_STATUS_NAME,
-    ERRORED_STATUS_NAME,
-    WAITING_STATUS_NAME,
-)
+from .constants import ACTIVE_STATUS_NAME, BLOCKED_STATUS_NAME, WAITING_STATUS_NAME
 
 
 @pytest.mark.parametrize(
@@ -267,13 +262,13 @@ def test_agent_relation_changed_download_jenkins_agent_fail(
     harness.begin()
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    if relation == state.AGENT_RELATION:
-        jenkins_charm.agent_observer._on_agent_relation_changed(mock_event)
-    else:
-        jenkins_charm.agent_observer._on_slave_relation_changed(mock_event)
+    with pytest.raises(RuntimeError) as exc:
+        if relation == state.AGENT_RELATION:
+            jenkins_charm.agent_observer._on_agent_relation_changed(mock_event)
+        else:
+            jenkins_charm.agent_observer._on_slave_relation_changed(mock_event)
 
-    assert jenkins_charm.unit.status.name == ERRORED_STATUS_NAME
-    assert jenkins_charm.unit.status.message == "Failed to download Jenkins agent executable."
+        assert exc.value == "Failed to download Jenkins agent executable."
 
 
 @pytest.mark.parametrize(

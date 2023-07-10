@@ -48,6 +48,9 @@ class JenkinsAgentCharm(ops.CharmBase):
 
         Args:
             event: The event fired on config changed or upgrade charm.
+
+        Raises:
+            RuntimeError: if the Jenkins agent failed to download.
         """
         container = self.unit.get_container(self.state.jenkins_agent_service_name)
         if not container.can_connect():
@@ -82,8 +85,7 @@ class JenkinsAgentCharm(ops.CharmBase):
             )
         except server.AgentJarDownloadError as exc:
             logger.error("Failed to download Agent JAR executable, %s", exc)
-            self.model.unit.status = ops.ErrorStatus("Failed to download Agent JAR executable.")
-            return
+            raise RuntimeError("Failed to download Jenkins agent. Fix issue ") from exc
 
         valid_agent_token = server.find_valid_credentials(
             agent_name_token_pairs=self.state.jenkins_config.agent_name_token_pairs,

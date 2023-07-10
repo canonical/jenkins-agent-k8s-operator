@@ -96,6 +96,9 @@ class Observer(ops.Object):
 
         Args:
             event: The event fired when slave relation data has changed.
+
+        Raises:
+            RuntimeError: if the Jenkins agent failed to download.
         """
         logger.info("%s relation changed.", event.relation.name)
 
@@ -128,10 +131,7 @@ class Observer(ops.Object):
             )
         except server.AgentJarDownloadError as exc:
             logger.error("Failed to download Jenkins agent executable, %s", exc)
-            self.charm.unit.status = ops.ErrorStatus(
-                "Failed to download Jenkins agent executable."
-            )
-            return
+            raise RuntimeError("Failed to download Jenkins agent.") from exc
 
         self.charm.unit.status = ops.MaintenanceStatus("Validating credentials.")
         if not server.validate_credentials(
@@ -166,6 +166,9 @@ class Observer(ops.Object):
 
         Args:
             event: The event fired when the agent relation data has changed.
+
+        Raises:
+            RuntimeError: if the Jenkins agent failed to download.
         """
         logger.info("%s relation changed.", event.relation.name)
 
@@ -198,10 +201,7 @@ class Observer(ops.Object):
             )
         except server.AgentJarDownloadError as exc:
             logger.error("Failed to download Jenkins agent executable, %s", exc)
-            self.charm.unit.status = ops.ErrorStatus(
-                "Failed to download Jenkins agent executable."
-            )
-            return
+            raise RuntimeError("Failed to download Jenkins agent.") from exc
 
         self.charm.unit.status = ops.MaintenanceStatus("Validating credentials.")
         if not server.validate_credentials(

@@ -17,7 +17,7 @@ import server
 import state
 from charm import JenkinsAgentCharm
 
-from .constants import ACTIVE_STATUS_NAME, BLOCKED_STATUS_NAME, ERRORED_STATUS_NAME
+from .constants import ACTIVE_STATUS_NAME, BLOCKED_STATUS_NAME
 
 
 def test___init___invalid_state(
@@ -114,10 +114,10 @@ def test__register_agent_from_config_download_agent_error(
     mock_event = unittest.mock.MagicMock(spec=ops.HookEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm._on_config_changed(mock_event)
 
-    assert jenkins_charm.unit.status.name == ERRORED_STATUS_NAME
-    assert jenkins_charm.unit.status.message == "Failed to download Agent JAR executable."
+    with pytest.raises(RuntimeError) as exc:
+        jenkins_charm._on_config_changed(mock_event)
+        assert exc.value == "Failed to download Agent JAR executable."
 
 
 def test__register_agent_from_config_no_valid_credentials(
