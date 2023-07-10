@@ -1,90 +1,186 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# Disable since pytest fixtures require the fixture name as an argument.
-# pylint: disable=redefined-outer-name
+"""Fixtures for Jenkins-k8s-operator charm unit tests."""
 
-"""Fixtures for unit tests."""
-
-import os
+import secrets
 import typing
-from unittest import mock
+import unittest.mock
 
+import ops
 import pytest
-from ops import testing
+from ops.testing import Harness
 
-from src.charm import JenkinsAgentCharm
+import server
+import state
+from charm import JenkinsAgentCharm
 
-from . import types
 
-
-@pytest.fixture
-def harness() -> typing.Generator[testing.Harness[JenkinsAgentCharm], None, None]:
-    """Create test harness for unit tests."""
-    # Create and confifgure harness
-    harness = testing.Harness(JenkinsAgentCharm)
-    harness.begin()
-    harness.disable_hooks()
-    harness.update_config(
-        {
-            "jenkins_url": "",
-            "jenkins_agent_name": "",
-            "jenkins_agent_token": "",
-            "jenkins_agent_labels": "",
-        }
-    )
+@pytest.fixture(scope="function", name="harness")
+def harness_fixture():
+    """Enable ops test framework harness."""
+    harness = Harness(JenkinsAgentCharm)
 
     yield harness
 
     harness.cleanup()
 
 
-@pytest.fixture(scope="module")
-def valid_config():
-    """Get valid configuration for the charm."""
+@pytest.fixture(scope="function", name="config")
+def config_fixture():
+    """The Jenkins testing configuration values."""
     return {
-        "jenkins_url": "http://test",
-        "jenkins_agent_name": "agent-one",
-        "jenkins_agent_token": "token-one",
+        "jenkins_url": "http://testingurl",
+        "jenkins_agent_name": "testing_agent_name",
+        "jenkins_agent_token": secrets.token_hex(16),
     }
 
 
-@pytest.fixture
-def harness_pebble_ready(harness: testing.Harness[JenkinsAgentCharm]):
-    """Get the charm to the pebble ready state."""
-    harness.container_pebble_ready(harness.charm.service_name)
+@pytest.fixture(scope="function", name="get_mock_relation_changed_event")
+def get_mock_relation_changed_event_fixture():
+    """Relation changed event with name, data and unit data."""
 
-    return harness
+    def get_mock_relation_changed_event(relation: str):
+        """Create a new mock relation changed event.
+
+        Args:
+            relation: The target relation name.
+
+        Returns:
+            The mock relation event with Jenkins server.
+        """
+        mock_relation_data = unittest.mock.MagicMock(spec=ops.RelationData)
+        mock_relation = unittest.mock.MagicMock(spec=ops.Relation)
+        mock_relation.name = relation
+        mock_relation.data = mock_relation_data
+        mock_event = unittest.mock.MagicMock(spec=ops.RelationChangedEvent)
+        mock_event.relation = mock_relation
+        mock_event.unit = "jenkins/0"
+        return mock_event
+
+    return get_mock_relation_changed_event
 
 
-@pytest.fixture
-def charm_with_jenkins_relation(
-    harness_pebble_ready: testing.Harness[JenkinsAgentCharm],
-    monkeypatch: pytest.MonkeyPatch,
+@pytest.fixture(scope="function", name="get_valid_relation_data")
+def get_valid_relation_data_fixture():
+    """Relation changed event with name, data and unit data."""
+
+    def get_valid_relation_data(relation: str):
+        """Create a new mock relation changed event.
+
+        Args:
+            relation: The target relation name.
+
+        Returns:
+            The relation data for given relation.
+        """
+        if relation == state.AGENT_RELATION:
+            return {"url": "test_url", "jenkins-agent-k8s-0_secret": secrets.token_hex(16)}
+        return {"url": "test_url", "secret": secrets.token_hex(16)}
+
+    return get_valid_relation_data
+
+
+@pytest.fixture(scope="function", name="get_event_relation_data")
+def get_event_relation_data_fixture(
+    get_mock_relation_changed_event: typing.Callable[[str], unittest.mock.MagicMock],
+    get_valid_relation_data: typing.Callable[[str], typing.Dict[str, str]],
 ):
-    """Create the jenkins agent charm with an existing relation to jenkins."""
-    # Mock uname and CPU count
-    mock_os_cpu_count = mock.MagicMock()
-    cpu_count = 8
-    mock_os_cpu_count.return_value = cpu_count
-    monkeypatch.setattr(os, "cpu_count", mock_os_cpu_count)
-    mock_os_uname = mock.MagicMock()
-    machine_architecture = "x86_64"
-    mock_os_uname.return_value.machine = machine_architecture
-    monkeypatch.setattr(os, "uname", mock_os_uname)
-    # Setup relation
-    harness_pebble_ready.enable_hooks()
-    remote_app = "jenkins"
-    remote_unit_name = f"{remote_app}/0"
-    relation_id = harness_pebble_ready.add_relation(relation_name="slave", remote_app=remote_app)
-    harness_pebble_ready.add_relation_unit(
-        relation_id=relation_id, remote_unit_name=remote_unit_name
-    )
+    """A wrapper to reduce fixgure arguments to get mock event and relation data."""
 
-    return types.CharmWithJenkinsRelation(
-        cpu_count=cpu_count,
-        machine_architecture=machine_architecture,
-        remote_app=remote_app,
-        remote_unit_name=remote_unit_name,
-        relation_id=relation_id,
-    )
+    def wrap_event_relation_data(relation: str):
+        """Wrap mock event and relation data.
+
+        Args:
+            relation: The target relation name.
+
+        Returns:
+            A tuple wrapping mock relation changed event and relation data.
+        """
+        return (
+            get_mock_relation_changed_event(relation),
+            get_valid_relation_data(relation),
+        )
+
+    return wrap_event_relation_data
+
+
+@pytest.fixture(scope="function", name="agent_credentials")
+def agent_credentials_fixture():
+    """Credentials from the Jenkins server charm."""
+    return server.Credentials(address="http://test-jenkins-url", secret=secrets.token_hex(16))
+
+
+@pytest.fixture(scope="function", name="raise_exception")
+def raise_exception_fixture():
+    """The mock function for patching."""
+
+    def raise_exception(exception: Exception):
+        """Raise exception function for monkeypatching.
+
+        Args:
+            exception: The exception to raise.
+
+        Raises:
+            exception: .
+        """
+        raise exception
+
+    return raise_exception
+
+
+@pytest.fixture(scope="function", name="jenkins_error_log")
+def jenkins_error_log_fixture():
+    """The logs produced by Jenkins agent on failed connection."""
+    return """<TIME_REDACTED> org.jenkinsci.remoting.engine.WorkDirManager initializeWorkDir
+INFO: Using /var/lib/jenkins/remoting as a remoting work directory
+<TIME_REDACTED> org.jenkinsci.remoting.engine.WorkDirManager setupLogging
+INFO: Both error and output logs will be printed to /var/lib/jenkins/remoting
+[Fatal Error] :1:1: Invalid byte 1 of 1-byte UTF-8 sequence.
+Exception in thread "main" org.xml.sax.SAXParseException; lineNumber: 1; columnNumber: 1; Invalid byte 1 of 1-byte UTF-8 sequence.
+    """
+
+
+@pytest.fixture(scope="function", name="jenkins_used_credential_log")
+def jenkins_used_credential_log_fixture():
+    """The logs produced by Jenkins agent on using an already registered credential."""
+    return "Given agent already registered. Skipping."
+
+
+@pytest.fixture(scope="function", name="jenkins_connection_log")
+def jenkins_connection_log_fixture():
+    """The logs produced by Jenkins on successful connection."""
+    return """<TIME_REDACTED> hudson.remoting.jnlp.Main createEngine
+INFO: Setting up agent: jenkins-agent-k8s-0
+<TIME_REDACTED> hudson.remoting.Engine startEngine
+INFO: Using Remoting version: 3107.v665000b_51092
+<TIME_REDACTED> org.jenkinsci.remoting.engine.WorkDirManager initializeWorkDir
+INFO: Using /var/lib/jenkins/remoting as a remoting work directory
+<TIME_REDACTED> hudson.remoting.jnlp.Main$CuiListener status
+INFO: Locating server among [<IP_REDACTED>]
+<TIME_REDACTED> org.jenkinsci.remoting.engine.JnlpAgentEndpointResolver resolve
+INFO: Remoting server accepts the following protocols: [JNLP4-connect, Ping]
+<TIME_REDACTED> hudson.remoting.jnlp.Main$CuiListener status
+INFO: Agent discovery successful
+  Agent address: <IP_REDACTED>
+  Agent port:    <PORT_REDACTED>
+  Identity:      <IP_REDACTED>
+<TIME_REDACTED> hudson.remoting.jnlp.Main$CuiListener status
+INFO: Handshaking
+<TIME_REDACTED> hudson.remoting.jnlp.Main$CuiListener status
+INFO: Connecting to <IP_REDACTED>:<PORT_REDACTED>
+<TIME_REDACTED> hudson.remoting.jnlp.Main$CuiListener status
+INFO: Trying protocol: JNLP4-connect
+<TIME_REDACTED> org.jenkinsci.remoting.protocol.impl.BIONetworkLayer$Reader run
+INFO: Waiting for ProtocolStack to start.
+<TIME_REDACTED> hudson.remoting.jnlp.Main$CuiListener status
+INFO: Remote identity confirmed: <IP_REDACTED>
+<TIME_REDACTED> hudson.remoting.jnlp.Main$CuiListener status
+INFO: Connected
+"""
+
+
+@pytest.fixture(scope="function", name="jenkins_terminated_connection_log")
+def jenkins_terminated_connection_log_fixture(jenkins_connection_log: str):
+    """The logs produced by Jenkins on terminated connection."""
+    return jenkins_connection_log + "INFO: Terminated"

@@ -1,218 +1,137 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# Disable since pytest fixtures require the fixture name as an argument.
-# pylint: disable=redefined-outer-name
-# Disable since fixtures can become complicated
-# pylint: disable=too-many-arguments
+"""Fixtures for Jenkins-agent-k8s-operator charm integration tests."""
 
-"""Fixtures for integration tests."""
+import logging
+import secrets
+import typing
 
-import asyncio
-import pathlib
-
-import jenkins
-import juju.model
+import jenkinsapi.jenkins
 import pytest
 import pytest_asyncio
-import yaml
+from juju.action import Action
+from juju.application import Application
+from juju.client._definitions import FullStatus, UnitStatus
+from juju.model import Controller, Model
+from juju.unit import Unit
 from pytest_operator.plugin import OpsTest
 
-
-@pytest.fixture(scope="module")
-def jenkins_agent_image(pytestconfig: pytest.Config):
-    """Get the jenkins agent image."""
-    value: None | str = pytestconfig.getoption("--jenkins-agent-image")
-    assert value is not None, "please specify the --jenkins-agent-image command line option"
-    return value
+logger = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="module")
-def jenkins_controller_name(pytestconfig: pytest.Config):
-    """Get the name of the controller jenkins is running on."""
-    value: None | str = pytestconfig.getoption("--jenkins-controller-name")
-    assert value is not None, "please specify the --jenkins-controller-name command line option"
-    return value
+@pytest.fixture(scope="module", name="model")
+def model_fixture(ops_test: OpsTest) -> Model:
+    """The testing model."""
+    assert ops_test.model
+    return ops_test.model
 
 
-@pytest.fixture(scope="module")
-def jenkins_model_name(pytestconfig: pytest.Config):
-    """Get the name of the model jenkins is running on."""
-    value: None | str = pytestconfig.getoption("--jenkins-model-name")
-    assert value is not None, "please specify the --jenkins-model-name command line option"
-    return value
+@pytest.fixture(scope="module", name="agent_image")
+def agent_image_fixture(request: pytest.FixtureRequest) -> str:
+    """The OCI image for jenkins-agent-k8s charm."""
+    agent_k8s_image = request.config.getoption("--jenkins-agent-k8s-image")
+    assert agent_k8s_image, (
+        "--jenkins-agent-k8s-image argument is required which should contain the name of the OCI "
+        "image."
+    )
+    return agent_k8s_image
 
 
-@pytest.fixture(scope="module")
-def jenkins_unit_number(pytestconfig: pytest.Config):
-    """Get the number of the unit jenkins is running on."""
-    value: None | str = pytestconfig.getoption("--jenkins-unit-number")
-    assert value is not None, "please specify the --jenkins-unit-number command line option"
-    assert value.isdigit(), "--jenkins-unit-number must be a non-negative integer"
-    return int(value)
+@pytest.fixture(scope="module", name="num_agents")
+def num_agents_fixture() -> int:
+    """The number of agents to deploy."""
+    return 1
 
 
-@pytest.fixture(scope="module")
-def metadata():
-    """Provides charm metadata."""
-    yield yaml.safe_load(pathlib.Path("./metadata.yaml").read_text(encoding="utf-8"))
-
-
-@pytest.fixture(scope="module")
-def app_name(metadata):
-    """Provides app name from the metadata."""
-    yield metadata["name"]
-
-
-@pytest_asyncio.fixture(scope="module")
-async def agent_label(ops_test: OpsTest):
-    """Provides label that uniquely identifies the agent under test."""
-    yield ops_test.model_name
-
-
-@pytest_asyncio.fixture(scope="module")
-async def app(
-    ops_test: OpsTest,
-    app_name: str,
-    jenkins_agent_image: str,
-    jenkins_controller_name: str,
-    jenkins_model_name: str,
-    agent_label: str,
-):
-    """Charm used for integration testing.
-
-    Builds the charm and deploys it and the relations it depends on.
-    """
-    # This helps with type hints, it seems model could be None
-    assert ops_test.model is not None
-
-    # Build and deploy the charm
+@pytest_asyncio.fixture(scope="module", name="application")
+async def application_fixture(
+    ops_test: OpsTest, model: Model, agent_image: str, num_agents: int
+) -> typing.AsyncGenerator[Application, None]:
+    """Build and deploy the charm."""
+    # Build and deploy charm from local source folder
     charm = await ops_test.build_charm(".")
-    resources = {"jenkins-agent-image": jenkins_agent_image}
-    application = await ops_test.model.deploy(
-        charm,
-        resources=resources,
-        application_name=app_name,
-        series="jammy",
-        config={"jenkins_agent_labels": agent_label},
+    resources = {"jenkins-agent-k8s-image": agent_image}
+
+    # Deploy the charm and wait for blocked status
+    application = await model.deploy(
+        charm, resources=resources, series="jammy", num_units=num_agents
     )
-    await ops_test.model.wait_for_idle()
-
-    juju_model = juju.model.Model()
-    await juju_model.connect("testing")
-    juju_controller = await juju_model.get_controller()
-    await juju_controller.connect()
-    controller_name = juju_controller.controller_name
-
-    assert controller_name is not None
-
-    # Create the relationship
-    jenkins_controller_model_name = f"{jenkins_controller_name}:{jenkins_model_name}"
-    await ops_test.model.create_offer(application_name=app_name, endpoint=f"{app_name}:slave")
-    # [2022-08-26] Cannot use native ops_test functions because they do not support
-    # cross-controller operations
-    await ops_test.juju(
-        "add-relation",
-        "jenkins",
-        f"{controller_name}:{ops_test.model_name}.{app_name}",
-        "--model",
-        jenkins_controller_model_name,
-        check=True,
-    )
-    await ops_test.model.wait_for_idle()
+    await model.wait_for_idle(apps=[application.name], status="blocked")
 
     yield application
 
-    # Delete relation and saas
-    # [2022-08-26] Cannot use native ops_test functions because they do not support
-    # cross-controller operations
-    await asyncio.gather(
-        ops_test.juju(
-            "remove-relation",
-            f"{app_name}:slave",
-            "jenkins:master",
-            "--model",
-            jenkins_controller_model_name,
-            check=True,
-        ),
-        ops_test.juju(
-            "remove-saas", app_name, "--model", jenkins_controller_model_name, check=True
-        ),
+    await model.remove_application(application.name, block_until_done=True, force=True)
+
+
+@pytest_asyncio.fixture(scope="module", name="machine_controller")
+async def machine_controller_fixture() -> typing.AsyncGenerator[Controller, None]:
+    """The juju controller on LXC local cloud."""
+    controller = Controller()
+    await controller.connect_controller("localhost")
+
+    yield controller
+
+    await controller.disconnect()
+
+
+@pytest_asyncio.fixture(scope="module", name="machine_model")
+async def machine_model_fixture(
+    machine_controller: Controller,
+) -> typing.AsyncGenerator[Model, None]:
+    """The machine model for jenkins machine charm."""
+    machine_model_name = f"jenkins-server-machine-{secrets.token_hex(2)}"
+    logger.info("Adding model %s on cloud localhost", machine_model_name)
+    model = await machine_controller.add_model(machine_model_name)
+
+    yield model
+
+    await model.disconnect()
+
+
+@pytest_asyncio.fixture(scope="module", name="jenkins_machine_server")
+async def jenkins_machine_server_fixture(machine_model: Model) -> Application:
+    """The jenkins machine server."""
+    app = await machine_model.deploy("jenkins", series="focal")
+    await machine_model.wait_for_idle(apps=[app.name], timeout=1200, raise_on_error=False)
+
+    return app
+
+
+@pytest_asyncio.fixture(scope="module", name="server_unit_ip")
+async def server_unit_ip_fixture(machine_model: Model, jenkins_machine_server: Application):
+    """Get Jenkins machine server charm unit IP."""
+    status: FullStatus = await machine_model.get_status([jenkins_machine_server.name])
+    try:
+        unit_status: UnitStatus = next(
+            iter(status.applications[jenkins_machine_server.name].units.values())
+        )
+        assert unit_status.public_address, "Invalid unit address"
+        return unit_status.public_address
+    except StopIteration as exc:
+        raise StopIteration("Invalid unit status") from exc
+
+
+@pytest_asyncio.fixture(scope="module", name="web_address")
+async def web_address_fixture(server_unit_ip: str):
+    """Get Jenkins machine server charm web address."""
+    return f"http://{server_unit_ip}:8080"
+
+
+@pytest_asyncio.fixture(scope="module", name="jenkins_client")
+async def jenkins_client_fixture(
+    jenkins_machine_server: Application,
+    web_address: str,
+) -> jenkinsapi.jenkins.Jenkins:
+    """The Jenkins API client."""
+    jenkins_unit: Unit = jenkins_machine_server.units[0]
+    action: Action = await jenkins_unit.run_action("get-admin-credentials")
+    await action.wait()
+    assert action.status == "completed", "Failed to get credentials."
+    password = action.results["password"]
+
+    # Initialization of the jenkins client will raise an exception if unable to connect to the
+    # server.
+    return jenkinsapi.jenkins.Jenkins(
+        baseurl=web_address, username="admin", password=password, timeout=60
     )
-
-
-@pytest_asyncio.fixture(scope="module")
-async def jenkins_cli(
-    ops_test: OpsTest,
-    jenkins_controller_name: str,
-    jenkins_model_name: str,
-    jenkins_unit_number: int,
-):
-    """Create cli to jenkins."""
-    # Get information about jenkins
-    unit_name = f"{jenkins_model_name}/{jenkins_unit_number}"
-    controller_model_name = f"{jenkins_controller_name}:{jenkins_model_name}"
-    # [2022-08-26] Cannot use native ops_test functions because they do not support
-    # cross-controller operations
-    _, result, _ = await ops_test.juju(
-        "show-unit", unit_name, "--format", "yaml", "--model", controller_model_name, check=True
-    )
-    public_address = yaml.safe_load(result)[unit_name]["public-address"]
-    # [2022-08-26] Cannot use native ops_test functions because they do not support
-    # cross-controller operations
-    _, result, _ = await ops_test.juju(
-        "run-action",
-        unit_name,
-        "get-admin-credentials",
-        "--wait",
-        "--format",
-        "yaml",
-        "--model",
-        controller_model_name,
-        check=True,
-    )
-    result_dict = yaml.safe_load(result)[f"unit-{jenkins_model_name}-{jenkins_unit_number}"][
-        "results"
-    ]
-    username = result_dict["username"]
-    password = result_dict["password"]
-
-    # Handling IPv6 and create cli
-    hostname = f"[{public_address}]" if ":" in public_address else public_address
-    return jenkins.Jenkins(url=f"http://{hostname}:8080", username=username, password=password)
-
-
-@pytest.fixture
-def jenkins_test_job(jenkins_cli: jenkins.Jenkins, agent_label: str):
-    """Create a test job.
-
-    The agent_label is used in the job to target the charmed jenkins agent.
-    """
-    job_name = f"test-job-{agent_label}"
-    job_xml = f"""<?xml version='1.1' encoding='UTF-8'?>
-<project>
-  <description></description>
-  <keepDependencies>false</keepDependencies>
-  <properties/>
-  <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>{agent_label}</assignedNode>
-  <canRoam>false</canRoam>
-  <disabled>false</disabled>
-  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
-  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
-  <triggers/>
-  <concurrentBuild>false</concurrentBuild>
-  <builders>
-    <hudson.tasks.Shell>
-      <command>echo test</command>
-      <configuredLocalRules/>
-    </hudson.tasks.Shell>
-  </builders>
-  <publishers/>
-  <buildWrappers/>
-</project>"""
-    jenkins_cli.create_job(name=job_name, config_xml=job_xml)
-
-    yield job_name
-
-    jenkins_cli.delete_job(name=job_name)

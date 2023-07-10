@@ -42,7 +42,7 @@ juju run-action jenkins/0 get-admin-credentials --wait
 
 Then go to the jenkins interface by visiting `$JENKINS_IP:8080` in a browser,
 and logging in with the username `admin` and password (as obtained through the command above).
- You can configure the plugins you want, and either create an
+You can configure the plugins you want, and either create an
 initial admin user or skip that and continue with the pre-created one.
 
 Now we're going to create our k8s model and generate a cross-model relation
@@ -51,7 +51,7 @@ offer:
 ```bash
 microk8s.config | juju add-k8s micro --controller=lxd
 juju add-model jenkins-agent-k8s micro
-juju deploy alejdg-jenkins-agent-k8s --resource jenkins-agent-image=jenkinscicharmers/jenkinsagent:edge
+juju deploy jenkins-agent-k8s
 ```
 
 The charm status will be "Blocked" with a message of "Missing required config:
@@ -60,7 +60,7 @@ by creating and accepting our cross-model relation. We do this from within the
 k8s model:
 
 ```bash
-juju offer jenkins-agent:slave
+juju offer jenkins-agent-k8s:slave
 # The output will be something like:
 #  Application "jenkins-agent" endpoints [slave] available at "admin/jenkins-agent-k8s.jenkins-agent"
 ```
@@ -69,7 +69,7 @@ Switch back to your IaaS model where you deployed jenkins and run:
 
 ```bash
 # Adjust based on the output of your 'juju offer' command above
-juju add-relation jenkins <your-controller>:admin/<your-microk8s-model>.jenkins-agent
+juju add-relation jenkins <your-controller>:admin/<your-microk8s-model>.jenkins-agent-k8s
 ```
 
 You can now visit `$JENKINS_IP:8080/computer/` in a browser and you'll see the
@@ -86,7 +86,7 @@ This is feature is being tracked in this [bug](https://bugs.launchpad.net/charm-
 If more units are needed while this is not available, deploy additional applications with:
 
 ```bash
-juju deploy alejdg-jenkins-agent-k8s agent-one --resource jenkins-agent-image=jenkinscicharmers/jenkinsagent:edge
+juju deploy jenkins-agent-k8s agent-one
 ```
 
 For more details [see here](https://charmhub.io/alejdg-jenkins-agent-k8s/docs).

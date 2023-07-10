@@ -1,18 +1,16 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Fixtures for all tests."""
+"""Fixtures for jenkins-agent-k8s charm tests."""
 
-from pytest import Parser
+import pytest
 
 
-def pytest_addoption(parser: Parser):
-    """Store command line options.
+def pytest_addoption(parser: pytest.Parser):
+    """Parse additional pytest options.
 
     Args:
-        parser: Argument parser.
+        parser: pytest command line parser.
     """
-    parser.addoption("--jenkins-agent-image", action="store")
-    parser.addoption("--jenkins-controller-name", action="store")
-    parser.addoption("--jenkins-model-name", action="store")
-    parser.addoption("--jenkins-unit-number", action="store")
+    # The Jenkins agent k8s image name:tag.
+    parser.addoption("--jenkins-agent-k8s-image", action="store", default="")

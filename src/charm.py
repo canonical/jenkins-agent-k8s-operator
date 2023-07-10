@@ -3,258 +3,126 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Charm for Jenkins Agent on kubernetes."""
+"""Charm k8s jenkins agent."""
 
 import logging
-import os
 import typing
-import uuid
 
-import yaml
-from ops.charm import (
-    CharmBase,
-    ConfigChangedEvent,
-    RelationChangedEvent,
-    RelationJoinedEvent,
-)
-from ops.framework import StoredState
+import ops
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
+
+import agent
+import pebble
+import server
+from state import AGENT_RELATION, SLAVE_RELATION, InvalidStateError, State
 
 logger = logging.getLogger()
 
 
-class JenkinsAgentCharmStoredState(StoredState):
-    """Defines valid attributes of the stored state for the Jenkins Agent.
+class JenkinsAgentCharm(ops.CharmBase):
+    """Charm Jenkins k8s agent."""
 
-    Attrs:
-       relation_configured: Whether the relation is configured.
-       jenkins_url: Jenkins server URL.
-       relation_agent_name: Agent name.
-       relation_agent_token: Token for this agent.
-    """
-
-    # Disabling since class is used to add type information to the stored state.
-    # pylint: disable=too-few-public-methods
-
-    relation_configured: bool | None
-    jenkins_url: str | None
-    relation_agent_name: str
-    relation_agent_token: str | None
-
-
-class JenkinsAgentEnvConfig(typing.TypedDict):
-    """The environment configuration for the jenkins agent.
-
-    Attrs:
-        JENKINS_AGENTS: List of Jenkins agents.
-        JENKINS_TOKENS: List of Jenkins tokens.
-        JENKINS_URL: Jenkins server URL.
-    """
-
-    JENKINS_AGENTS: str
-    JENKINS_TOKENS: str
-    JENKINS_URL: str
-
-
-class JenkinsAgentCharm(CharmBase):
-    """Charm for Jenkins Agent on kubernetes.
-
-    Attrs:
-        service_name: Jenkins service name.
-    """
-
-    _stored = JenkinsAgentCharmStoredState()
-    service_name = "jenkins-agent"
-
-    def __init__(self, *args) -> None:
-        """Initialize the instance.
+    def __init__(self, *args: typing.Any):
+        """Initialize the charm and register event handlers.
 
         Args:
-            args: Arguments for the CharmBase superclass.
+            args: Arguments to initialize the charm base.
         """
         super().__init__(*args)
-        self.framework.observe(self.on.start, self._on_config_changed)
+        try:
+            self.state = State.from_charm(self)
+        except InvalidStateError as exc:
+            self.unit.status = ops.BlockedStatus(exc.msg)
+            return
+
+        self.pebble_service = pebble.PebbleService(self.state)
+        self.agent_observer = agent.Observer(self, self.state, self.pebble_service)
+
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(self.on.upgrade_charm, self._on_config_changed)
-        self.framework.observe(self.on.slave_relation_joined, self._on_agent_relation_joined)
-        self.framework.observe(self.on.slave_relation_changed, self._on_agent_relation_changed)
+        self.framework.observe(self.on.upgrade_charm, self._on_upgrade_charm)
 
-        self._stored.set_default(
-            relation_configured=False,
-            jenkins_url=None,
-            relation_agent_name=f"{self.unit.name.replace('/', '-')}-{uuid.uuid4()}",
-            relation_agent_token=None,
-        )
-
-    def _get_pebble_config(self) -> dict:
-        """Generate the pebble config for the charm.
-
-        Returns:
-            The pebble configuration for the charm.
-        """
-        env_config = self._get_env_config()
-        pebble_config = {
-            "summary": "jenkins agent layer",
-            "description": "Jenkins Agent layer",
-            "services": {
-                "jenkins-agent": {
-                    "override": "replace",
-                    "summary": "Jenkins Agent service",
-                    "command": "/entrypoint.sh",
-                    "startup": "enabled",
-                    "environment": env_config,
-                }
-            },
-        }
-        return pebble_config
-
-    def _on_config_changed(self, event: ConfigChangedEvent) -> None:
-        """Handle config-changed event.
+    def _register_via_config(
+        self, event: typing.Union[ops.ConfigChangedEvent, ops.UpgradeCharmEvent]
+    ) -> None:
+        """Register the agent to server from configuration values.
 
         Args:
-            event: The information about the event.
+            event: The event fired on config changed or upgrade charm.
+
+        Raises:
+            RuntimeError: if the Jenkins agent failed to download.
         """
-        # Check for container connectivity
-        if not self.unit.get_container(self.service_name).can_connect():
+        container = self.unit.get_container(self.state.jenkins_agent_service_name)
+        if not container.can_connect():
+            logger.warning("Jenkins agent container not yet ready. Deferring.")
             event.defer()
             return
 
-        # Check whether configuration is valid
-        config_valid, message = self._is_valid_config()
-        if not config_valid:
-            logger.info(message)
-            self.unit.status = BlockedStatus(message)
+        if (
+            not self.state.jenkins_config
+            and not self.model.get_relation(SLAVE_RELATION)
+            and not self.model.get_relation(AGENT_RELATION)
+        ):
+            self.model.unit.status = ops.BlockedStatus("Waiting for config/relation.")
             return
 
-        # Add any newly required or update any changed services
-        pebble_config = self._get_pebble_config()
-        container = self.unit.get_container(self.service_name)
-        services = container.get_plan().to_dict().get("services", {})
-        if services != pebble_config["services"]:
-            logger.debug("About to add_layer with pebble_config:\n%s", yaml.dump(pebble_config))
-            self.unit.status = MaintenanceStatus(f"Adding {container.name} layer to pebble")
-            container.add_layer(self.service_name, pebble_config, combine=True)
-            self.unit.status = MaintenanceStatus(f"Starting {container.name} container")
-            container.pebble.replan_services()
-        else:
-            logger.debug("Pebble config unchanged")
+        if not self.state.jenkins_config:
+            if self.model.get_relation(SLAVE_RELATION):
+                self.model.unit.status = ops.BlockedStatus(
+                    "Please remove and re-relate slave relation."
+                )
+                return
+            # Support fallback relation to AGENT_RELATION.
+            self.model.unit.status = ops.BlockedStatus(
+                "Please remove and re-relate agent relation."
+            )
+            return
 
-        self.unit.status = ActiveStatus()
+        try:
+            server.download_jenkins_agent(
+                server_url=self.state.jenkins_config.server_url,
+                container=container,
+            )
+        except server.AgentJarDownloadError as exc:
+            logger.error("Failed to download Agent JAR executable, %s", exc)
+            raise RuntimeError("Failed to download Jenkins agent. Fix issue ") from exc
 
-    def _is_valid_config(self) -> tuple[bool, str]:
-        """Validate required configuration.
-
-        When not configuring the agent through relations (as indicated by relation_configured
-        stored state), 'jenkins_url', 'jenkins_agent_name' and 'jenkins_agent_token' are required.
-
-        Returns:
-            Whether the configuration is valid, including a reason if it is not.
-        """
-        # Check for agent tokens
-        # mypy misinterprets this line, reports function overloading
-        if self._stored.relation_configured:  # type: ignore
-            return True, ""
-
-        # Retrieve required and non-empty configuration options
-        required_options = {"jenkins_url", "jenkins_agent_name", "jenkins_agent_token"}
-        non_empty_options = {option for option in required_options if self.model.config[option]}
-
-        if required_options.issubset(non_empty_options):
-            return True, ""
-
-        return (
-            False,
-            "Missing required configuration: "
-            f"{' '.join(sorted(required_options - non_empty_options))}",
+        valid_agent_token = server.find_valid_credentials(
+            agent_name_token_pairs=self.state.jenkins_config.agent_name_token_pairs,
+            server_url=self.state.jenkins_config.server_url,
+            container=container,
         )
+        if not valid_agent_token:
+            logger.error("No valid agent-token pair found.")
+            self.model.unit.status = ops.BlockedStatus(
+                "Additional valid agent-token pairs required."
+            )
+            return
 
-    def _on_agent_relation_joined(self, event: RelationJoinedEvent) -> None:
-        """Set relation data for the unit once an agent has connected.
+        self.model.unit.status = ops.MaintenanceStatus("Starting agent pebble service.")
+        self.pebble_service.reconcile(
+            server_url=self.state.jenkins_config.server_url,
+            agent_token_pair=valid_agent_token,
+            container=container,
+        )
+        self.model.unit.status = ops.ActiveStatus()
+
+    def _on_config_changed(self, event: ops.ConfigChangedEvent) -> None:
+        """Handle config changed event.
 
         Args:
-            event: information about the relation joined event.
+            event: The event fired on configuration change.
         """
-        logger.info("Jenkins relation joined")
-        num_executors = os.cpu_count()
-        config_labels = self.model.config.get("jenkins_agent_labels")
+        self._register_via_config(event)
 
-        if config_labels:
-            labels = config_labels
-        else:
-            labels = os.uname().machine
-
-        event.relation.data[self.model.unit]["executors"] = str(num_executors)
-        event.relation.data[self.model.unit]["labels"] = labels
-        event.relation.data[self.model.unit]["slavehost"] = self._stored.relation_agent_name
-
-    def _on_agent_relation_changed(self, event: RelationChangedEvent) -> None:
-        """Populate local configuration with data from relation.
+    def _on_upgrade_charm(self, event: ops.UpgradeCharmEvent) -> None:
+        """Handle upgrade charm event.
 
         Args:
-            event: information about the relation changed event.
+            event: The event fired on upgrade charm.
         """
-        logger.info("Jenkins relation changed")
-
-        # Check event data
-        try:
-            # Right side data type is Union[Unit, Application]
-            relation_jenkins_url = event.relation.data[event.unit]["url"]  # type: ignore
-        except KeyError:
-            logger.warning(
-                "Expected 'url' key for %s unit in relation data. Skipping setup for now.",
-                event.unit,
-            )
-            self.model.unit.status = ActiveStatus()
-            return
-        try:
-            # Right side data type is Union[Unit, Application]
-            relation_secret = event.relation.data[event.unit]["secret"]  # type: ignore
-        except KeyError:
-            logger.warning(
-                "Expected 'secret' key for %s unit in relation data. Skipping setup for now.",
-                event.unit,
-            )
-            self.model.unit.status = ActiveStatus()
-            return
-        self._stored.jenkins_url = relation_jenkins_url
-        self._stored.relation_agent_token = relation_secret
-        self._stored.relation_configured = True
-
-        # Check whether jenkins_url has been set
-        if self.model.config.get("jenkins_url"):
-            logger.warning(
-                "Config option 'jenkins_url' is set, ignoring and using agent relation."
-            )
-
-        logger.info("Setting up jenkins via agent relation")
-        self.model.unit.status = MaintenanceStatus("Configuring jenkins agent")
-        self.on.config_changed.emit()
-
-    def _get_env_config(self) -> JenkinsAgentEnvConfig:
-        """Retrieve the environment configuration.
-
-        Reads the jenkis url, agents and tokens either from the configuration or as set by a
-        relation to jenkins with the relation data preferred over the configuration.
-
-        Returns:
-            A dictionary with the environment variables to be set for the jenkins agent.
-        """
-        # mypy misinterprets these lines, reports function overloading
-        if self._stored.relation_configured:  # type: ignore
-            return {
-                "JENKINS_URL": self._stored.jenkins_url or "",  # type: ignore
-                "JENKINS_AGENTS": self._stored.relation_agent_name,  # type: ignore
-                "JENKINS_TOKENS": self._stored.relation_agent_token,  # type: ignore
-            }
-        return {
-            "JENKINS_URL": self.config["jenkins_url"],
-            "JENKINS_AGENTS": self.config["jenkins_agent_name"],
-            "JENKINS_TOKENS": self.config["jenkins_agent_token"],
-        }
+        self._register_via_config(event)
 
 
 if __name__ == "__main__":  # pragma: no cover
-    # use_juju_for_storage is a workaround for states not persisting through upgrades:
-    # https://github.com/canonical/operator/issues/506
-    main(JenkinsAgentCharm, use_juju_for_storage=True)
+    main(JenkinsAgentCharm)

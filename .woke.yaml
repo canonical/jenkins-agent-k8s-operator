@@ -3,3 +3,5 @@ rules:
   # terminology due to support for older versions of Jenkins.
   - name: slave
   - name: master
+  # Ignore whitelist - we are using it to ignore pydantic in pyptoject.toml
+  - name: whitelist
