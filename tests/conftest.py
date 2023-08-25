@@ -14,3 +14,5 @@ def pytest_addoption(parser: pytest.Parser):
     """
     # The Jenkins agent k8s image name:tag.
     parser.addoption("--jenkins-agent-k8s-image", action="store", default="")
+    # The prebuilt charm file.
+    parser.addoption("--charm-file", action="store", default="")

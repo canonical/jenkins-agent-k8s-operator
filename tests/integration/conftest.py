@@ -20,6 +20,18 @@ from pytest_operator.plugin import OpsTest
 logger = logging.getLogger(__name__)
 
 
+@pytest_asyncio.fixture(scope="module", name="charm")
+async def charm_fixture(request: pytest.FixtureRequest, ops_test: OpsTest) -> str:
+    """The path to charm."""
+    charm = request.config.getoption("--charm-file")
+    if not charm:
+        charm = await ops_test.build_charm(".")
+    else:
+        charm = f"./{charm}"
+
+    return charm
+
+
 @pytest.fixture(scope="module", name="model")
 def model_fixture(ops_test: OpsTest) -> Model:
     """The testing model."""
@@ -46,11 +58,9 @@ def num_agents_fixture() -> int:
 
 @pytest_asyncio.fixture(scope="module", name="application")
 async def application_fixture(
-    ops_test: OpsTest, model: Model, agent_image: str, num_agents: int
+    ops_test: OpsTest, model: Model, charm: str, agent_image: str, num_agents: int
 ) -> typing.AsyncGenerator[Application, None]:
     """Build and deploy the charm."""
-    # Build and deploy charm from local source folder
-    charm = await ops_test.build_charm(".")
     resources = {"jenkins-agent-k8s-image": agent_image}
 
     # Deploy the charm and wait for blocked status
