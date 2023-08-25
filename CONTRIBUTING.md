@@ -8,6 +8,7 @@ rockcraft
 ```
 
 Push the OCI image to microk8s:
+(Note that the microk8s registry needs to be enabled using microk8s enable registry.)
 
 ```bash
 sudo /snap/rockcraft/current/bin/skopeo --insecure-policy copy oci-archive:jenkins_agent_k8s_rock/jenkins-agent-k8s_1.0_amd64.rock docker-daemon:jenkins-agent:1.0
