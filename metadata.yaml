@@ -4,7 +4,7 @@ name: jenkins-agent-k8s
 display-name: Jenkins k8s Agent
 summary: Agent for Jenkins for Kubernetes.
 maintainers:
-  - IS DevOps <launchpad.net/~canonical-is-devops>
+  - https://launchpad.net/~canonical-is-devops
 description: |
   A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators)
   deploying and managing [Jenkins](https://www.jenkins.io/) Agent on Kubernetes, 
