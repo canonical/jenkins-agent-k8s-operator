@@ -58,7 +58,7 @@ def num_agents_fixture() -> int:
 
 @pytest_asyncio.fixture(scope="module", name="application")
 async def application_fixture(
-    ops_test: OpsTest, model: Model, charm: str, agent_image: str, num_agents: int
+    model: Model, charm: str, agent_image: str, num_agents: int
 ) -> typing.AsyncGenerator[Application, None]:
     """Build and deploy the charm."""
     resources = {"jenkins-agent-k8s-image": agent_image}
