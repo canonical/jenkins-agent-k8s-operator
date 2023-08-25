@@ -18,6 +18,7 @@ parts:
       - bash
       - ca-certificates-java
       - default-jre-headless
+      - git
     override-prime: |
       craftctl default  
       /bin/bash -c "mkdir -p --mode=775 var/{lib/jenkins,lib/jenkins/agents,log/jenkins}"
