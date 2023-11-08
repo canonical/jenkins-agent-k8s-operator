@@ -9,7 +9,7 @@ import typing
 from dataclasses import dataclass
 
 import ops
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, validator, HttpUrl
 
 import metadata
 import server
@@ -37,6 +37,8 @@ class InvalidStateError(CharmStateBaseError):
         """
         self.msg = msg
 
+class Validator(BaseModel):
+    http_url_validator: HttpUrl
 
 class JenkinsConfig(BaseModel):
     """The Jenkins config from juju config values.
@@ -48,6 +50,10 @@ class JenkinsConfig(BaseModel):
 
     server_url: str = Field(..., min_length=1)
     agent_name_token_pairs: typing.List[typing.Tuple[str, str]] = Field(..., min_items=1)
+
+    @validator("server_url")
+    def valid_http_url(cls, server_url: str):
+        _ = Validator(http_url_validator = server_url)
 
     @classmethod
     def from_charm_config(cls, config: ops.ConfigData) -> typing.Optional["JenkinsConfig"]:
