@@ -38,6 +38,11 @@ class InvalidStateError(CharmStateBaseError):
         self.msg = msg
 
 class Validator(BaseModel):
+    """Pydantic validator for various attributes
+
+    Attrs:
+        http_url_validator: assign a value to this attribute to validate it against pydantic's HttpUrl type
+    """
     http_url_validator: HttpUrl
 
 class JenkinsConfig(BaseModel):
@@ -53,7 +58,16 @@ class JenkinsConfig(BaseModel):
 
     @validator("server_url")
     def valid_http_url(cls, server_url: str):
+        """Pydantic validator for sever_url attribute
+
+        Args:
+            server_url: the server_url attribute to validate
+
+        Returns:
+            the validated server_url attribute
+        """
         _ = Validator(http_url_validator = server_url)
+        return server_url
 
     @classmethod
     def from_charm_config(cls, config: ops.ConfigData) -> typing.Optional["JenkinsConfig"]:
