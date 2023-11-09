@@ -69,7 +69,6 @@ class JenkinsConfig(BaseModel):
         Returns:
             the validated server_url attribute.
         """
-
         _ = Validator(http_url_validator = server_url)
         return server_url
 
