@@ -9,7 +9,7 @@ import typing
 from dataclasses import dataclass
 
 import ops
-from pydantic import AnyHttpUrl, BaseModel, Field, ValidationError, validator
+from pydantic import AnyHttpUrl, BaseModel, Field, ValidationError, tools
 
 import metadata
 import server
@@ -53,25 +53,19 @@ class JenkinsConfig(BaseModel):
     """The Jenkins config from juju config values.
 
     Attrs:
-        server_url: The Jenkins server url.
+        server_url_not_validated: The Jenkins server url, to be validated with pydantic.
+        server_url: The Jenkins server url, to be used by the charm.
         agent_name_token_pairs: Jenkins agent names paired with corresponding token value.
     """
 
-    server_url: str = Field(..., min_length=1)
+    server_url_not_validated: AnyHttpUrl
+
     agent_name_token_pairs: typing.List[typing.Tuple[str, str]] = Field(..., min_items=1)
 
-    @validator("server_url")
-    def valid_http_url(cls, server_url: str):
-        """Pydantic validator for server_url attribute in jenkins' config.
-
-        Args:
-            server_url: the server_url attribute to validate.
-
-        Returns:
-            the validated server_url attribute.
-        """
-        _ = Validator(http_url_validator=server_url)
-        return server_url
+    @property
+    def server_url(self) -> str:
+        """Convert validated server_url to string."""
+        return str(self.server_url_not_validated)
 
     @classmethod
     def from_charm_config(cls, config: ops.ConfigData) -> typing.Optional["JenkinsConfig"]:
@@ -93,7 +87,10 @@ class JenkinsConfig(BaseModel):
         agent_names = agent_name_config.split(":") if agent_name_config else []
         agent_tokens = agent_token_config.split(":") if agent_token_config else []
         agent_name_token_pairs = list(zip(agent_names, agent_tokens))
-        return cls(server_url=server_url or "", agent_name_token_pairs=agent_name_token_pairs)
+        return cls(
+            server_url_not_validated=tools.parse_obj_as(AnyHttpUrl, server_url) or "",
+            agent_name_token_pairs=agent_name_token_pairs,
+        )
 
 
 def _get_jenkins_unit(
