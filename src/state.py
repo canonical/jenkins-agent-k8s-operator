@@ -9,7 +9,7 @@ import typing
 from dataclasses import dataclass
 
 import ops
-from pydantic import BaseModel, Field, ValidationError, validator, AnyHttpUrl
+from pydantic import AnyHttpUrl, BaseModel, Field, ValidationError, validator
 
 import metadata
 import server
