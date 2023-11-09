@@ -9,7 +9,7 @@ import typing
 from dataclasses import dataclass
 
 import ops
-from pydantic import BaseModel, Field, ValidationError, validator, HttpUrl
+from pydantic import BaseModel, Field, ValidationError, validator, AnyHttpUrl
 
 import metadata
 import server
@@ -43,7 +43,7 @@ class Validator(BaseModel):
     Attrs:
         http_url_validator: assign a value to this attribute to validate it against pydantic's HttpUrl type
     """
-    http_url_validator: HttpUrl
+    http_url_validator: AnyHttpUrl
 
 class JenkinsConfig(BaseModel):
     """The Jenkins config from juju config values.
