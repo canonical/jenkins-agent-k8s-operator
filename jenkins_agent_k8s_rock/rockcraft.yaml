@@ -20,7 +20,7 @@ parts:
       - default-jre-headless
       - git
     override-prime: |
-      craftctl default  
+      craftctl default
       /bin/bash -c "mkdir -p --mode=775 var/{lib/jenkins,lib/jenkins/agents,log/jenkins}"
       /bin/bash -c "chown -R 584792 var/{lib/jenkins,lib/jenkins/agents,log/jenkins}"
   entrypoint:
