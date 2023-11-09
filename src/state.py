@@ -61,7 +61,7 @@ class JenkinsConfig(BaseModel):
     agent_name_token_pairs: typing.List[typing.Tuple[str, str]] = Field(..., min_items=1)
 
     @validator("server_url")
-    def valid_http_url(self, server_url: str):
+    def valid_http_url(cls, server_url: str):
         """Pydantic validator for server_url attribute in jenkins' config.
 
         Args:
