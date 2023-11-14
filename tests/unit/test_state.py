@@ -89,7 +89,7 @@ def test_from_charm_invalid_server_url(
         state.State.from_charm(charm=harness.charm)
 
 
-def test_from_charm_vailid_config(harness: ops.testing.Harness, config: typing.Dict[str, str]):
+def test_from_charm_valid_config(harness: ops.testing.Harness, config: typing.Dict[str, str]):
     """
     arrange: given valid charm configuration data.
     act: when the state is initialized from_charm.
