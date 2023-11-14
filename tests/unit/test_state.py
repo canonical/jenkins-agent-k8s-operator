@@ -75,9 +75,9 @@ def test_from_charm_invalid_server_url(
     harness: ops.testing.Harness, config: typing.Dict[str, str]
 ):
     """
-    arrange: given charm configuration data with invalid server_url attribute
+    arrange: given charm configuration data with invalid server_url attribute.
     act: when the state is initialized from_charm.
-    assert: InvalidStateError is raised. (due to pydantic's AnyHttpUrl validator)
+    assert: InvalidStateError is raised. (due to pydantic's AnyHttpUrl validator).
     """
     invalid_config = config
     # This configuration is invalid because schema (http or https) must be specified
