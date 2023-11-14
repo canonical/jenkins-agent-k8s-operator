@@ -71,6 +71,24 @@ def test_from_charm_invalid_charm_config(harness: ops.testing.Harness):
         state.State.from_charm(charm=harness.charm)
 
 
+def test_from_charm_invalid_server_url(
+    harness: ops.testing.Harness, config: typing.Dict[str, str]
+):
+    """
+    arrange: given charm configuration data with invalid server_url attribute
+    act: when the state is initialized from_charm.
+    assert: InvalidStateError is raised. (due to pydantic's AnyHttpUrl validator)
+    """
+    invalid_config = config
+    # This configuration is invalid because schema (http or https) must be specified
+    invalid_config["jenkins_url"] = "example.com"
+    harness.update_config(invalid_config)
+    harness.begin()
+
+    with pytest.raises(state.InvalidStateError):
+        state.State.from_charm(charm=harness.charm)
+
+
 def test_from_charm_vailid_config(harness: ops.testing.Harness, config: typing.Dict[str, str]):
     """
     arrange: given valid charm configuration data.
