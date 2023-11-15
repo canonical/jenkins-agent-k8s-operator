@@ -30,7 +30,7 @@ def harness_fixture():
 def config_fixture():
     """The Jenkins testing configuration values."""
     return {
-        "jenkins_url": "http://testingurl",
+        "jenkins_url": "http://testingurl.com",
         "jenkins_agent_name": "testing_agent_name",
         "jenkins_agent_token": secrets.token_hex(16),
     }

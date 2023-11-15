@@ -54,6 +54,7 @@ copyright-regexp = "Copyright\\s\\d{4}([-,]\\d{4})*\\s+%(author)s"
 ignore_missing_imports = true
 check_untyped_defs = true
 disallow_untyped_defs = true
+plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
 module = "tests.*"
