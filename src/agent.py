@@ -122,6 +122,8 @@ class Observer(ops.Object):
         if not self.state.slave_relation_credentials:
             self.charm.unit.status = ops.WaitingStatus("Waiting for complete relation data.")
             logger.info("Waiting for complete relation data.")
+            # The event needs to be retried after the agent credentials have been set.
+            event.defer()
             return
 
         self.charm.unit.status = ops.MaintenanceStatus("Downloading Jenkins agent executable.")
@@ -192,6 +194,8 @@ class Observer(ops.Object):
         if not self.state.agent_relation_credentials:
             self.charm.unit.status = ops.WaitingStatus("Waiting for complete relation data.")
             logger.info("Waiting for complete relation data.")
+            # The event needs to be retried after the agent credentials have been set.
+            event.defer()
             return
 
         self.charm.unit.status = ops.MaintenanceStatus("Downloading Jenkins agent executable.")
@@ -234,6 +238,7 @@ class Observer(ops.Object):
         """Handle slave relation departed event."""
         container = self.charm.unit.get_container(self.state.jenkins_agent_service_name)
         if not container.can_connect():
+            logger.warning("Relation departed before service ready.")
             return
         self.pebble_service.stop_agent(container=container)
         self.charm.unit.status = ops.BlockedStatus("Waiting for config/relation.")
@@ -242,6 +247,7 @@ class Observer(ops.Object):
         """Handle agent relation departed event."""
         container = self.charm.unit.get_container(self.state.jenkins_agent_service_name)
         if not container.can_connect():
+            logger.warning("Relation departed before service ready.")
             return
         self.pebble_service.stop_agent(container=container)
         self.charm.unit.status = ops.BlockedStatus("Waiting for config/relation.")
