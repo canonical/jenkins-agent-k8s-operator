@@ -10,3 +10,4 @@ lib/ops-*.dist-info
 ^unit/
 .vscode
 venv
+*.rock
