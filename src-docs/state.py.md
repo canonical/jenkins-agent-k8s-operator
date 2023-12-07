@@ -50,14 +50,20 @@ Initialize a new instance of the InvalidStateError exception.
 ## <kbd>class</kbd> `JenkinsConfig`
 The Jenkins config from juju config values. 
 
-Attrs:  server_url: The Jenkins server url.  agent_name_token_pairs: Jenkins agent names paired with corresponding token value. 
+Attrs:  server_url_not_validated: The Jenkins server url, to be validated with pydantic.  server_url: The Jenkins server url, to be used by the charm.  agent_name_token_pairs: Jenkins agent names paired with corresponding token value. 
 
+
+---
+
+#### <kbd>property</kbd> server_url
+
+Convert validated server_url to string. 
 
 
 
 ---
 
-<a href="../src/state.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L59"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm_config`
 
@@ -91,7 +97,7 @@ Attrs:  agent_meta: The Jenkins agent metadata to register on Jenkins server.  j
 
 ---
 
-<a href="../src/state.py#L153"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L163"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 
