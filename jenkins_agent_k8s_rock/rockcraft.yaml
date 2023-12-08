@@ -4,7 +4,7 @@
 name: jenkins-agent-k8s
 summary: Jenkins-agent-k8s rock
 description: Jenkins-agent-k8s OCI image for the Jenkins-agent-k8s charm
-version: "1.0"
+version: "1.1"
 base: ubuntu:22.04
 build-base: ubuntu:22.04
 license: Apache-2.0
@@ -22,7 +22,6 @@ parts:
     override-prime: |
       craftctl default
       /bin/bash -c "mkdir -p --mode=775 var/{lib/jenkins,lib/jenkins/agents,log/jenkins}"
-      /bin/bash -c "chown -R 584792 var/{lib/jenkins,lib/jenkins/agents,log/jenkins}"
   entrypoint:
     plugin: dump
     source: files
@@ -31,4 +30,11 @@ parts:
     override-prime: |
       craftctl default
       /bin/bash -c "chmod +x var/lib/jenkins/entrypoint.sh"
-      /bin/bash -c "chown -R 584792 var/lib/jenkins/entrypoint.sh"
+  jenkins-agent-configure:
+    plugin: nil
+    after:
+      - "jenkins"
+      - "entrypoint"
+    override-prime: |
+      craftctl default
+      /bin/bash -c "chown -R 584792:584792 $CRAFT_PRIME/var/{lib/jenkins,log/jenkins}"
