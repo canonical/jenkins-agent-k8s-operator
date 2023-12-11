@@ -24,9 +24,9 @@ parts:
       /bin/bash -c "mkdir -p --mode=775 var/{lib/jenkins,lib/jenkins/agents,log/jenkins}"
   entrypoint:
     plugin: dump
-    source: files
+    source: https://github.com/jenkinsci/docker-inbound-agent.git
     organize:
-      entrypoint.sh: /var/lib/jenkins/entrypoint.sh
+      jenkins-agent: /var/lib/jenkins/entrypoint.sh
     override-prime: |
       craftctl default
       /bin/bash -c "chmod +x var/lib/jenkins/entrypoint.sh"
