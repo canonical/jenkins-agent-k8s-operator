@@ -22,11 +22,16 @@ parts:
     override-prime: |
       craftctl default
       /bin/bash -c "mkdir -p --mode=775 var/{lib/jenkins,lib/jenkins/agents,log/jenkins}"
-  entrypoint:
+  jenkins-agent-script:
     plugin: dump
     source: https://github.com/jenkinsci/docker-inbound-agent.git
     organize:
-      jenkins-agent: /var/lib/jenkins/entrypoint.sh
+      jenkins-agent: /var/lib/jenkins/jenkins-agent
+  entrypoint:
+    plugin: dump
+    source: files
+    organize:
+      entrypoint.sh: /var/lib/jenkins/entrypoint.sh
     override-prime: |
       craftctl default
       /bin/bash -c "chmod +x var/lib/jenkins/entrypoint.sh"
@@ -34,6 +39,7 @@ parts:
     plugin: nil
     after:
       - "jenkins"
+      - "jenkins-agent-script"
       - "entrypoint"
     override-prime: |
       craftctl default
