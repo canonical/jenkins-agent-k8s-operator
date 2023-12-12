@@ -9,3 +9,6 @@ jobs:
     with:
       pre-run-script: tests/integration/pre_run_script.sh
     secrets: inherit
+    permissions:
+      contents: read
+      packages: write
