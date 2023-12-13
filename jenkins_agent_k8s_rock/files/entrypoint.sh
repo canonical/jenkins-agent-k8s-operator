@@ -25,11 +25,11 @@ typeset JENKINS_TOKEN="${JENKINS_TOKEN:?"Jenkins agent token must be provided"}"
 # typeset JENKINS_HOME="/var/lib/jenkins"
 # homedir in jenkins-inbound-agent is fixed to /usr/share/jenkins
 typeset JENKINS_HOME="/usr/share/jenkins"
-
+mkdir -p "${JENKINS_HOME}/agents"
 # Ensure working directory is at $JENKINS_HOME
 # -workDir parameter might be unreliable from experiences
 # and jenkins can sometime ignore it (to be verified!)
-cd $JENKINS_HOME
+cd "${JENKINS_HOME}"
 # Path of the agent.jar
 typeset AGENT_JAR="${JENKINS_HOME}/agent.jar"
 
