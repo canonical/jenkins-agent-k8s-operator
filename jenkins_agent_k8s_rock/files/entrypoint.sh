@@ -31,7 +31,6 @@ mkdir -p "${JENKINS_HOME}/agents"
 # and jenkins can sometime ignore it (to be verified!)
 cd "${JENKINS_HOME}"
 # Path of the agent.jar
-typeset AGENT_JAR="${JENKINS_HOME}/agent.jar"
 
 # Specify the pod as ready
 touch "${JENKINS_HOME}/agents/.ready"
