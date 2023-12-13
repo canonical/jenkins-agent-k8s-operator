@@ -21,7 +21,7 @@ parts:
       - git
     override-prime: |
       craftctl default
-      /bin/bash -c "mkdir -p --mode=775 usr/share/{jenkins,jenkins/agents} /var/log/jenkins"
+      /bin/bash -c "mkdir -p --mode=775 usr/share/{jenkins,jenkins/agents} var/log/jenkins"
   jenkins-agent-script:
     plugin: dump
     source: https://github.com/jenkinsci/docker-inbound-agent.git
