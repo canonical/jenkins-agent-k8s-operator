@@ -22,7 +22,9 @@ typeset JENKINS_URL="${JENKINS_URL:?"URL of a jenkins server must be provided"}"
 typeset JENKINS_AGENT="${JENKINS_AGENT:?"Jenkins agent name must be provided"}"
 typeset JENKINS_TOKEN="${JENKINS_TOKEN:?"Jenkins agent token must be provided"}"
 
-typeset JENKINS_HOME="/var/lib/jenkins"
+# typeset JENKINS_HOME="/var/lib/jenkins"
+# homedir in jenkins-inbound-agent is fixed to /usr/share/jenkins
+typeset JENKINS_HOME="/usr/share/jenkins"
 
 # Ensure working directory is at $JENKINS_HOME
 # -workDir parameter might be unreliable from experiences
@@ -36,6 +38,6 @@ touch "${JENKINS_HOME}/agents/.ready"
 
 # Start Jenkins agent
 echo "${JENKINS_AGENT}"
-${JENKINS_HOME}/jenkins-agent -url "${JENKINS_URL}" -secret "${JENKINS_TOKEN}" -name ${JENKINS_AGENT} -noReconnect
+JENKINS_JAVA_BIN=$JAVA ${JENKINS_HOME}/jenkins-agent -url "${JENKINS_URL}" -secret "${JENKINS_TOKEN}" -name ${JENKINS_AGENT} -noReconnect
 # Remove ready mark if unsuccessful
 rm ${JENKINS_HOME}/agents/.ready
