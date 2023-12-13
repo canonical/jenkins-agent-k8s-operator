@@ -21,7 +21,7 @@ parts:
       - git
     override-prime: |
       craftctl default
-      /bin/bash -c "mkdir -p --mode=775 var/{lib/jenkins,lib/jenkins/agents,log/jenkins}"
+      /bin/bash -c "mkdir -p --mode=775 usr/share/{jenkins,jenkins/agents} /var/log/jenkins"
   jenkins-agent-script:
     plugin: dump
     source: https://github.com/jenkinsci/docker-inbound-agent.git
@@ -43,4 +43,4 @@ parts:
       - "entrypoint"
     override-prime: |
       craftctl default
-      /bin/bash -c "chown -R 584792:584792 $CRAFT_PRIME/var/{lib/jenkins,log/jenkins}"
+      /bin/bash -c "chown -R 584792:584792 $CRAFT_PRIME/var/log/jenkins $CRAFT_PRIME/usr/share/jenkins"
