@@ -89,14 +89,12 @@ class PebbleService:
 
         Args:
             container: The agent workload container.
-
-        Raises:
-            APIError: if something went wrong with pebble requesting service stop.
         """
         try:
-            container.stop(self.state.jenkins_agent_service_name)
-        except ops.pebble.APIError as exc:
-            if f'service "{self.state.jenkins_agent_service_name}" does not exist' in exc.message:
-                return
-            raise
+            # use get_service to check if service should be stopped rather than stopping and
+            # catching ops.pebble.APIError and parsing error message to determine type of error.
+            container.get_service(self.state.jenkins_agent_service_name)
+        except ops.ModelError:
+            return
+        container.stop(self.state.jenkins_agent_service_name)
         container.remove_path(str(server.AGENT_READY_PATH))

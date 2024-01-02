@@ -76,16 +76,12 @@ def test_stop_agent_service_not_exists():
     mock_state = unittest.mock.MagicMock(spec=state.State)
     mock_state.jenkins_agent_service_name = state.State.jenkins_agent_service_name
     mock_container = unittest.mock.MagicMock(spec=ops.Container)
-    mock_container.stop.side_effect = [
-        ops.pebble.APIError(
-            {}, 0, "", f'service "{state.State.jenkins_agent_service_name}" does not exist'
-        )
-    ]
+    mock_container.get_service.side_effect = [ops.ModelError()]
     pebble_service = pebble.PebbleService(state=mock_state)
 
     pebble_service.stop_agent(container=mock_container)
 
-    mock_container.stop.assert_called_once()
+    mock_container.stop.assert_not_called()
     mock_container.remove_path.assert_not_called()
 
 

@@ -74,9 +74,3 @@ Stop Jenkins agent.
  - <b>`container`</b>:  The agent workload container. 
 
 
-
-**Raises:**
- 
- - <b>`APIError`</b>:  if something went wrong with pebble requesting service stop. 
-
-
