@@ -67,6 +67,24 @@ def test_reconcile():
     mock_container.replan.assert_called_once()
 
 
+def test_stop_agent_service_not_exists():
+    """
+    arrange: given a monkeypatched container that raises pebble API service not exists error.
+    act: when stop_agent is called.
+    assert: nothing happens since the service was not started.
+    """
+    mock_state = unittest.mock.MagicMock(spec=state.State)
+    mock_state.jenkins_agent_service_name = state.State.jenkins_agent_service_name
+    mock_container = unittest.mock.MagicMock(spec=ops.Container)
+    mock_container.get_service.side_effect = [ops.ModelError()]
+    pebble_service = pebble.PebbleService(state=mock_state)
+
+    pebble_service.stop_agent(container=mock_container)
+
+    mock_container.stop.assert_not_called()
+    mock_container.remove_path.assert_not_called()
+
+
 def test_stop_agent():
     """
     arrange: given a monkeypatched _jenkins_agent_container representing non connectable container.

@@ -207,22 +207,6 @@ class Observer(ops.Object):
             logger.error("Failed to download Jenkins agent executable, %s", exc)
             raise RuntimeError("Failed to download Jenkins agent.") from exc
 
-        self.charm.unit.status = ops.MaintenanceStatus("Validating credentials.")
-        if not server.validate_credentials(
-            agent_name=self.state.agent_meta.name,
-            credentials=self.state.agent_relation_credentials,
-            container=container,
-        ):
-            # The jenkins server sets credentials one by one, hence if the current credentials are
-            # not for this particular agent, the agent operator should wait until it receives one
-            # designated for it.
-            logger.warning(
-                "Failed credential for agent %s, will wait for next credentials to be set",
-                self.state.agent_meta.name,
-            )
-            self.charm.unit.status = ops.WaitingStatus("Waiting for credentials.")
-            return
-
         self.charm.unit.status = ops.MaintenanceStatus("Starting agent pebble service.")
         self.pebble_service.reconcile(
             server_url=self.state.agent_relation_credentials.address,
