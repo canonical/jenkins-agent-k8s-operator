@@ -43,4 +43,34 @@ Shortcut for more simple access the model.
 
 
 
+---
+
+<a href="../src/agent.py#L199"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `start_agent_from_relation`
+
+```python
+start_agent_from_relation(
+    container: Container,
+    credentials: Credentials,
+    agent_name: str
+) → None
+```
+
+Start agent from agent relation. 
+
+
+
+**Args:**
+ 
+ - <b>`container`</b>:  The Jenkins agent workload container. 
+ - <b>`credentials`</b>:  The agent registration details for jenkins server. 
+ - <b>`agent_name`</b>:  The jenkins agent to register as. 
+
+
+
+**Raises:**
+ 
+ - <b>`AgentJarDownloadError`</b>:  if the agent jar executable failed to download. 
+
 
