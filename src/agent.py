@@ -98,7 +98,7 @@ class Observer(ops.Object):
             event: The event fired when slave relation data has changed.
 
         Raises:
-            RuntimeError: if the Jenkins agent failed to download.
+            AgentJarDownloadError: if the Jenkins agent failed to download.
         """
         logger.info("%s relation changed.", event.relation.name)
 
@@ -133,7 +133,7 @@ class Observer(ops.Object):
             )
         except server.AgentJarDownloadError as exc:
             logger.error("Failed to download Jenkins agent executable, %s", exc)
-            raise RuntimeError("Failed to download Jenkins agent.") from exc
+            raise
 
         self.charm.unit.status = ops.MaintenanceStatus("Validating credentials.")
         if not server.validate_credentials(
@@ -152,25 +152,17 @@ class Observer(ops.Object):
             self.charm.unit.status = ops.WaitingStatus("Waiting for credentials.")
             return
 
-        self.charm.unit.status = ops.MaintenanceStatus("Starting agent pebble service.")
-        self.pebble_service.reconcile(
-            server_url=self.state.slave_relation_credentials.address,
-            agent_token_pair=(
-                self.state.agent_meta.name,
-                self.state.slave_relation_credentials.secret,
-            ),
+        self.start_agent_from_relation(
             container=container,
+            credentials=self.state.slave_relation_credentials,
+            agent_name=self.state.agent_meta.name,
         )
-        self.charm.unit.status = ops.ActiveStatus()
 
     def _on_agent_relation_changed(self, event: ops.RelationChangedEvent) -> None:
         """Handle agent relation changed event.
 
         Args:
             event: The event fired when the agent relation data has changed.
-
-        Raises:
-            RuntimeError: if the Jenkins agent failed to download.
         """
         logger.info("%s relation changed.", event.relation.name)
 
@@ -198,21 +190,38 @@ class Observer(ops.Object):
             event.defer()
             return
 
+        self.start_agent_from_relation(
+            container=container,
+            credentials=self.state.agent_relation_credentials,
+            agent_name=self.state.agent_meta.name,
+        )
+
+    def start_agent_from_relation(
+        self, container: ops.Container, credentials: server.Credentials, agent_name: str
+    ) -> None:
+        """Start agent from agent relation.
+
+        Args:
+            container: The Jenkins agent workload container.
+            credentials: The agent registration details for jenkins server.
+            agent_name: The jenkins agent to register as.
+
+        Raises:
+            AgentJarDownloadError: if the agent jar executable failed to download.
+        """
         self.charm.unit.status = ops.MaintenanceStatus("Downloading Jenkins agent executable.")
         try:
-            server.download_jenkins_agent(
-                server_url=self.state.agent_relation_credentials.address, container=container
-            )
+            server.download_jenkins_agent(server_url=credentials.address, container=container)
         except server.AgentJarDownloadError as exc:
             logger.error("Failed to download Jenkins agent executable, %s", exc)
-            raise RuntimeError("Failed to download Jenkins agent.") from exc
+            raise server.AgentJarDownloadError("Failed to download Jenkins agent.") from exc
 
         self.charm.unit.status = ops.MaintenanceStatus("Starting agent pebble service.")
         self.pebble_service.reconcile(
-            server_url=self.state.agent_relation_credentials.address,
+            server_url=credentials.address,
             agent_token_pair=(
-                self.state.agent_meta.name,
-                self.state.agent_relation_credentials.secret,
+                agent_name,
+                credentials.secret,
             ),
             container=container,
         )

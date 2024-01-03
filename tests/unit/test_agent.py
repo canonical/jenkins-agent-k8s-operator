@@ -262,7 +262,7 @@ def test_agent_relation_changed_download_jenkins_agent_fail(
     harness.begin()
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    with pytest.raises(RuntimeError) as exc:
+    with pytest.raises(server.AgentJarDownloadError) as exc:
         if relation == state.AGENT_RELATION:
             jenkins_charm.agent_observer._on_agent_relation_changed(mock_event)
         else:
