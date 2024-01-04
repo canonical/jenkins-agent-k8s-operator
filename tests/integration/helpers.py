@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Helpers for Jenkins-agent-k8s-operator charm integration tests."""
+import asyncio
 import inspect
 import time
 import typing
@@ -34,7 +35,7 @@ async def wait_for(
         else:
             if result := func():
                 return result
-        time.sleep(check_interval)
+        await asyncio.sleep(check_interval)
 
     # final check before raising TimeoutError.
     if is_awaitable:
