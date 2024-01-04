@@ -6,9 +6,9 @@ on:
 jobs:
   integration-tests:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    secrets: inherit
     with:
       pre-run-script: tests/integration/pre_run_script.sh
-    secrets: inherit
-    extra-arguments: |
-      --kube-config ${GITHUB_WORKSPACE}/kube-config
-    modules: '["test_agent_k8s.py", "test_agent_machine.py"]'
+      extra-arguments: |
+        --kube-config ${GITHUB_WORKSPACE}/kube-config
+      modules: '["test_agent_k8s.py", "test_agent_machine.py"]'
