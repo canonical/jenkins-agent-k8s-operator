@@ -39,7 +39,6 @@ touch "${JENKINS_HOME}/agents/.ready"
 echo "${JENKINS_AGENT}"
 JENKINS_JAVA_BIN=$JAVA \
 JENKINS_URL="${JENKINS_URL}/computer/${JENKINS_AGENT}/jenkins-agent.jnlp" \
-JENKINS_NAME="${JENKINS_AGENT}" \
 JENKINS_SECRET="${JENKINS_TOKEN}" \
 ${JENKINS_HOME}/jenkins-agent -noReconnect
 # Remove ready mark if unsuccessful
