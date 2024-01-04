@@ -34,7 +34,7 @@ parts:
       entrypoint.sh: /usr/share/jenkins/entrypoint.sh
     override-prime: |
       craftctl default
-      /bin/bash -c "chmod +x var/lib/jenkins/entrypoint.sh"
+      /bin/bash -c "chmod +x usr/share/jenkins/entrypoint.sh"
   jenkins-agent-configure:
     plugin: nil
     after:
