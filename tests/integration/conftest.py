@@ -192,7 +192,7 @@ async def k8s_server_unit_ip_fixture(model: Model, jenkins_k8s_server: Applicati
 
 
 @pytest_asyncio.fixture(scope="module", name="k8s_web_address")
-async def machine_web_address_fixture(k8s_server_unit_ip: str):
+async def k8s_web_address_fixture(k8s_server_unit_ip: str):
     """Get Jenkins k8s server charm web address."""
     return f"http://{k8s_server_unit_ip}:8080"
 

@@ -41,8 +41,12 @@ async def test_agent_recover(
     kube_core_client.delete_namespaced_pod(name=pod_name, namespace=model.name)
     await wait_for(lambda: not node.is_online())
 
-    def containers_ready():
-        """Check if all containers are ready."""
+    def containers_ready() -> bool:
+        """Check if all containers are ready.
+
+        Returns:
+            True if containers are all ready.
+        """
         pod_status: kubernetes.client.V1PodStatus = kube_core_client.read_namespaced_pod_status(
             name=pod_name, namespace=model.name
         ).status
@@ -52,4 +56,4 @@ async def test_agent_recover(
         return all(status.ready for status in container_statuses)
 
     await wait_for(containers_ready)
-    await wait_for(lambda: node.is_online())
+    await wait_for(node.is_online)
