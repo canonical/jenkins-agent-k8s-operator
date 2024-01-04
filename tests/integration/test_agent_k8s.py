@@ -57,3 +57,4 @@ async def test_agent_recover(
 
     await wait_for(containers_ready)
     await wait_for(node.is_online)
+    assert node.is_online(), "Node not online."
