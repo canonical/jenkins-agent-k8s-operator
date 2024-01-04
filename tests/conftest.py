@@ -16,3 +16,5 @@ def pytest_addoption(parser: pytest.Parser):
     parser.addoption("--jenkins-agent-k8s-image", action="store", default="")
     # The prebuilt charm file.
     parser.addoption("--charm-file", action="store", default="")
+    # The path to kubernetes config.
+    parser.addoption("--kube-config", action="store", default="~/.kube/config")
