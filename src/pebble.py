@@ -58,7 +58,7 @@ class PebbleService:
                 "ready": {
                     "override": "replace",
                     "level": "ready",
-                    "exec": {"command": "/bin/cat /var/lib/jenkins/agents/.ready"},
+                    "exec": {"command": "/bin/cat /usr/share/jenkins/agents/.ready"},
                     "period": "30s",
                     "threshold": 5,
                 }

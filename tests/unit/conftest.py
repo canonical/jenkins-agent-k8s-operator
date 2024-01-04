@@ -133,9 +133,9 @@ def raise_exception_fixture():
 def jenkins_error_log_fixture():
     """The logs produced by Jenkins agent on failed connection."""
     return """<TIME_REDACTED> org.jenkinsci.remoting.engine.WorkDirManager initializeWorkDir
-INFO: Using /var/lib/jenkins/remoting as a remoting work directory
+INFO: Using /usr/share/jenkins/remoting as a remoting work directory
 <TIME_REDACTED> org.jenkinsci.remoting.engine.WorkDirManager setupLogging
-INFO: Both error and output logs will be printed to /var/lib/jenkins/remoting
+INFO: Both error and output logs will be printed to /usr/share/jenkins/remoting
 [Fatal Error] :1:1: Invalid byte 1 of 1-byte UTF-8 sequence.
 Exception in thread "main" org.xml.sax.SAXParseException; lineNumber: 1; columnNumber: 1; Invalid byte 1 of 1-byte UTF-8 sequence.
     """
@@ -155,7 +155,7 @@ INFO: Setting up agent: jenkins-agent-k8s-0
 <TIME_REDACTED> hudson.remoting.Engine startEngine
 INFO: Using Remoting version: 3107.v665000b_51092
 <TIME_REDACTED> org.jenkinsci.remoting.engine.WorkDirManager initializeWorkDir
-INFO: Using /var/lib/jenkins/remoting as a remoting work directory
+INFO: Using /usr/share/jenkins/remoting as a remoting work directory
 <TIME_REDACTED> hudson.remoting.jnlp.Main$CuiListener status
 INFO: Locating server among [<IP_REDACTED>]
 <TIME_REDACTED> org.jenkinsci.remoting.engine.JnlpAgentEndpointResolver resolve

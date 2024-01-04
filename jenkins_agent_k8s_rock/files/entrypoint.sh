@@ -22,7 +22,7 @@ typeset JENKINS_URL="${JENKINS_URL:?"URL of a jenkins server must be provided"}"
 typeset JENKINS_AGENT="${JENKINS_AGENT:?"Jenkins agent name must be provided"}"
 typeset JENKINS_TOKEN="${JENKINS_TOKEN:?"Jenkins agent token must be provided"}"
 
-# typeset JENKINS_HOME="/var/lib/jenkins"
+# typeset JENKINS_HOME="/usr/share/jenkins"
 # homedir in jenkins-inbound-agent is fixed to /usr/share/jenkins
 typeset JENKINS_HOME="/usr/share/jenkins"
 mkdir -p "${JENKINS_HOME}/agents"

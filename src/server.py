@@ -15,7 +15,7 @@ from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
-JENKINS_WORKDIR = Path("/var/lib/jenkins")
+JENKINS_WORKDIR = Path("/usr/share/jenkins")
 AGENT_JAR_PATH = Path(JENKINS_WORKDIR / "agent.jar")
 AGENT_READY_PATH = Path(JENKINS_WORKDIR / "agents/.ready")
 ENTRYSCRIPT_PATH = Path(JENKINS_WORKDIR / "entrypoint.sh")
