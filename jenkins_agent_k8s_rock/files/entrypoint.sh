@@ -36,7 +36,7 @@ touch "${JENKINS_HOME}/agents/.ready"
 
 # Start Jenkins agent
 echo "${JENKINS_AGENT}"
-${JAVA} -jar ${AGENT_JAR} -jnlpUrl "${JENKINS_URL}/computer/${JENKINS_AGENT}/slave-agent.jnlp" -workDir "${JENKINS_HOME}" -noReconnect -secret "${JENKINS_TOKEN}" || echo "Invalid or already used credentials."
+${JAVA} -jar ${AGENT_JAR} -jnlpUrl "${JENKINS_URL}/computer/${JENKINS_AGENT}/jenkins-agent.jnlp" -workDir "${JENKINS_HOME}" -noReconnect -secret "${JENKINS_TOKEN}" || echo "Invalid or already used credentials."
 
 # Remove ready mark if unsuccessful
 rm ${JENKINS_HOME}/agents/.ready

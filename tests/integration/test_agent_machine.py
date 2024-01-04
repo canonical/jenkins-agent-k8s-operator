@@ -1,7 +1,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Integration tests for jenkins-agent-k8s-operator charm."""
+"""Integration tests for jenkins-agent-k8s-operator charm with machine server."""
 
 import logging
 
@@ -15,7 +15,7 @@ logger = logging.getLogger()
 async def test_agent_relation(
     jenkins_machine_server: Application,
     application: Application,
-    jenkins_client: jenkinsapi.jenkins.Jenkins,
+    machine_jenkins_client: jenkinsapi.jenkins.Jenkins,
     num_agents: int,
 ):
     """
@@ -39,7 +39,7 @@ async def test_agent_relation(
     )
     await model.wait_for_idle(status="active", timeout=1200)
 
-    nodes = jenkins_client.get_nodes()
+    nodes = machine_jenkins_client.get_nodes()
     assert all(node.is_online() for node in nodes.values())
     # One of the nodes is the server node.
     assert len(nodes.values()) == num_agents + 1
