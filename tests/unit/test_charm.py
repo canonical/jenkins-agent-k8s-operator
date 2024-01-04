@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Jenkins-k8s-agent charm module tests."""
@@ -6,12 +6,13 @@
 # Need access to protected functions for testing
 # pylint:disable=protected-access
 
+import secrets
 import typing
-import unittest.mock
+from unittest.mock import MagicMock
 
 import ops
-import ops.testing
 import pytest
+from ops.testing import Harness
 
 import server
 import state
@@ -21,7 +22,7 @@ from .constants import ACTIVE_STATUS_NAME, BLOCKED_STATUS_NAME
 
 
 def test___init___invalid_state(
-    harness: ops.testing.Harness, monkeypatch: pytest.MonkeyPatch, raise_exception: typing.Callable
+    harness: Harness, monkeypatch: pytest.MonkeyPatch, raise_exception: typing.Callable
 ):
     """
     arrange: given a monkeypatched State.from_charm that raises an InvalidState Error.
@@ -42,7 +43,7 @@ def test___init___invalid_state(
     assert jenkins_charm.unit.status.message == invalid_state_message
 
 
-def test__register_agent_from_config_container_not_ready(harness: ops.testing.Harness):
+def test__register_agent_from_config_container_not_ready(harness: Harness):
     """
     arrange: given a charm with a workload container that is not ready yet.
     act: when _register_agent_from_config is called.
@@ -50,7 +51,7 @@ def test__register_agent_from_config_container_not_ready(harness: ops.testing.Ha
     """
     harness.set_can_connect("jenkins-k8s-agent", False)
     harness.begin()
-    mock_event = unittest.mock.MagicMock(spec=ops.HookEvent)
+    mock_event = MagicMock(spec=ops.HookEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm._on_config_changed(mock_event)
@@ -58,7 +59,7 @@ def test__register_agent_from_config_container_not_ready(harness: ops.testing.Ha
     mock_event.defer.assert_called_once()
 
 
-def test__register_agent_from_config_no_config_state(harness: ops.testing.Harness):
+def test__register_agent_from_config_no_config_state(harness: Harness):
     """
     arrange: given a charm with no configured state nor relation.
     act: when _register_agent_from_config is called.
@@ -66,7 +67,7 @@ def test__register_agent_from_config_no_config_state(harness: ops.testing.Harnes
     """
     harness.set_can_connect("jenkins-k8s-agent", True)
     harness.begin()
-    mock_event = unittest.mock.MagicMock(spec=ops.HookEvent)
+    mock_event = MagicMock(spec=ops.HookEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm._on_config_changed(mock_event)
@@ -75,7 +76,7 @@ def test__register_agent_from_config_no_config_state(harness: ops.testing.Harnes
     assert jenkins_charm.unit.status.message == "Waiting for config/relation."
 
 
-def test__register_agent_from_config_use_relation(harness: ops.testing.Harness):
+def test__register_agent_from_config_use_relation(harness: Harness):
     """
     arrange: given a charm with an agent relation but no configured state.
     act: when _register_agent_from_config is called.
@@ -84,7 +85,7 @@ def test__register_agent_from_config_use_relation(harness: ops.testing.Harness):
     harness.set_can_connect("jenkins-k8s-agent", True)
     harness.add_relation(state.AGENT_RELATION, "jenkins")
     harness.begin()
-    mock_event = unittest.mock.MagicMock(spec=ops.HookEvent)
+    mock_event = MagicMock(spec=ops.HookEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm._on_config_changed(mock_event)
@@ -95,7 +96,7 @@ def test__register_agent_from_config_use_relation(harness: ops.testing.Harness):
 def test__register_agent_from_config_download_agent_error(
     monkeypatch: pytest.MonkeyPatch,
     raise_exception: typing.Callable,
-    harness: ops.testing.Harness,
+    harness: Harness,
     config: typing.Dict[str, str],
 ):
     """
@@ -111,18 +112,18 @@ def test__register_agent_from_config_download_agent_error(
     harness.set_can_connect("jenkins-k8s-agent", True)
     harness.update_config(config)
     harness.begin()
-    mock_event = unittest.mock.MagicMock(spec=ops.HookEvent)
+    mock_event = MagicMock(spec=ops.HookEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
 
-    with pytest.raises(RuntimeError) as exc:
+    with pytest.raises(server.AgentJarDownloadError) as exc:
         jenkins_charm._on_config_changed(mock_event)
         assert exc.value == "Failed to download Agent JAR executable."
 
 
 def test__register_agent_from_config_no_valid_credentials(
     monkeypatch: pytest.MonkeyPatch,
-    harness: ops.testing.Harness,
+    harness: Harness,
     config: typing.Dict[str, str],
 ):
     """
@@ -135,7 +136,7 @@ def test__register_agent_from_config_no_valid_credentials(
     harness.set_can_connect("jenkins-k8s-agent", True)
     harness.update_config(config)
     harness.begin()
-    mock_event = unittest.mock.MagicMock(spec=ops.HookEvent)
+    mock_event = MagicMock(spec=ops.HookEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm._on_config_changed(mock_event)
@@ -145,7 +146,7 @@ def test__register_agent_from_config_no_valid_credentials(
 
 
 def test__register_agent_from_config_fallback_relation_slave(
-    harness: ops.testing.Harness,
+    harness: Harness,
 ):
     """
     arrange: given a charm with reset config values and a slave relation.
@@ -157,7 +158,7 @@ def test__register_agent_from_config_fallback_relation_slave(
     harness.add_relation(state.SLAVE_RELATION, "jenkins")
     harness.begin()
 
-    mock_event = unittest.mock.MagicMock(spec=ops.HookEvent)
+    mock_event = MagicMock(spec=ops.HookEvent)
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm._on_config_changed(mock_event)
 
@@ -166,7 +167,7 @@ def test__register_agent_from_config_fallback_relation_slave(
 
 
 def test__register_agent_from_config_fallback_relation_agent(
-    harness: ops.testing.Harness,
+    harness: Harness,
 ):
     """
     arrange: given a charm with reset config values and a agent relation.
@@ -178,7 +179,7 @@ def test__register_agent_from_config_fallback_relation_agent(
     harness.add_relation(state.AGENT_RELATION, "jenkins")
     harness.begin()
 
-    mock_event = unittest.mock.MagicMock(spec=ops.HookEvent)
+    mock_event = MagicMock(spec=ops.HookEvent)
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm._on_config_changed(mock_event)
 
@@ -188,7 +189,7 @@ def test__register_agent_from_config_fallback_relation_agent(
 
 def test__register_agent_from_config(
     monkeypatch: pytest.MonkeyPatch,
-    harness: ops.testing.Harness,
+    harness: Harness,
     config: typing.Dict[str, str],
 ):
     """
@@ -201,7 +202,7 @@ def test__register_agent_from_config(
     harness.set_can_connect("jenkins-k8s-agent", True)
     harness.update_config(config)
     harness.begin()
-    mock_event = unittest.mock.MagicMock(spec=ops.ConfigChangedEvent)
+    mock_event = MagicMock(spec=ops.ConfigChangedEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm._on_config_changed(mock_event)
@@ -210,7 +211,7 @@ def test__register_agent_from_config(
 
 
 def test__on_upgrade_charm(
-    monkeypatch: pytest.MonkeyPatch, harness: ops.testing.Harness, config: typing.Dict[str, str]
+    monkeypatch: pytest.MonkeyPatch, harness: Harness, config: typing.Dict[str, str]
 ):
     """
     arrange: given a charm with monkeypatched server functions that returns passing values.
@@ -222,9 +223,77 @@ def test__on_upgrade_charm(
     harness.set_can_connect("jenkins-k8s-agent", True)
     harness.update_config(config)
     harness.begin()
-    mock_event = unittest.mock.MagicMock(spec=ops.UpgradeCharmEvent)
+    mock_event = MagicMock(spec=ops.UpgradeCharmEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm._on_upgrade_charm(mock_event)
 
     assert jenkins_charm.unit.status.name == ACTIVE_STATUS_NAME
+
+
+def test__on_jenkins_k8s_agent_pebble_ready_container_not_ready(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+):
+    """
+    arrange: given a charm container that is not yet connectable.
+    act: when _on_jenkins_k8s_agent_pebble_ready is called.
+    assert: the charm is not started.
+    """
+    harness.begin()
+    charm = typing.cast(JenkinsAgentCharm, harness.charm)
+    monkeypatch.setattr(
+        server,
+        "download_jenkins_agent",
+        (mock_download_func := MagicMock(spec=server.download_jenkins_agent)),
+    )
+
+    charm._on_jenkins_k8s_agent_pebble_ready(MagicMock(spec=ops.PebbleReadyEvent))
+
+    mock_download_func.assert_not_called()
+
+
+def test__on_jenkins_k8s_agent_pebble_ready_agent_download_error(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+):
+    """
+    arrange: given a mocked server download that raises an error.
+    act: when _on_jenkins_k8s_agent_pebble_ready is called.
+    assert: RuntimeError is raised.
+    """
+    harness.set_can_connect(state.State.jenkins_agent_service_name, True)
+    harness.begin()
+    charm = typing.cast(JenkinsAgentCharm, harness.charm)
+    charm.state.agent_relation_credentials = server.Credentials(
+        address="test", secret=secrets.token_hex(16)
+    )
+    monkeypatch.setattr(
+        server,
+        "download_jenkins_agent",
+        MagicMock(spec=server.download_jenkins_agent, side_effect=[server.AgentJarDownloadError]),
+    )
+
+    with pytest.raises(server.AgentJarDownloadError):
+        charm._on_jenkins_k8s_agent_pebble_ready(MagicMock(spec=ops.PebbleReadyEvent))
+
+
+def test__on_jenkins_k8s_agent_pebble_ready(harness: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given a mocked server functions.
+    act: when _on_jenkins_k8s_agent_pebble_ready is called.
+    assert: the charm is in ActiveStatus.
+    """
+    harness.set_can_connect(state.State.jenkins_agent_service_name, True)
+    harness.begin()
+    charm = typing.cast(JenkinsAgentCharm, harness.charm)
+    charm.state.agent_relation_credentials = server.Credentials(
+        address="test", secret=secrets.token_hex(16)
+    )
+    monkeypatch.setattr(
+        server,
+        "download_jenkins_agent",
+        MagicMock(spec=server.download_jenkins_agent),
+    )
+
+    charm._on_jenkins_k8s_agent_pebble_ready(MagicMock(spec=ops.PebbleReadyEvent))
+
+    assert charm.unit.status.name == ACTIVE_STATUS_NAME

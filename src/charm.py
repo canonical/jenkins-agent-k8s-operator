@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Charm k8s jenkins agent."""
@@ -41,6 +41,10 @@ class JenkinsAgentCharm(ops.CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.upgrade_charm, self._on_upgrade_charm)
 
+        self.framework.observe(
+            self.on.jenkins_k8s_agent_pebble_ready, self._on_jenkins_k8s_agent_pebble_ready
+        )
+
     def _register_via_config(
         self, event: typing.Union[ops.ConfigChangedEvent, ops.UpgradeCharmEvent]
     ) -> None:
@@ -50,7 +54,7 @@ class JenkinsAgentCharm(ops.CharmBase):
             event: The event fired on config changed or upgrade charm.
 
         Raises:
-            RuntimeError: if the Jenkins agent failed to download.
+            AgentJarDownloadError: if the Jenkins agent failed to download.
         """
         container = self.unit.get_container(self.state.jenkins_agent_service_name)
         if not container.can_connect():
@@ -85,7 +89,7 @@ class JenkinsAgentCharm(ops.CharmBase):
             )
         except server.AgentJarDownloadError as exc:
             logger.error("Failed to download Agent JAR executable, %s", exc)
-            raise RuntimeError("Failed to download Jenkins agent. Fix issue ") from exc
+            raise
 
         valid_agent_token = server.find_valid_credentials(
             agent_name_token_pairs=self.state.jenkins_config.agent_name_token_pairs,
@@ -122,6 +126,25 @@ class JenkinsAgentCharm(ops.CharmBase):
             event: The event fired on upgrade charm.
         """
         self._register_via_config(event)
+
+    def _on_jenkins_k8s_agent_pebble_ready(self, _: ops.PebbleReadyEvent) -> None:
+        """Handle pebble ready event.
+
+        Pebble ready is fired
+            1. during initial charm launch.
+            2. when the container has restarted for various reasons.
+        It is necessary to handle case 2 for recovery cases.
+        """
+        container = self.unit.get_container(self.state.jenkins_agent_service_name)
+        if not container.can_connect() or not self.state.agent_relation_credentials:
+            logger.warning("Preconditions not ready.")
+            return
+
+        self.agent_observer.start_agent_from_relation(
+            container=container,
+            credentials=self.state.agent_relation_credentials,
+            agent_name=self.state.agent_meta.name,
+        )
 
 
 if __name__ == "__main__":  # pragma: no cover

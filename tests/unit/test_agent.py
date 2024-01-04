@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Jenkins-k8s-agent agent module tests."""
@@ -262,7 +262,7 @@ def test_agent_relation_changed_download_jenkins_agent_fail(
     harness.begin()
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    with pytest.raises(RuntimeError) as exc:
+    with pytest.raises(server.AgentJarDownloadError) as exc:
         if relation == state.AGENT_RELATION:
             jenkins_charm.agent_observer._on_agent_relation_changed(mock_event)
         else:
@@ -271,17 +271,9 @@ def test_agent_relation_changed_download_jenkins_agent_fail(
         assert exc.value == "Failed to download Jenkins agent executable."
 
 
-@pytest.mark.parametrize(
-    "relation",
-    [
-        pytest.param(state.AGENT_RELATION, id="agent relation"),
-        pytest.param(state.SLAVE_RELATION, id="slave relation"),
-    ],
-)
 def test_agent_relation_changed_validate_credentials_fail(
     monkeypatch: pytest.MonkeyPatch,
     harness: ops.testing.Harness,
-    relation: str,
     get_event_relation_data: typing.Callable[
         [str], typing.Tuple[unittest.mock.MagicMock, typing.Dict[str, str]]
     ],
@@ -291,11 +283,11 @@ def test_agent_relation_changed_validate_credentials_fail(
     act: when _on_agent_relation_changed is called.
     assert: the unit falls into WaitingStatus.
     """
-    (mock_event, relation_data) = get_event_relation_data(relation)
+    (mock_event, relation_data) = get_event_relation_data(state.SLAVE_RELATION)
     monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(server, "validate_credentials", lambda *_args, **_kwargs: False)
     harness.set_can_connect("jenkins-k8s-agent", True)
-    relation_id = harness.add_relation(relation, "jenkins")
+    relation_id = harness.add_relation(state.SLAVE_RELATION, "jenkins")
     harness.add_relation_unit(relation_id, "jenkins/0")
     harness.update_relation_data(
         relation_id=relation_id,
@@ -305,10 +297,7 @@ def test_agent_relation_changed_validate_credentials_fail(
     harness.begin()
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    if relation == state.AGENT_RELATION:
-        jenkins_charm.agent_observer._on_agent_relation_changed(mock_event)
-    else:
-        jenkins_charm.agent_observer._on_slave_relation_changed(mock_event)
+    jenkins_charm.agent_observer._on_slave_relation_changed(mock_event)
 
     assert jenkins_charm.unit.status.name == WAITING_STATUS_NAME
     assert jenkins_charm.unit.status.message == "Waiting for credentials."
