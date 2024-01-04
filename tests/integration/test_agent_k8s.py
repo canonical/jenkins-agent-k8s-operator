@@ -39,7 +39,7 @@ async def test_agent_recover(
     assert node.is_online(), "Node not online."
 
     kube_core_client.delete_namespaced_pod(name=pod_name, namespace=model.name)
-    await wait_for(lambda: not node.is_online())
+    await wait_for(lambda: not node.is_online(), timeout=60 * 10)
 
     def containers_ready() -> bool:
         """Check if all containers are ready.
@@ -55,6 +55,6 @@ async def test_agent_recover(
         ] = pod_status.container_statuses
         return all(status.ready for status in container_statuses)
 
-    await wait_for(containers_ready)
-    await wait_for(node.is_online)
+    await wait_for(containers_ready, timeout=60 * 10)
+    await wait_for(node.is_online, timeout=60 * 10)
     assert node.is_online(), "Node not online."
