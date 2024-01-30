@@ -14,7 +14,7 @@ from ops.main import main
 import agent
 import pebble
 import server
-from state import AGENT_RELATION, SLAVE_RELATION, InvalidStateError, State
+from state import AGENT_RELATION, InvalidStateError, State
 
 logger = logging.getLogger()
 
@@ -62,21 +62,11 @@ class JenkinsAgentCharm(ops.CharmBase):
             event.defer()
             return
 
-        if (
-            not self.state.jenkins_config
-            and not self.model.get_relation(SLAVE_RELATION)
-            and not self.model.get_relation(AGENT_RELATION)
-        ):
+        if not self.state.jenkins_config and not self.model.get_relation(AGENT_RELATION):
             self.model.unit.status = ops.BlockedStatus("Waiting for config/relation.")
             return
 
         if not self.state.jenkins_config:
-            if self.model.get_relation(SLAVE_RELATION):
-                self.model.unit.status = ops.BlockedStatus(
-                    "Please remove and re-relate slave relation."
-                )
-                return
-            # Support fallback relation to AGENT_RELATION.
             self.model.unit.status = ops.BlockedStatus(
                 "Please remove and re-relate agent relation."
             )

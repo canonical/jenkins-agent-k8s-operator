@@ -14,8 +14,6 @@ from pydantic import AnyHttpUrl, BaseModel, Field, ValidationError, tools
 import metadata
 import server
 
-# relation name used for compatibility with machine Jenkins server charm.
-SLAVE_RELATION = "slave"
 # agent relation name
 AGENT_RELATION = "agent"
 
@@ -103,24 +101,6 @@ def _get_jenkins_unit(
     return None
 
 
-def _get_credentials_from_slave_relation(
-    server_unit_databag: ops.RelationDataContent,
-) -> typing.Optional[server.Credentials]:
-    """Import server metadata from databag in slave relation.
-
-    Args:
-        server_unit_databag: The relation databag content from slave relation.
-
-    Returns:
-        Metadata if complete values(url, secret) are set. None otherwise.
-    """
-    address = server_unit_databag.get("url")
-    secret = server_unit_databag.get("secret")
-    if not address or not secret:
-        return None
-    return server.Credentials(address=address, secret=secret)
-
-
 def _get_credentials_from_agent_relation(
     server_unit_databag: ops.RelationDataContent, unit_name: str
 ) -> typing.Optional[server.Credentials]:
@@ -147,8 +127,6 @@ class State:
     Attrs:
         agent_meta: The Jenkins agent metadata to register on Jenkins server.
         jenkins_config: Jenkins configuration value from juju config.
-        slave_relation_credentials: The full set of credentials from the slave relation. None if
-            partial data is set.
         agent_relation_credentials: The full set of credentials from the agent relation. None if
             partial data is set or the credentials do not belong to current agent.
         jenkins_agent_service_name: The Jenkins agent workload container name.
@@ -156,7 +134,6 @@ class State:
 
     agent_meta: metadata.Agent
     jenkins_config: typing.Optional[JenkinsConfig]
-    slave_relation_credentials: typing.Optional[server.Credentials]
     agent_relation_credentials: typing.Optional[server.Credentials]
     jenkins_agent_service_name: str = "jenkins-k8s-agent"
 
@@ -189,14 +166,6 @@ class State:
             logging.error("Invalid jenkins config values, %s", exc)
             raise InvalidStateError("Invalid jenkins config values.") from exc
 
-        slave_relation = charm.model.get_relation(SLAVE_RELATION)
-        slave_relation_credentials: typing.Optional[server.Credentials] = None
-        if slave_relation and (
-            slave_relation_jenkins_unit := _get_jenkins_unit(slave_relation.units, charm.app.name)
-        ):
-            slave_relation_credentials = _get_credentials_from_slave_relation(
-                slave_relation.data[slave_relation_jenkins_unit]
-            )
         agent_relation = charm.model.get_relation(AGENT_RELATION)
         agent_relation_credentials: typing.Optional[server.Credentials] = None
         if agent_relation and (
@@ -209,6 +178,5 @@ class State:
         return cls(
             agent_meta=agent_meta,
             jenkins_config=jenkins_config,
-            slave_relation_credentials=slave_relation_credentials,
             agent_relation_credentials=agent_relation_credentials,
         )
