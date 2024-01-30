@@ -84,4 +84,4 @@ juju deploy ./jenkins-agent-k8s_ubuntu-22.04-amd64.charm \
 
 ## Canonical Contributor Agreement
 
-Canonical welcomes contributions to the Jenkins Agent k8s Operator. Please check out our [contributor agreement](https://ubuntu.com/legal/contributors) if you're interested in contributing to the solution.
+Canonical welcomes contributions to the Jenkins Agent k8s operator. Please check out our [contributor agreement](https://ubuntu.com/legal/contributors) if you're interested in contributing to the solution.

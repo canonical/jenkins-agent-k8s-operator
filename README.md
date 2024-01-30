@@ -3,7 +3,7 @@
 [![Promote charm](https://github.com/canonical/jenkins-agent-k8s-operator/actions/workflows/promote_charm.yaml/badge.svg)](https://github.com/canonical/jenkins-agent-k8s-operator/actions/workflows/promote_charm.yaml)
 [![Discourse Status](https://img.shields.io/discourse/status?server=https%3A%2F%2Fdiscourse.charmhub.io&style=flat&label=CharmHub%20Discourse)](https://discourse.charmhub.io)
 
-# Jenkins Agent k8s Operator
+# Jenkins Agent k8s operator
 
 A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators) deploying and managing [Jenkins](https://www.jenkins.io/) Agent on Kubernetes, configurable to use a Jenkins charm deployed in another Juju model, or to connect to a standalone Jenkins instance.
 
