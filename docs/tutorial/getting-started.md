@@ -23,7 +23,7 @@ Deploy the charms:
 
 ```bash
 juju deploy jenkins-agent-k8s
-juju deploy jenkins
+juju deploy jenkins-k8s
 ```
 
 To see the pod created by the Jenkins k8s agent charm, run `kubectl get pods` on a namespace named for the Juju model you've deployed the charm into. The output is similar to the following:
@@ -46,7 +46,7 @@ This means that Jenkins k8s agent charm isn't integrated with Jenkins yet.
 Provide integration between Jenkins k8s agent and Jenkins by running the following [`juju integrate`](https://juju.is/docs/juju/juju-integrate) command:
 
 ```bash
-juju integrate jenkins jenkins-agent-k8s
+juju integrate jenkins-k8s jenkins-agent-k8s
 ```
 
 Run `juju status` and wait until the Application status is `Active` as the following example:
