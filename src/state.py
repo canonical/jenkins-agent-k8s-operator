@@ -135,7 +135,7 @@ class State:
     agent_meta: metadata.Agent
     jenkins_config: typing.Optional[JenkinsConfig]
     agent_relation_credentials: typing.Optional[server.Credentials]
-    jenkins_agent_service_name: str = "jenkins-k8s-agent"
+    jenkins_agent_service_name: str = "jenkins-agent-k8s"
 
     @classmethod
     def from_charm(cls, charm: ops.CharmBase) -> "State":

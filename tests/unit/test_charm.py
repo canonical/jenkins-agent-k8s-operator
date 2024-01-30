@@ -1,7 +1,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Jenkins-k8s-agent charm module tests."""
+"""Jenkins-agent-k8s charm module tests."""
 
 # Need access to protected functions for testing
 # pylint:disable=protected-access
@@ -49,7 +49,7 @@ def test__register_agent_from_config_container_not_ready(harness: Harness):
     act: when _register_agent_from_config is called.
     assert: the event is deferred.
     """
-    harness.set_can_connect("jenkins-k8s-agent", False)
+    harness.set_can_connect("jenkins-agent-k8s", False)
     harness.begin()
     mock_event = MagicMock(spec=ops.HookEvent)
 
@@ -65,7 +65,7 @@ def test__register_agent_from_config_no_config_state(harness: Harness):
     act: when _register_agent_from_config is called.
     assert: the unit falls into BlockedStatus.
     """
-    harness.set_can_connect("jenkins-k8s-agent", True)
+    harness.set_can_connect("jenkins-agent-k8s", True)
     harness.begin()
     mock_event = MagicMock(spec=ops.HookEvent)
 
@@ -82,7 +82,7 @@ def test__register_agent_from_config_use_relation(harness: Harness):
     act: when _register_agent_from_config is called.
     assert: the nothing happens since agent observer should be handling the relation.
     """
-    harness.set_can_connect("jenkins-k8s-agent", True)
+    harness.set_can_connect("jenkins-agent-k8s", True)
     harness.add_relation(state.AGENT_RELATION, "jenkins")
     harness.begin()
     mock_event = MagicMock(spec=ops.HookEvent)
@@ -109,7 +109,7 @@ def test__register_agent_from_config_download_agent_error(
         "download_jenkins_agent",
         lambda *_args, **_kwargs: raise_exception(server.AgentJarDownloadError),
     )
-    harness.set_can_connect("jenkins-k8s-agent", True)
+    harness.set_can_connect("jenkins-agent-k8s", True)
     harness.update_config(config)
     harness.begin()
     mock_event = MagicMock(spec=ops.HookEvent)
@@ -133,7 +133,7 @@ def test__register_agent_from_config_no_valid_credentials(
     """
     monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(server, "validate_credentials", lambda *_args, **_kwargs: False)
-    harness.set_can_connect("jenkins-k8s-agent", True)
+    harness.set_can_connect("jenkins-agent-k8s", True)
     harness.update_config(config)
     harness.begin()
     mock_event = MagicMock(spec=ops.HookEvent)
@@ -153,7 +153,7 @@ def test__register_agent_from_config_fallback_relation_agent(
     act: when _on_config_changed is called.
     assert: unit falls into BlockedStatus, this should support fallback relation later.
     """
-    harness.set_can_connect("jenkins-k8s-agent", True)
+    harness.set_can_connect("jenkins-agent-k8s", True)
     harness.update_config({})
     harness.add_relation(state.AGENT_RELATION, "jenkins")
     harness.begin()
@@ -178,7 +178,7 @@ def test__register_agent_from_config(
     """
     monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(server, "validate_credentials", lambda *_args, **_kwargs: True)
-    harness.set_can_connect("jenkins-k8s-agent", True)
+    harness.set_can_connect("jenkins-agent-k8s", True)
     harness.update_config(config)
     harness.begin()
     mock_event = MagicMock(spec=ops.ConfigChangedEvent)
@@ -199,7 +199,7 @@ def test__on_upgrade_charm(
     """
     monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(server, "validate_credentials", lambda *_args, **_kwargs: True)
-    harness.set_can_connect("jenkins-k8s-agent", True)
+    harness.set_can_connect("jenkins-agent-k8s", True)
     harness.update_config(config)
     harness.begin()
     mock_event = MagicMock(spec=ops.UpgradeCharmEvent)

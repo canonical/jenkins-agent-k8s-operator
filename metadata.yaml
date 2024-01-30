@@ -1,7 +1,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 name: jenkins-agent-k8s
-display-name: Jenkins k8s Agent
+display-name: Jenkins Agent k8s
 summary: Agent for Jenkins for Kubernetes.
 maintainers:
   - https://launchpad.net/~canonical-is-devops
@@ -33,12 +33,12 @@ tags:
 assumes:
   - k8s-api
 containers:
-  jenkins-k8s-agent:
+  jenkins-agent-k8s:
     resource: jenkins-agent-k8s-image
 resources:
   jenkins-agent-k8s-image:
     type: oci-image
-    description: OCI image for Jenkins k8s agent
+    description: OCI image for Jenkins agent k8s
 provides:
   agent:
     interface: jenkins_agent_v0

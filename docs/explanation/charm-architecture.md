@@ -11,7 +11,7 @@ Pebble `services` are configured through [layers](https://github.com/canonical/p
 1. An [Jenkins agent](https://www.jenkins.io/doc/book/managing/nodes/#components-of-distributed-builds) container, which manages the CI jobs.
 
 
-As a result, if you run a `kubectl get pods` on a namespace named for the Juju model you've deployed the Jenkins k8s agent charm into, you'll see something like the following:
+As a result, if you run a `kubectl get pods` on a namespace named for the Juju model you've deployed the Jenkins agent k8s charm into, you'll see something like the following:
 
 ```bash
 NAME                             READY   STATUS            RESTARTS   AGE

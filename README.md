@@ -3,7 +3,7 @@
 [![Promote charm](https://github.com/canonical/jenkins-agent-k8s-operator/actions/workflows/promote_charm.yaml/badge.svg)](https://github.com/canonical/jenkins-agent-k8s-operator/actions/workflows/promote_charm.yaml)
 [![Discourse Status](https://img.shields.io/discourse/status?server=https%3A%2F%2Fdiscourse.charmhub.io&style=flat&label=CharmHub%20Discourse)](https://discourse.charmhub.io)
 
-# Jenkins k8s Agent Operator
+# Jenkins Agent k8s Operator
 
 A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators) deploying and managing [Jenkins](https://www.jenkins.io/) Agent on Kubernetes, configurable to use a Jenkins charm deployed in another Juju model, or to connect to a standalone Jenkins instance.
 
@@ -15,12 +15,12 @@ For DevOps or SRE teams this charm will make operating Jenkins Agent simple and 
 
 ## Project and community
 
-The Jenkins k8s agent Operator is a member of the Ubuntu family. It's an open source project that warmly welcomes community  projects, contributions, suggestions, fixes and constructive feedback.
+The Jenkins agent k8s operator is a member of the Ubuntu family. It's an open source project that warmly welcomes community  projects, contributions, suggestions, fixes and constructive feedback.
 * [Code of conduct](https://ubuntu.com/community/code-of-conduct)
 * [Get support](https://discourse.charmhub.io/)
 * [Join our online chat](https://app.element.io/#/room/#charmhub-charmdev:ubuntu.com)
 * [Contribute](https://charmhub.io/jenkins-agent-k8s-operator/docs/how-to-contribute)
-Thinking about using the Jenkins k8s agent Operator for your next project?[Get in touch](https://app.element.io/#/room/#charmhub-charmdev:ubuntu.com)!
+Thinking about using the Jenkins agent k8s operator for your next project?[Get in touch](https://app.element.io/#/room/#charmhub-charmdev:ubuntu.com)!
 
 ---
 

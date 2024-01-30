@@ -20,7 +20,7 @@ logger = logging.getLogger()
 
 
 class JenkinsAgentCharm(ops.CharmBase):
-    """Charm Jenkins k8s agent."""
+    """Charm Jenkins agent k8s."""
 
     def __init__(self, *args: typing.Any):
         """Initialize the charm and register event handlers.

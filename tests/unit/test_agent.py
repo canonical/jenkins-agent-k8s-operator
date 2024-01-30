@@ -1,7 +1,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Jenkins-k8s-agent agent module tests."""
+"""Jenkins-agent-k8s agent module tests."""
 
 # Need access to protected functions for testing
 # pylint:disable=protected-access
@@ -98,7 +98,7 @@ def test_agent_relation_changed_container_not_ready(
     assert: the relation changed event is deferred.
     """
     mock_event = get_mock_relation_changed_event(state.AGENT_RELATION)
-    harness.set_can_connect("jenkins-k8s-agent", False)
+    harness.set_can_connect("jenkins-agent-k8s", False)
     harness.begin()
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
@@ -117,8 +117,8 @@ def test_agent_relation_changed_service_running(
     assert: nothing happens since the agent is already registered.
     """
     mock_event = get_mock_relation_changed_event(state.AGENT_RELATION)
-    harness.set_can_connect("jenkins-k8s-agent", True)
-    container = harness.model.unit.get_container("jenkins-k8s-agent")
+    harness.set_can_connect("jenkins-agent-k8s", True)
+    container = harness.model.unit.get_container("jenkins-agent-k8s")
     container.push(server.AGENT_READY_PATH, "test", encoding="utf-8", make_dirs=True)
     harness.begin()
 
@@ -138,7 +138,7 @@ def test_agent_relation_changed_incomplete_relation_data(
     assert: charm falls into waiting status.
     """
     mock_event = get_mock_relation_changed_event(state.AGENT_RELATION)
-    harness.set_can_connect("jenkins-k8s-agent", True)
+    harness.set_can_connect("jenkins-agent-k8s", True)
     relation_id = harness.add_relation(state.AGENT_RELATION, remote_app="jenkins")
     harness.add_relation_unit(relation_id, "jenkins/0")
     harness.update_relation_data(relation_id, "jenkins/0", {"url": "test"})
@@ -170,7 +170,7 @@ def test_agent_relation_changed_download_jenkins_agent_fail(
         "download_jenkins_agent",
         lambda *_args, **_kwargs: raise_exception(server.AgentJarDownloadError),
     )
-    harness.set_can_connect("jenkins-k8s-agent", True)
+    harness.set_can_connect("jenkins-agent-k8s", True)
     relation_id = harness.add_relation(state.AGENT_RELATION, "jenkins")
     harness.add_relation_unit(relation_id, "jenkins/0")
     harness.update_relation_data(
@@ -202,7 +202,7 @@ def test_agent_relation_changed(
     (mock_event, relation_data) = get_event_relation_data(state.AGENT_RELATION)
     monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(server, "validate_credentials", lambda *_args, **_kwargs: True)
-    harness.set_can_connect("jenkins-k8s-agent", True)
+    harness.set_can_connect("jenkins-agent-k8s", True)
     relation_id = harness.add_relation(state.AGENT_RELATION, "jenkins")
     harness.add_relation_unit(relation_id, "jenkins/0")
     harness.update_relation_data(
@@ -229,7 +229,7 @@ def test_agent_relation_departed_container_not_ready(
     mock_stop_agent = unittest.mock.MagicMock(spec=pebble.PebbleService.stop_agent)
     monkeypatch.setattr(pebble.PebbleService, "stop_agent", mock_stop_agent)
     mock_event = unittest.mock.MagicMock(spec=ops.RelationDepartedEvent)
-    harness.set_can_connect("jenkins-k8s-agent", False)
+    harness.set_can_connect("jenkins-agent-k8s", False)
     harness.begin()
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
@@ -246,7 +246,7 @@ def test_agent_relation_departed(monkeypatch: pytest.MonkeyPatch, harness: ops.t
     """
     monkeypatch.setattr(pebble.PebbleService, "stop_agent", lambda *_args, **_kwargs: None)
     mock_event = unittest.mock.MagicMock(spec=ops.RelationDepartedEvent)
-    harness.set_can_connect("jenkins-k8s-agent", True)
+    harness.set_can_connect("jenkins-agent-k8s", True)
     harness.begin()
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)

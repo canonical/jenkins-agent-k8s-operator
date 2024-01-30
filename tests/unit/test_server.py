@@ -1,7 +1,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Jenkins-k8s-agent server module tests."""
+"""Jenkins-agent-k8s server module tests."""
 
 # Need access to protected functions for testing
 # pylint:disable=protected-access
@@ -52,10 +52,10 @@ def test_download_jenkins_agent_download(
     mock_response = unittest.mock.MagicMock(spec=requests.Response)
     mock_response.content = response_content
     monkeypatch.setattr(requests, "get", lambda *_args, **_kwags: mock_response)
-    harness.set_can_connect("jenkins-k8s-agent", True)
+    harness.set_can_connect("jenkins-agent-k8s", True)
     harness.begin()
 
-    container = harness.model.unit.get_container("jenkins-k8s-agent")
+    container = harness.model.unit.get_container("jenkins-agent-k8s")
     server.download_jenkins_agent(server_url="http://test-url", container=container)
 
     assert str(container.pull(server.AGENT_JAR_PATH, encoding="utf-8").read()) == response_content
