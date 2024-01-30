@@ -1,92 +1,29 @@
-[![CharmHub Badge](https://charmhub.io/alejdg-jenkins-agent-k8s/badge.svg)](https://charmhub.io/alejdg-jenkins-agent-k8s)
+[![CharmHub Badge](https://charmhub.io/jenkins-agent-k8s/badge.svg)](https://charmhub.io/jenkins-agent-k8s)
 [![Publish to edge](https://github.com/canonical/jenkins-agent-k8s-operator/actions/workflows/publish_charm.yaml/badge.svg)](https://github.com/canonical/jenkins-agent-k8s-operator/actions/workflows/publish_charm.yaml)
 [![Promote charm](https://github.com/canonical/jenkins-agent-k8s-operator/actions/workflows/promote_charm.yaml/badge.svg)](https://github.com/canonical/jenkins-agent-k8s-operator/actions/workflows/promote_charm.yaml)
 [![Discourse Status](https://img.shields.io/discourse/status?server=https%3A%2F%2Fdiscourse.charmhub.io&style=flat&label=CharmHub%20Discourse)](https://discourse.charmhub.io)
 
-# Jenkins Agent Operator
+# Jenkins k8s Agent Operator
 
-A Juju charm deploying and managing Jenkins Agent on Kubernetes, configurable to
-use a Jenkins charm deployed in another Juju model, or to connect to a
-standalone Jenkins instance.
+A Juju charm deploying and managing Jenkins agents on Kubernetes, configurable to use a Jenkins charm deployed in another Juju model, or to connect to a standalone Jenkins instance. [Jenkins](https://www.jenkins.io/) is a self-contained, open source automation server which can be used to automate all sorts of tasks related to building, testing, and delivering or deploying software.
 
-## Overview
+This charm simplifies initial deployment and "day N" operations of Jenkins agents on Kubernetes. It allows for deployment on many different Kubernetes platforms, from [MicroK8s](https://microk8s.io) to [Charmed Kubernetes](https://ubuntu.com/kubernetes) to  public cloud Kubernetes offerings.
 
-Jenkins is a self-contained, open source automation server which can be used
-to automate all sorts of tasks related to building, testing, and delivering or
-deploying software.
+As such, the charm makes it easy for those looking to deploy their own continuous integration server with Jenkins, and gives them  the freedom to deploy on the Kubernetes platform of their choice.
 
-For documentation on Jenkins itself, [see here](https://www.jenkins.io/doc/).
+For DevOps or SRE teams this charm will make operating Jenkins agents simple and straightforward through Juju's clean interface. It will allow easy deployment into multiple environments for testing of changes, and supports scaling out for enterprise deployments.
 
-## Usage
+## Project and community
 
-For details on using Kubernetes with Juju [see here](https://juju.is/docs/kubernetes), and for details on using
-Juju with MicroK8s for easy local testing [see here](https://juju.is/docs/microk8s-cloud).
-
-The charm supports cross-model relations to connect to a Juju-deployed Jenkins
-instance in another model. We'll use this to deploy a Jenkins instance and
-connect our Jenkins Agent to it.
-
-First we're going to bootstrap and deploy Juju on LXC. We'll later add our
-MicroK8s model to this same controller.
-
-```bash
-juju bootstrap localhost lxd
-juju deploy jenkins --config jnlp-port=-1
-```
-
-The default password for the 'admin' account will be auto-generated. Retrieve it using:
-
-```bash
-juju run-action jenkins/0 get-admin-credentials --wait
-```
-
-Then go to the jenkins interface by visiting `$JENKINS_IP:8080` in a browser,
-and logging in with the username `admin` and password (as obtained through the command above).
-You can configure the plugins you want, and either create an
-initial admin user or skip that and continue with the pre-created one.
-
-Now we're going to create our k8s model and generate a cross-model relation
-offer:
-
-```bash
-microk8s.config | juju add-k8s micro --controller=lxd
-juju add-model jenkins-agent-k8s micro
-juju deploy jenkins-agent-k8s
-```
-
-The charm status will be "Blocked" with a message of "Missing required config:
-jenkins_agent_name jenkins_agent_token jenkins_url". This will be fixed
-by creating and accepting our cross-model relation. We do this from within the
-k8s model:
-
-```bash
-juju offer jenkins-agent-k8s:slave
-# The output will be something like:
-#  Application "jenkins-agent" endpoints [slave] available at "admin/jenkins-agent-k8s.jenkins-agent"
-```
-
-Switch back to your IaaS model where you deployed jenkins and run:
-
-```bash
-# Adjust based on the output of your 'juju offer' command above
-juju add-relation jenkins <your-controller>:admin/<your-microk8s-model>.jenkins-agent-k8s
-```
-
-You can now visit `$JENKINS_IP:8080/computer/` in a browser and you'll see the
-jenkins agent has been added to your jenkins instance.
+The Jenkins k8s agent Operator is a member of the Ubuntu family. It's an open source project that warmly welcomes community  projects, contributions, suggestions, fixes and constructive feedback.
+* [Code of conduct](https://ubuntu.com/community/code-of-conduct)
+* [Get support](https://discourse.charmhub.io/)
+* [Join our online chat](https://app.element.io/#/room/#charmhub-charmdev:ubuntu.com)
+* [Contribute](https://charmhub.io/indico/docs/how-to-contribute)
+Thinking about using the Jenkins k8s agent Operator for your next project?[Get in touch](https://app.element.io/#/room/#charmhub-charmdev:ubuntu.com)!
 
 ---
 
-## Future improvements
+For further details,
+[see the charm's detailed documentation](https://charmhub.io/jenkins-agent-k8s).
 
-Currently the charm only supports one unit per application when using relations. If new units are added they fail to connect to Jenkins.
-
-This is feature is being tracked in this [bug](https://bugs.launchpad.net/charm-k8s-jenkins-agent/+bug/1928022).
-
-If more units are needed while this is not available, deploy additional applications with:
-
-```bash
-juju deploy jenkins-agent-k8s agent-one
-```
-
-For more details [see here](https://charmhub.io/alejdg-jenkins-agent-k8s/docs).
