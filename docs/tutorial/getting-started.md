@@ -16,7 +16,7 @@ For more information about how to install Juju, see [Get started with Juju](http
 
 ### Deploy the Jenkins k8s agent charm
 
-Since the Jenkins k8s agent charm requires a connection to Jenkins, you'll deploy the Jenkins charm too. For more information, see [Charm Architecture](https://charmhub.io/indico/jenkins-agent-k8s/explanation-charm-architecture).
+Since the Jenkins k8s agent charm requires a connection to Jenkins, you'll deploy the Jenkins charm too. For more information, see [Charm Architecture](https://charmhub.io/jenkins-agent-k8s/docs/explanation-charm-architecture).
 
 
 Deploy the charms:

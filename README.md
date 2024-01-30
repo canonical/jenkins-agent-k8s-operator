@@ -19,7 +19,7 @@ The Jenkins k8s agent Operator is a member of the Ubuntu family. It's an open so
 * [Code of conduct](https://ubuntu.com/community/code-of-conduct)
 * [Get support](https://discourse.charmhub.io/)
 * [Join our online chat](https://app.element.io/#/room/#charmhub-charmdev:ubuntu.com)
-* [Contribute](https://charmhub.io/indico/docs/how-to-contribute)
+* [Contribute](https://charmhub.io/jenkins-agent-k8s-operator/docs/how-to-contribute)
 Thinking about using the Jenkins k8s agent Operator for your next project?[Get in touch](https://app.element.io/#/room/#charmhub-charmdev:ubuntu.com)!
 
 ---
