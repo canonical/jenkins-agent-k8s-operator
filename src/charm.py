@@ -42,7 +42,7 @@ class JenkinsAgentCharm(ops.CharmBase):
         self.framework.observe(self.on.upgrade_charm, self._on_upgrade_charm)
 
         self.framework.observe(
-            self.on.jenkins_k8s_agent_pebble_ready, self._on_jenkins_k8s_agent_pebble_ready
+            self.on.jenkins_agent_k8s_pebble_ready, self._on_jenkins_agent_k8s_pebble_ready
         )
 
     def _register_via_config(
@@ -117,7 +117,7 @@ class JenkinsAgentCharm(ops.CharmBase):
         """
         self._register_via_config(event)
 
-    def _on_jenkins_k8s_agent_pebble_ready(self, _: ops.PebbleReadyEvent) -> None:
+    def _on_jenkins_agent_k8s_pebble_ready(self, _: ops.PebbleReadyEvent) -> None:
         """Handle pebble ready event.
 
         Pebble ready is fired

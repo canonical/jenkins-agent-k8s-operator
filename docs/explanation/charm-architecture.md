@@ -51,7 +51,7 @@ Accordingly to the [Juju SDK](https://juju.is/docs/sdk/event): "an event is a da
 
 For this charm, the following events are observed:
 
-1. [jenkins_k8s_agent_pebble_ready](https://juju.is/docs/sdk/container-name-pebble-ready-event): fired on Kubernetes charms when the requested container is ready.
+1. [jenkins_agent_k8s_pebble_ready](https://juju.is/docs/sdk/container-name-pebble-ready-event): fired on Kubernetes charms when the requested container is ready.
 Action: wait for the integrations and configuration, download the JAR, configure the container and replan the service.
 2. [config_changed](https://juju.is/docs/sdk/config-changed-event): usually fired in response to a configuration change using the CLI.
 Action: wait for the integrations and configuration, download the JAR, configure the container and replan the service.
