@@ -145,27 +145,6 @@ def test__register_agent_from_config_no_valid_credentials(
     assert jenkins_charm.unit.status.message == "Additional valid agent-token pairs required."
 
 
-def test__register_agent_from_config_fallback_relation_slave(
-    harness: Harness,
-):
-    """
-    arrange: given a charm with reset config values and a slave relation.
-    act: when _on_config_changed is called.
-    assert: unit falls into BlockedStatus since slave relation cannot be established in reverse.
-    """
-    harness.set_can_connect("jenkins-k8s-agent", True)
-    harness.update_config({})
-    harness.add_relation(state.SLAVE_RELATION, "jenkins")
-    harness.begin()
-
-    mock_event = MagicMock(spec=ops.HookEvent)
-    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm._on_config_changed(mock_event)
-
-    assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
-    assert jenkins_charm.unit.status.message == "Please remove and re-relate slave relation."
-
-
 def test__register_agent_from_config_fallback_relation_agent(
     harness: Harness,
 ):

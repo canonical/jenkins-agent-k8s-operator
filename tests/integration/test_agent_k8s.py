@@ -50,9 +50,9 @@ async def test_agent_recover(
         pod_status: kubernetes.client.V1PodStatus = kube_core_client.read_namespaced_pod_status(
             name=pod_name, namespace=model.name
         ).status
-        container_statuses: list[
-            kubernetes.client.V1ContainerStatus
-        ] = pod_status.container_statuses
+        container_statuses: list[kubernetes.client.V1ContainerStatus] = (
+            pod_status.container_statuses
+        )
         return all(status.ready for status in container_statuses)
 
     await wait_for(containers_ready, timeout=60 * 10)

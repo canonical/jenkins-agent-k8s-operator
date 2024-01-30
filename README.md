@@ -60,9 +60,9 @@ by creating and accepting our cross-model relation. We do this from within the
 k8s model:
 
 ```bash
-juju offer jenkins-agent-k8s:slave
+juju offer jenkins-agent-k8s:agent
 # The output will be something like:
-#  Application "jenkins-agent" endpoints [slave] available at "admin/jenkins-agent-k8s.jenkins-agent"
+#  Application "jenkins-agent" endpoints [agent] available at "admin/jenkins-agent-k8s.jenkins-agent"
 ```
 
 Switch back to your IaaS model where you deployed jenkins and run:

@@ -40,7 +40,5 @@ resources:
     type: oci-image
     description: OCI image for Jenkins k8s agent
 provides:
-  slave:
-    interface: jenkins-slave
   agent:
     interface: jenkins_agent_v0

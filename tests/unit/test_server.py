@@ -71,7 +71,7 @@ def test_download_jenkins_agent_download(
 )
 def test_validate_credentials_fail(failed_log_fixture: str, request: pytest.FixtureRequest):
     """
-    arrange: given a mock container that returns unsuccessful jenkins slave connection logs.
+    arrange: given a mock container that returns unsuccessful jenkins agent connection logs.
     act: when validate_credentials is called.
     assert: False is returned.
     """
@@ -96,7 +96,7 @@ def test_validate_credentials_fail(failed_log_fixture: str, request: pytest.Fixt
 )
 def test_validate_credentials(jenkins_connection_log: str, random_delay: bool):
     """
-    arrange: given a mock container that returns unsuccessful jenkins slave connection logs.
+    arrange: given a mock container that returns unsuccessful jenkins agent connection logs.
     act: when validate_credentials is called.
     assert: True is returned.
     """

@@ -14,4 +14,4 @@ jobs:
         ./tests/integration/pre_run_script.sh"
       extra-arguments: |
         --kube-config ${GITHUB_WORKSPACE}/kube-config
-      modules: '["test_agent_k8s.py", "test_agent_machine.py"]'
+      modules: '["test_agent_k8s.py"]'
