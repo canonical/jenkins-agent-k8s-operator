@@ -118,7 +118,7 @@ def test__register_agent_from_config_download_agent_error(
 
     with pytest.raises(server.AgentJarDownloadError) as exc:
         jenkins_charm._on_config_changed(mock_event)
-        assert exc.value == "Failed to download Agent JAR executable."
+        assert exc.value == "Failed to download agent JAR executable."
 
 
 def test__register_agent_from_config_no_valid_credentials(

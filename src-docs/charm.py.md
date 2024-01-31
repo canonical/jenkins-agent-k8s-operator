@@ -8,13 +8,12 @@ Charm k8s jenkins agent.
 **Global Variables**
 ---------------
 - **AGENT_RELATION**
-- **SLAVE_RELATION**
 
 
 ---
 
 ## <kbd>class</kbd> `JenkinsAgentCharm`
-Charm Jenkins k8s agent. 
+Charm Jenkins agent k8s. 
 
 <a href="../src/charm.py#L25"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 

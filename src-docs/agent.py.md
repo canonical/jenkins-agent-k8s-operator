@@ -8,7 +8,6 @@ The agent relation observer module.
 **Global Variables**
 ---------------
 - **AGENT_RELATION**
-- **SLAVE_RELATION**
 
 
 ---
@@ -45,7 +44,7 @@ Shortcut for more simple access the model.
 
 ---
 
-<a href="../src/agent.py#L199"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/agent.py#L102"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `start_agent_from_relation`
 

@@ -1,6 +1,6 @@
 # Charm architecture
 
-At its core, [Jenkins agents](https://www.jenkins.io/doc/book/managing/nodes/#components-of-distributed-builds) are [Java](https://www.java.com/en/) applications executing the Jobs in behalf of [Jenkins](https://www.jenkins.io/) itself.
+At its core, [Jenkins agents](https://www.jenkins.io/doc/book/managing/nodes/#components-of-distributed-builds) are [Java](https://www.java.com/en/) applications executing the jobs on behalf of [Jenkins](https://www.jenkins.io/) itself.
 
 The charm design leverages the [sidecar](https://kubernetes.io/blog/2015/06/the-distributed-system-toolkit-patterns/#example-1-sidecar-containers) pattern to allow multiple containers in each pod with [Pebble](https://juju.is/docs/sdk/pebble) running as the workload container’s entrypoint.
 
@@ -18,7 +18,7 @@ NAME                             READY   STATUS            RESTARTS   AGE
 jenkins-agent-k8s-0              2/2     Running           0          2m2s
 ```
 
-This shows there are 2 containers - the one named above and a container for the charm code itself.
+This shows there are 2 containers - the Jenkins agent one and container for the charm code itself.
 
 And if you run `kubectl describe pod jenkins-agent-k8s-0`, all the containers will have as Command ```/charm/bin/pebble```. That's because Pebble is responsible for the processes startup as explained above.
 
@@ -47,7 +47,7 @@ The [Jenkins](https://charmhub.io/jenkins-k8s) controller, a CI server for which
 
 ## Juju events
 
-Accordingly to the [Juju SDK](https://juju.is/docs/sdk/event): "an event is a data structure that encapsulates part of the execution context of a charm".
+According to the [Juju SDK](https://juju.is/docs/sdk/event): "an event is a data structure that encapsulates part of the execution context of a charm".
 
 For this charm, the following events are observed:
 

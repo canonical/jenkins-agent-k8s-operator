@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document explains the processes and practices recommended for contributing enhancements to the Jenkins Agent k8s operator.
+This document explains the processes and practices recommended for contributing enhancements to the Jenkins agent k8s operator.
 
 - Generally, before developing enhancements to this charm, you should consider [opening an issue
   ](https://github.com/canonical/jenkins-agent-k8s-operator/issues) explaining your use case.
@@ -35,7 +35,7 @@ source .tox/unit/bin/activate
 
 ### Testing
 
-Note that the [Jenkins Agent k8s](jenkins_agent_k8s_rock/rockcraft.yaml) needs to be built and pushed to microk8s for the tests to run. It should be tagged as `localhost:32000/jenkins-agent-k8s:latest` so that Kubernetes knows how to pull them from the microk8s repository. Note that the microk8s registry needs to be enabled using `microk8s enable registry`. More details regarding the OCI images below. The following commands can then be used to run the tests:
+Note that the [Jenkins agent k8s](jenkins_agent_k8s_rock/rockcraft.yaml) needs to be built and pushed to microk8s for the tests to run. It should be tagged as `localhost:32000/jenkins-agent-k8s:latest` so that Kubernetes knows how to pull them from the microk8s repository. Note that the microk8s registry needs to be enabled using `microk8s enable registry`. More details regarding the OCI images below. The following commands can then be used to run the tests:
 
 * `tox`: Runs all of the basic checks (`lint`, `unit`, `static`, and `coverage-report`).
 * `tox -e fmt`: Runs formatting using `black` and `isort`.
@@ -84,4 +84,4 @@ juju deploy ./jenkins-agent-k8s_ubuntu-22.04-amd64.charm \
 
 ## Canonical Contributor Agreement
 
-Canonical welcomes contributions to the Jenkins Agent k8s operator. Please check out our [contributor agreement](https://ubuntu.com/legal/contributors) if you're interested in contributing to the solution.
+Canonical welcomes contributions to the Jenkins agent k8s operator. Please check out our [contributor agreement](https://ubuntu.com/legal/contributors) if you're interested in contributing to the solution.

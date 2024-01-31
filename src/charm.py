@@ -78,7 +78,7 @@ class JenkinsAgentCharm(ops.CharmBase):
                 container=container,
             )
         except server.AgentJarDownloadError as exc:
-            logger.error("Failed to download Agent JAR executable, %s", exc)
+            logger.error("Failed to download agent JAR executable, %s", exc)
             raise
 
         valid_agent_token = server.find_valid_credentials(
