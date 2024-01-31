@@ -20,7 +20,7 @@ jenkins-agent-k8s-0              2/2     Running           0          2m2s
 
 This shows there are 2 containers - the Jenkins agent one and container for the charm code itself.
 
-And if you run `kubectl describe pod jenkins-agent-k8s-0`, all the containers will have as Command ```/charm/bin/pebble```. That's because Pebble is responsible for the processes startup as explained above.
+If you run `kubectl describe pod jenkins-agent-k8s-0`, all the containers will have ```/charm/bin/pebble``` as the entrypoint command. That's because Pebble is responsible for the processes startup as explained above.
 
 ## OCI images
 
@@ -31,7 +31,7 @@ This is done by publishing a resource to Charmhub as described in the [Juju SDK 
 
 ## Containers
 
-Configuration files for the containers can be found in the respective directories that define the ROCKs, see the section above.
+Configuration files for the containers can be found in the respective directories that define the ROCKs. See the section above.
 
 ### Jenkins agent k8s
 
