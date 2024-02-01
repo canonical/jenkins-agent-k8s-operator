@@ -19,7 +19,7 @@ Attrs:  num_executors: The number of executors available on the unit.  labels: T
 
 ---
 
-<a href="../src/metadata.py#L36"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/metadata.py#L24"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_jenkins_agent_v0_interface_dict`
 
@@ -33,22 +33,5 @@ Generate dictionary representation of agent metadata.
 
 **Returns:**
   A dictionary adhering to jenkins_agent_v0 interface. 
-
----
-
-<a href="../src/metadata.py#L24"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>function</kbd> `get_jenkins_slave_interface_dict`
-
-```python
-get_jenkins_slave_interface_dict() → Dict[str, str]
-```
-
-Generate dictionary representation of agent metadata. 
-
-
-
-**Returns:**
-  A dictionary adhering to jenkins-slave interface. 
 
 

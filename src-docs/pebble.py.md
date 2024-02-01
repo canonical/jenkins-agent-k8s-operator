@@ -26,7 +26,7 @@ Initialize the pebble service.
 
 **Args:**
  
- - <b>`state`</b>:  The Jenkins k8s agent state. 
+ - <b>`state`</b>:  The Jenkins agent k8s state. 
 
 
 

@@ -21,7 +21,7 @@ class PebbleService:
         """Initialize the pebble service.
 
         Args:
-            state: The Jenkins k8s agent state.
+            state: The Jenkins agent k8s state.
         """
         self.state = state
 
@@ -38,12 +38,12 @@ class PebbleService:
             The pebble layer defining Jenkins service layer.
         """
         layer: ops.pebble.LayerDict = {
-            "summary": "Jenkins k8s agent layer",
-            "description": "pebble config layer for Jenkins k8s agent.",
+            "summary": "Jenkins agent k8s layer",
+            "description": "pebble config layer for Jenkins agent k8s.",
             "services": {
                 self.state.jenkins_agent_service_name: {
                     "override": "replace",
-                    "summary": "Jenkins k8s agent",
+                    "summary": "Jenkins agent k8s",
                     "command": str(server.ENTRYSCRIPT_PATH),
                     "environment": {
                         "JENKINS_URL": server_url,
