@@ -19,5 +19,15 @@ If there's a particular area of documentation that you'd like to see that's miss
 |  [Tutorials](https://charmhub.io/jenkins-agent-k8s/docs/tutorial-getting-started)</br>  Get started - a hands-on introduction to using the Charmed Indico operator for new users </br> |  [How-to guides](https://charmhub.io/jenkins-agent-k8s/docs/how-to-contribute) </br> Step-by-step guides covering key operations and common tasks |
 | [Reference](https://charmhub.io/jenkins-agent-k8s/docs/reference-actions) </br> Technical information - specifications, APIs, architecture | [Explanation](https://charmhub.io/jenkins-agent-k8s/docs/explanation-charm-architecture) </br> Concepts - discussion and clarification of key topics  |
 
-# Navigation
+# Contents
 
+1. [Explanation](explanation)
+  1. [Charm architecture](explanation/charm-architecture.md)
+1. [How To](how-to)
+  1. [How to contribute](how-to/contribute.md)
+1. [Reference](reference)
+  1. [Actions](reference/actions.md)
+  1. [Configurations](reference/configurations.md)
+  1. [Integrations](reference/integrations.md)
+1. [Tutorial](tutorial)
+  1. [Quick guide](tutorial/getting-started.md)
