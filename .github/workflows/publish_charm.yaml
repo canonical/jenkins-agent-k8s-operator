@@ -17,4 +17,3 @@ jobs:
     secrets: inherit
     with:
       channel: latest/edge
-      doc-automation-disabled: false
