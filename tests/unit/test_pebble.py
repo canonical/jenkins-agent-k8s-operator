@@ -1,7 +1,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Jenkins-k8s-agent pebble module tests."""
+"""Jenkins-agent-k8s pebble module tests."""
 
 # Need access to protected functions for testing
 # pylint:disable=protected-access
@@ -33,9 +33,9 @@ def test__get_pebble_layer(harness: ops.testing.Harness):
         server_url=test_url, agent_token_pair=test_agent_token_pair
     )
 
-    assert layer.services["jenkins-k8s-agent"] == {
+    assert layer.services["jenkins-agent-k8s"] == {
         "override": "replace",
-        "summary": "Jenkins k8s agent",
+        "summary": "Jenkins agent k8s",
         "command": str(server.ENTRYSCRIPT_PATH),
         "environment": {
             "JENKINS_URL": test_url,

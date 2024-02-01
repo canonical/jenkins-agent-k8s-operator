@@ -7,7 +7,6 @@ The module for managing charm state.
 
 **Global Variables**
 ---------------
-- **SLAVE_RELATION**
 - **AGENT_RELATION**
 
 
@@ -25,7 +24,7 @@ Represents error with charm state.
 ## <kbd>class</kbd> `InvalidStateError`
 Exception raised when state configuration is invalid. 
 
-<a href="../src/state.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L30"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -63,7 +62,7 @@ Convert validated server_url to string.
 
 ---
 
-<a href="../src/state.py#L59"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L57"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm_config`
 
@@ -90,14 +89,14 @@ Instantiate JenkinsConfig from charm config.
 ## <kbd>class</kbd> `State`
 The k8s Jenkins agent state. 
 
-Attrs:  agent_meta: The Jenkins agent metadata to register on Jenkins server.  jenkins_config: Jenkins configuration value from juju config.  slave_relation_credentials: The full set of credentials from the slave relation. None if  partial data is set.  agent_relation_credentials: The full set of credentials from the agent relation. None if  partial data is set or the credentials do not belong to current agent.  jenkins_agent_service_name: The Jenkins agent workload container name. 
+Attrs:  agent_meta: The Jenkins agent metadata to register on Jenkins server.  jenkins_config: Jenkins configuration value from juju config.  agent_relation_credentials: The full set of credentials from the agent relation. None if  partial data is set or the credentials do not belong to current agent.  jenkins_agent_service_name: The Jenkins agent workload container name. 
 
 
 
 
 ---
 
-<a href="../src/state.py#L163"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/state.py#L140"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_charm`
 

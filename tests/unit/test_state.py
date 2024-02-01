@@ -1,7 +1,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Jenkins-k8s-agent state module tests."""
+"""Jenkins-agent-k8s state module tests."""
 
 # Need access to protected functions for testing
 # pylint:disable=protected-access
