@@ -19,6 +19,7 @@ parts:
       - ca-certificates-java
       - default-jre-headless
       - git
+      - sudo
     override-prime: |
       craftctl default
       /bin/bash -c "mkdir -p --mode=775 var/{lib/jenkins,lib/jenkins/agents,log/jenkins}"
@@ -38,3 +39,5 @@ parts:
     override-prime: |
       craftctl default
       /bin/bash -c "chown -R 584792:584792 $CRAFT_PRIME/var/{lib/jenkins,log/jenkins}"
+      echo "_daemon_ ALL=NOPASSWD: ALL" >> $CRAFT_PRIME/etc/sudoers
+      visudo -c
