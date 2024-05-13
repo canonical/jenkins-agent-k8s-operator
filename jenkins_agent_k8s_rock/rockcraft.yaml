@@ -14,6 +14,8 @@ run-user: _daemon_
 parts:
   jenkins:
     plugin: nil
+    build-packages:
+      - sudo
     overlay-packages:
       - bash
       - ca-certificates-java
@@ -40,3 +42,4 @@ parts:
       craftctl default
       /bin/bash -c "chown -R 584792:584792 $CRAFT_PRIME/var/{lib/jenkins,log/jenkins}"
       echo "_daemon_ ALL=NOPASSWD: ALL" >> $CRAFT_PRIME/etc/sudoers
+      visudo -c
