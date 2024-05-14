@@ -66,7 +66,7 @@ async def test_agent_run_sudo(
     """
     arrange: given a jenkins-agent-k8s charm.
     act: Check if the _daemon_ user is allowed to run sudo commands.
-    assert: the _daemon_ user has the correct sudo priviledges.
+    assert: the _daemon_ user has the correct sudo privileges.
     """
     unit = application.units[0]
     action = await unit.run("sudo -l")
