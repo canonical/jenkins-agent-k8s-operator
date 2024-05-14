@@ -72,4 +72,4 @@ async def test_agent_run_sudo(
     action = await unit.run("sudo -l")
     await action.wait()
     assert action.results["return-code"] == 0
-    assert "NOPASSWD" in action.stdout
+    assert "NOPASSWD" in action.results["stdout"]
