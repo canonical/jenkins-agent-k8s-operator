@@ -58,3 +58,18 @@ async def test_agent_recover(
     await wait_for(containers_ready, timeout=60 * 10)
     await wait_for(node.is_online, timeout=60 * 10)
     assert node.is_online(), "Node not online."
+
+
+async def test_agent_run_sudo(
+    application: Application,
+):
+    """
+    arrange: given a jenkins-agent-k8s charm.
+    act: Check if the _daemon_ user is allowed to run sudo commands.
+    assert: the _daemon_ user has the correct sudo priviledges.
+    """
+    unit = application.units[0]
+    action = await unit.run("sudo -l")
+    await action.wait()
+    assert action.results["return-code"] == 0
+    assert "NOPASSWD" in action.stdout
