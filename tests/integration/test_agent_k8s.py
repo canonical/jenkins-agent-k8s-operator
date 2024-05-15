@@ -69,7 +69,7 @@ async def test_agent_run_sudo(
     assert: the _daemon_ user has the correct sudo privileges.
     """
     unit = application.units[0]
-    action = await unit.run("sudo -l")
+    action = await unit.run("su -c 'sudo -l' -s /bin/bash _daemon_")
     await action.wait()
     assert action.results["return-code"] == 0
     assert "NOPASSWD" in action.results["stdout"]
