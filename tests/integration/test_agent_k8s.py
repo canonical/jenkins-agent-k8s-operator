@@ -69,7 +69,15 @@ async def test_agent_run_sudo(
     assert: the _daemon_ user has the correct sudo privileges.
     """
     unit = application.units[0]
-    action = await unit.run("su -c 'sudo -l' -s /bin/bash _daemon_")
+    pebble_exec = (
+        "PEBBLE_SOCKET=/charm/containers/jenkins-agent-k8s/pebble.socket "
+        "pebble exec --user=_daemon_"
+    )
+    full_command = f"{pebble_exec} -- sudo -l"
+    logger.info("Enable plugins command: %s", full_command)
+
+    action = await unit.run(full_command)
     await action.wait()
-    assert action.results["return-code"] == 0
+
+    assert action.results["return-code"] == 0, action.results["stderr"]
     assert "NOPASSWD" in action.results["stdout"]
