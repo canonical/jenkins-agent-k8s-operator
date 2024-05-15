@@ -58,3 +58,26 @@ async def test_agent_recover(
     await wait_for(containers_ready, timeout=60 * 10)
     await wait_for(node.is_online, timeout=60 * 10)
     assert node.is_online(), "Node not online."
+
+
+async def test_agent_run_sudo(
+    application: Application,
+):
+    """
+    arrange: given a jenkins-agent-k8s charm.
+    act: Check if the _daemon_ user is allowed to run sudo commands.
+    assert: the _daemon_ user has the correct sudo privileges.
+    """
+    unit = application.units[0]
+    pebble_exec = (
+        "PEBBLE_SOCKET=/charm/containers/jenkins-agent-k8s/pebble.socket "
+        "pebble exec --user=_daemon_"
+    )
+    full_command = f"{pebble_exec} -- sudo -l"
+    logger.info("Enable plugins command: %s", full_command)
+
+    action = await unit.run(full_command)
+    await action.wait()
+
+    assert action.results["return-code"] == 0, action.results["stderr"]
+    assert "NOPASSWD" in action.results["stdout"]

@@ -13,5 +13,5 @@ jobs:
         chmod +x tests/integration/pre_run_script.sh
         ./tests/integration/pre_run_script.sh"
       extra-arguments: |
-        --kube-config ${GITHUB_WORKSPACE}/kube-config
+        --kube-config=${GITHUB_WORKSPACE}/kube-config
       modules: '["test_agent_k8s.py"]'
