@@ -25,19 +25,19 @@ If you run `kubectl describe pod jenkins-agent-k8s-0`, all the containers will h
 ## OCI images
 
 We use [Rockcraft](https://canonical-rockcraft.readthedocs-hosted.com/en/latest/) to build the OCI Image for the Jenkins agent. 
-The image is defined in the [Jenkins agent k8s ROCK](https://github.com/canonical/jenkins-agent-k8s-operator/blob/main/jenkins_agent_k8s_rock/).
+The image is defined in the [Jenkins agent k8s rock](https://github.com/canonical/jenkins-agent-k8s-operator/blob/main/jenkins_agent_k8s_rock/).
 They are published to [Charmhub](https://charmhub.io/), the official repository of charms.
 This is done by publishing a resource to Charmhub as described in the [Juju SDK How-to guides](https://juju.is/docs/sdk/publishing).
 
 ## Containers
 
-Configuration files for the containers can be found in the respective directories that define the ROCKs. See the section above.
+Configuration files for the containers can be found in the respective directories that define the rocks. See the section above.
 
 ### Jenkins agent k8s
 
 This container manages the task execution on behalf of the Jenkins controller by using executors. It contains an agent, a small  Java client process that connects to a Jenkins controller and is assumed to be unreliable. Any tools required for building and testing get installed on this container, where the agent runs.
 
-The workload that this container is running is defined in the [Jenkins agent k8s ROCK](https://github.com/canonical/jenkins-agent-k8s-operator/blob/main/jenkins_agent_k8s_rock/).
+The workload that this container is running is defined in the [Jenkins agent k8s rock](https://github.com/canonical/jenkins-agent-k8s-operator/blob/main/jenkins_agent_k8s_rock/).
 
 ## Integrations
 
