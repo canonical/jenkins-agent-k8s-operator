@@ -1,19 +1,12 @@
 name: Publish to edge
 
-# On push to the main branch, the workflow will:
-# * draft publish docs if the docs directory exists
-# * publish resource images
-# * publish charm to latest/edge channel
-
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
+      - track/*
 
 jobs:
   publish-to-edge:
     uses: canonical/operator-workflows/.github/workflows/publish_charm.yaml@main
     secrets: inherit
-    with:
-      channel: latest/edge
