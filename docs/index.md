@@ -6,18 +6,19 @@ As such, the charm makes it easy for those looking to take control of their own 
 
 For DevOps or SRE teams this charm will make operating Jenkins agent simple and straightforward through Juju's clean interface. It will allow easy deployment into multiple environments for testing changes, and supports scaling out for enterprise deployments.
 
-## Contributing to this documentation
-
-Documentation is an important part of this project, and we take the same open-source approach to the documentation as the code. As such, we welcome community contributions, suggestions and constructive feedback on our documentation. Our documentation is hosted on the [Charmhub forum](https://discourse.charmhub.io/t/jenkins-agent-documentation-overview/3982) to enable easy collaboration. Please use the "Help us improve this documentation" links on each documentation page to either directly change something you see that's wrong, ask a question, or make a suggestion about a potential change via the comments section.
-
-If there's a particular area of documentation that you'd like to see that's missing, please [file a bug](https://github.com/canonical/jenkins-agent-k8s-operator/issues).
-
 ## In this documentation
 
 | | |
 |--|--|
 |  [Tutorials](https://charmhub.io/jenkins-agent-k8s/docs/tutorial-getting-started)</br>  Get started - a hands-on introduction to using the Charmed Indico operator for new users </br> |  [How-to guides](https://charmhub.io/jenkins-agent-k8s/docs/how-to-contribute) </br> Step-by-step guides covering key operations and common tasks |
 | [Reference](https://charmhub.io/jenkins-agent-k8s/docs/reference-actions) </br> Technical information - specifications, APIs, architecture | [Explanation](https://charmhub.io/jenkins-agent-k8s/docs/explanation-charm-architecture) </br> Concepts - discussion and clarification of key topics  |
+
+
+## Contributing to this documentation
+
+Documentation is an important part of this project, and we take the same open-source approach to the documentation as the code. As such, we welcome community contributions, suggestions and constructive feedback on our documentation. Our documentation is hosted on the [Charmhub forum](https://discourse.charmhub.io/t/jenkins-agent-documentation-overview/3982) to enable easy collaboration. Please use the "Help us improve this documentation" links on each documentation page to either directly change something you see that's wrong, ask a question, or make a suggestion about a potential change via the comments section.
+
+If there's a particular area of documentation that you'd like to see that's missing, please [file a bug](https://github.com/canonical/jenkins-agent-k8s-operator/issues).
 
 # Contents
 
