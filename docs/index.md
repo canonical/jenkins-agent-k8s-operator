@@ -38,7 +38,7 @@ Thinking about using the jenkins-agent-k8s charm for your next project?
 1. [Tutorial](tutorial)
   1. [Quick guide](tutorial/getting-started.md)
 1. [How To](how-to)
-  1. [How to contribute](how-to/contribute.md)
+  1. [Contribute](how-to/contribute.md)
 1. [Reference](reference)
   1. [Actions](reference/actions.md)
   1. [Configurations](reference/configurations.md)
