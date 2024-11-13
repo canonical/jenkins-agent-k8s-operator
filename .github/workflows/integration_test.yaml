@@ -15,3 +15,7 @@ jobs:
       extra-arguments: |
         --kube-config=${GITHUB_WORKSPACE}/kube-config
       modules: '["test_agent_k8s.py"]'
+            juju-channel: 3.1/stable
+      self-hosted-runner: true
+      self-hosted-runner-label: "xlarge"
+      microk8s-addons: "dns ingress rbac storage metallb:10.15.119.2-10.15.119.4 registry"
