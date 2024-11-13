@@ -19,7 +19,7 @@ parts:
     overlay-packages:
       - bash
       - ca-certificates-java
-      - default-jre-headless
+      - openjdk-21-jre-headless
       - git
       - sudo
     override-prime: |
