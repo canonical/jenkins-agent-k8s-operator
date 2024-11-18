@@ -172,7 +172,7 @@ async def machine_jenkins_client_fixture(
 async def jenkins_k8s_server_fixture(model: Model) -> Application:
     """The jenkins k8s server."""
     app = await model.deploy("jenkins-k8s", series="jammy", channel="latest/edge")
-    await model.wait_for_idle(apps=[app.name], timeout=1200, raise_on_error=False)
+    await model.wait_for_idle(apps=[app.name], timeout=1200, raise_on_error=False, idle_period=30)
 
     return app
 
