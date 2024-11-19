@@ -171,7 +171,9 @@ async def machine_jenkins_client_fixture(
 @pytest_asyncio.fixture(scope="module", name="jenkins_k8s_server")
 async def jenkins_k8s_server_fixture(model: Model) -> Application:
     """The jenkins k8s server."""
-    app = await model.deploy("jenkins-k8s", series="jammy", channel="latest/edge")
+    # A custom JRE/Jenkins LTS upgraded version of Jenkins has been manually pushed to test/edge
+    # channel for testing. There's a deadlock on the dependency in testing.
+    app = await model.deploy("jenkins-k8s", series="jammy", channel="test/edge")
     await model.wait_for_idle(apps=[app.name], timeout=1200, raise_on_error=False, idle_period=30)
 
     return app
