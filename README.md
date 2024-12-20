@@ -13,7 +13,7 @@ As such, the charm makes it easy for those looking to take control of their own 
 
 For DevOps or SRE teams this charm will make operating Jenkins Agent simple and straightforward through Juju's clean interface. It will allow easy deployment into multiple environments for testing changes, and supports scaling out for enterprise deployments.
 
-For information about how to deploy, integrate, and manage this charm, see the Official [jenkins-agent charm Documentation](https://charmhub.io/jenkins-agent-k8s/docs).
+For information about how to deploy, integrate, and manage this charm, see the Official [jenkins-agent-k8s charm Documentation](https://charmhub.io/jenkins-agent-k8s/docs).
 
 ## Get started
 
