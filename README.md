@@ -7,7 +7,7 @@
 
 A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators) deploying and managing Jenkins agents on machines. It is configurable to integrate with a Jenkins charm deployed in another Juju model.
 
-This charm simplifies initial deployment and "day N" operations of Jenkins Agent on Kubernetes.
+This charm simplifies the deployment and operations of Jenkins Agent on Kubernetes.
 
 As such, the charm makes it easy for those looking to take control of their own agents whilst keeping operations simple, and gives them the freedom to deploy on the platform of their choice.
 
