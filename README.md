@@ -1,29 +1,37 @@
+# Jenkins-agent-k8s Operator
+
 [![CharmHub Badge](https://charmhub.io/jenkins-agent-k8s/badge.svg)](https://charmhub.io/jenkins-agent-k8s)
 [![Publish to edge](https://github.com/canonical/jenkins-agent-k8s-operator/actions/workflows/publish_charm.yaml/badge.svg)](https://github.com/canonical/jenkins-agent-k8s-operator/actions/workflows/publish_charm.yaml)
 [![Promote charm](https://github.com/canonical/jenkins-agent-k8s-operator/actions/workflows/promote_charm.yaml/badge.svg)](https://github.com/canonical/jenkins-agent-k8s-operator/actions/workflows/promote_charm.yaml)
-[![Discourse Status](https://img.shields.io/discourse/status?server=https%3A%2F%2Fdiscourse.charmhub.io&style=flat&label=CharmHub%20Discourse)](https://discourse.charmhub.io)
+[![Discourse Status](https://img.shields.io/discourse/status?server=https%3A%2F%2Fdiscourse.charmhub.io&style=flat&label=CharmHub%20Discourse)](https://discourse.charmhub.io)A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators) deploying and managing Jenkins agents on machines. It is configurable to integrate with a Jenkins charm deployed in another Juju model.
 
-# Jenkins agent k8s operator
+This charm simplifies initial deployment and "day N" operations of Jenkins Agent on Kubernetes.
 
-A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators) for deploying and managing [Jenkins](https://www.jenkins.io/) agents on Kubernetes, configurable to use a Jenkins charm deployed in another Juju model, or to connect to a standalone Jenkins instance.
+As such, the charm makes it easy for those looking to take control of their own agents whilst keeping operations simple, and gives them the freedom to deploy on the platform of their choice.
 
-This charm simplifies initial deployment and "day N" operations of Jenkins agent on Kubernetes. It allows for deployment on many  different Kubernetes platforms, from [MicroK8s](https://microk8s.io) to [Charmed Kubernetes](https://ubuntu.com/kubernetes/charmed-k8s) and public cloud Kubernetes offerings.
+For DevOps or SRE teams this charm will make operating Jenkins Agent simple and straightforward through Juju's clean interface. It will allow easy deployment into multiple environments for testing changes, and supports scaling out for enterprise deployments.
 
-As such, the charm makes it easy for those looking to take control of their own agents whilst keeping operations simple, and gives them the freedom to deploy on the Kubernetes platform of their choice.
+For information about how to deploy, integrate, and manage this charm, see the Official [jenkins-agent charm Documentation](https://charmhub.io/jenkins-agent-k8s/docs).
 
-For DevOps or SRE teams this charm will make operating Jenkins agent simple and straightforward through Juju's clean interface. It will allow easy deployment into multiple environments for testing changes, and supports scaling out for enterprise deployments.
+## Get started
+
+To begin, refer to the [Getting Started](https://charmhub.io/jenkins-agent-k8s/docs/tutorial-getting-started) tutorial for step-by-step instructions.
+
+### Basic operations
+
+#### Integrate with the Jenkins-k8s charm
+
+See the [deploy and integrate k8s agents](https://charmhub.io/jenkins-k8s/docs/tutorial-getting-started#deploy-and-integrate-k8s-agents) section in the jenkins-k8s-operator documentation.
+
+## Learn more
+
+- [Read more](https://charmhub.io/jenkins-agent-k8s/docs)
 
 ## Project and community
 
-The Jenkins agent k8s operator is a member of the Ubuntu family. It's an open source project that warmly welcomes community  projects, contributions, suggestions, fixes and constructive feedback.
-* [Code of conduct](https://ubuntu.com/community/code-of-conduct)
-* [Get support](https://discourse.charmhub.io/)
-* [Join our online chat](https://app.element.io/#/room/#charmhub-charmdev:ubuntu.com)
-* [Contribute](https://charmhub.io/jenkins-agent-k8s-operator/docs/how-to-contribute)
-Thinking about using the Jenkins agent k8s operator for your next project?[Get in touch](https://app.element.io/#/room/#charmhub-charmdev:ubuntu.com)!
+The Jenkins-agent-k8s Operator is a member of the Ubuntu family. It's an open source project that warmly welcomes community projects, contributions, suggestions, fixes and constructive feedback.
 
----
-
-For further details,
-[see the charm's detailed documentation](https://charmhub.io/jenkins-agent-k8s).
+* [Issues](https://github.com/canonical/jenkins-agent-k8s-operator/issues) <!--Link to GitHub issues (if applicable)-->
+* [Contributing](https://charmhub.io/jenkins-agent-k8s#contributing-to-this-documentation) <!--Link to any contribution guides--> 
+- [Matrix](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 
