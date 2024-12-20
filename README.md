@@ -28,6 +28,7 @@ See the [deploy and integrate k8s agents](https://charmhub.io/jenkins-k8s/docs/t
 ## Learn more
 
 - [Read more](https://charmhub.io/jenkins-agent-k8s/docs)
+- [Troubleshooting](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 
 ## Project and community
 
