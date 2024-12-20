@@ -3,7 +3,9 @@
 [![CharmHub Badge](https://charmhub.io/jenkins-agent-k8s/badge.svg)](https://charmhub.io/jenkins-agent-k8s)
 [![Publish to edge](https://github.com/canonical/jenkins-agent-k8s-operator/actions/workflows/publish_charm.yaml/badge.svg)](https://github.com/canonical/jenkins-agent-k8s-operator/actions/workflows/publish_charm.yaml)
 [![Promote charm](https://github.com/canonical/jenkins-agent-k8s-operator/actions/workflows/promote_charm.yaml/badge.svg)](https://github.com/canonical/jenkins-agent-k8s-operator/actions/workflows/promote_charm.yaml)
-[![Discourse Status](https://img.shields.io/discourse/status?server=https%3A%2F%2Fdiscourse.charmhub.io&style=flat&label=CharmHub%20Discourse)](https://discourse.charmhub.io)A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators) deploying and managing Jenkins agents on machines. It is configurable to integrate with a Jenkins charm deployed in another Juju model.
+[![Discourse Status](https://img.shields.io/discourse/status?server=https%3A%2F%2Fdiscourse.charmhub.io&style=flat&label=CharmHub%20Discourse)](https://discourse.charmhub.io)
+
+A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators) deploying and managing Jenkins agents on machines. It is configurable to integrate with a Jenkins charm deployed in another Juju model.
 
 This charm simplifies initial deployment and "day N" operations of Jenkins Agent on Kubernetes.
 
