@@ -36,5 +36,5 @@ The Jenkins-agent-k8s Operator is a member of the Ubuntu family. It's an open so
 
 * [Issues](https://github.com/canonical/jenkins-agent-k8s-operator/issues) <!--Link to GitHub issues (if applicable)-->
 * [Contributing](https://charmhub.io/jenkins-agent-k8s/docs/how-to-contribute) <!--Link to any contribution guides--> 
-- [Matrix](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
+* [Matrix](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
 
