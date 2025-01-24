@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Fixtures for Jenkins-agent-k8s-operator charm integration tests."""
@@ -133,10 +133,9 @@ async def machine_server_unit_ip_fixture(
 ):
     """Get Jenkins machine server charm unit IP."""
     status: FullStatus = await machine_model.get_status([jenkins_machine_server.name])
+    application = typing.cast(Application, status.applications[jenkins_machine_server.name])
     try:
-        unit_status: UnitStatus = next(
-            iter(status.applications[jenkins_machine_server.name].units.values())
-        )
+        unit_status: UnitStatus = next(iter(application.units.values()))
         assert unit_status.public_address, "Invalid unit address"
         return unit_status.public_address
     except StopIteration as exc:
@@ -186,10 +185,9 @@ async def jenkins_k8s_server_fixture(model: Model) -> Application:
 async def k8s_server_unit_ip_fixture(model: Model, jenkins_k8s_server: Application):
     """Get Jenkins k8s server charm unit IP."""
     status: FullStatus = await model.get_status([jenkins_k8s_server.name])
+    application = typing.cast(Application, status.applications[jenkins_k8s_server.name])
     try:
-        unit_status: UnitStatus = next(
-            iter(status.applications[jenkins_k8s_server.name].units.values())
-        )
+        unit_status: UnitStatus = next(iter(application.units.values()))
         assert unit_status.address, "Invalid unit address"
         return unit_status.address
     except StopIteration as exc:
