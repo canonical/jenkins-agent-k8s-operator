@@ -1,26 +1,50 @@
 # Charm architecture
 
-At its core, [Jenkins agents](https://www.jenkins.io/doc/book/managing/nodes/#components-of-distributed-builds) are [Java](https://www.java.com/en/) applications executing the jobs on behalf of [Jenkins](https://www.jenkins.io/) itself.
+The jenkins-agent-k8s charm aims to provide core functionalities of
+[Jenkins agents](https://www.jenkins.io/doc/book/managing/nodes#components-of-distributed-builds),
+which are [Java](https://www.java.com/en/) applications executing the jobs on behalf of
+[Jenkins](https://www.jenkins.io/) itself.
 
-The charm design leverages the [sidecar](https://kubernetes.io/blog/2015/06/the-distributed-system-toolkit-patterns/#example-1-sidecar-containers) pattern to allow multiple containers in each pod with [Pebble](https://juju.is/docs/sdk/pebble) running as the workload container’s entrypoint.
+## Containers
 
-Pebble is a lightweight, API-driven process supervisor that is responsible for configuring processes to run in a container and controlling those processes throughout the workload lifecycle.
+The core component of jenkins-agent-k8s charm consists of a jenkins-agent-k8s main workload
+container. The Jenkins agent inside the container is driven by Pebble, a lightweight API-driven
+process supervisor that controls the lifecycle of a service. Learn more about Pebble and its layer
+configurations [in the Pebble documentation](https://github.com/canonical/pebble).
 
-Pebble `services` are configured through [layers](https://github.com/canonical/pebble#layer-specification), and the following containers represent each one a layer forming the effective Pebble configuration, or `plan`:
+```mermaid
+C4Context
+title Component diagram for Jenkins Agent K8s Charm
 
-1. An [Jenkins agent](https://www.jenkins.io/doc/book/managing/nodes/#components-of-distributed-builds) container, which manages the CI jobs.
+Container_Boundary(jenkins-agent-k8s, "Jenkins Agent") {
+  Component(pebble, "Pebble", "", "Starts the Jenkins agent start script")
+  Component(jenkins-agent, "Jenkins agent application", "", "Jenkins agent application")
 
+  Rel(pebble, jenkins-agent, "")
+}
 
-As a result, if you run a `kubectl get pods` on a namespace named for the Juju model you've deployed the Jenkins agent k8s charm into, you'll see something like the following:
-
-```bash
-NAME                             READY   STATUS            RESTARTS   AGE
-jenkins-agent-k8s-0              2/2     Running           0          2m2s
+Container_Boundary(charm, "Jenkins Agent Operator") {
+  Component(charm, "Jenkins Agent Operator", "", "Jenkins Agent Operator (charm)")
+  
+  Rel(pebble, charm, "")
+}
 ```
 
-This shows there are 2 containers - the Jenkins agent one and container for the charm code itself.
+### Jenkins Agent
 
-If you run `kubectl describe pod jenkins-agent-k8s-0`, all the containers will have ```/charm/bin/pebble``` as the entrypoint command. That's because Pebble is responsible for the processes startup as explained above.
+The Jenkins Agent application integrates with the main Jenkins controller and get jobs scheduled
+for it to run. Once the agent receives registration token from the Jenkins integration, it will
+start downloading the compatible agent JNLP from the main Jenkins controller server and launch
+the agent application. The agent JAR is downloaded as `/var/lib/jenkins/agent.jar`.
+
+To indicate any startup failures, the `/var/lib/jenkins/agents.ready` file is created just before
+the starting the agent application and removed if the agent was not able to successfuly start.
+
+### Jenkins Agent Operator
+
+This container is the main point of contact with the Juju controller. It communicates with Juju to
+run necessary charm code defined by the main `src/charm.py`. The source code is copied to the
+`/var/lib/juju/agents/unit-UNIT_NAME/charm` directory.
 
 ## OCI images
 
@@ -28,10 +52,6 @@ We use [Rockcraft](https://canonical-rockcraft.readthedocs-hosted.com/en/latest/
 The image is defined in the [Jenkins agent k8s rock](https://github.com/canonical/jenkins-agent-k8s-operator/blob/main/jenkins_agent_k8s_rock/).
 They are published to [Charmhub](https://charmhub.io/), the official repository of charms.
 This is done by publishing a resource to Charmhub as described in the [Juju SDK How-to guides](https://juju.is/docs/sdk/publishing).
-
-## Containers
-
-Configuration files for the containers can be found in the respective directories that define the rocks. See the section above.
 
 ### Jenkins agent k8s
 
