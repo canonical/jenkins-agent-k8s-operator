@@ -67,8 +67,6 @@ The [Jenkins](https://charmhub.io/jenkins-k8s) controller, a CI server for which
 
 ## Juju events
 
-According to the [Juju SDK](https://juju.is/docs/sdk/event): "an event is a data structure that encapsulates part of the execution context of a charm".
-
 For this charm, the following events are observed:
 
 1. [jenkins_agent_k8s_pebble_ready](https://juju.is/docs/sdk/container-name-pebble-ready-event): fired on Kubernetes charms when the requested container is ready.
@@ -90,17 +88,17 @@ The `src/charm.py` is the default entry point for a charm and has the JenkinsAge
 
 CharmBase is the base class from which all Charms are formed, defined by [Ops](https://juju.is/docs/sdk/ops) (Python framework for developing charms).
 
-See more information in [Charm](https://juju.is/docs/sdk/constructs#heading--charm).
+See more information in [Charm](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/reference/charm/).
 
 The `__init__` method guarantees that the charm observes all events relevant to its operation and handles them.
 
 Take, for example, when a configuration is changed by using the CLI.
 
-1. User runs the command
+1. User runs the command:
 ```bash
 juju config jenkins_agent_name=agent-one
 ```
-2. A `config-changed` event is emitted
+2. A `config-changed` event is emitted.
 3. In the `__init__` method is defined how to handle this event like this:
 ```python
 self.framework.observe(self.on.config_changed, self._on_config_changed)
