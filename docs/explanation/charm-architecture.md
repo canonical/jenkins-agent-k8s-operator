@@ -17,8 +17,8 @@ C4Context
 title Component diagram for Jenkins Agent K8s Charm
 
 Container_Boundary(jenkins-agent-k8s, "Jenkins Agent") {
-  Component(pebble, "Pebble", "", "Starts the Jenkins agent start script")
   Component(jenkins-agent, "Jenkins agent application", "", "Jenkins agent application")
+  Component(pebble, "Pebble", "", "Starts the Jenkins agent start script")
 
   Rel(pebble, jenkins-agent, "")
 }
@@ -32,13 +32,13 @@ Container_Boundary(charm, "Jenkins Agent Operator") {
 
 ### Jenkins Agent
 
-The Jenkins Agent application integrates with the main Jenkins controller and get jobs scheduled
-for it to run. Once the agent receives registration token from the Jenkins integration, it will
+The Jenkins Agent application integrates with the main Jenkins controller and receives scheduled jobs
+to run. Once the agent receives registration token from the Jenkins integration, it will
 start downloading the compatible agent JNLP from the main Jenkins controller server and launch
 the agent application. The agent JAR is downloaded as `/var/lib/jenkins/agent.jar`.
 
 To indicate any startup failures, the `/var/lib/jenkins/agents.ready` file is created just before
-the starting the agent application and removed if the agent was not able to successfuly start.
+starting the agent application and removed if the agent was not able to start successfully.
 
 ### Jenkins Agent Operator
 
