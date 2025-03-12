@@ -30,9 +30,9 @@ Container_Boundary(charm, "Jenkins Agent Operator") {
 }
 ```
 
-### Jenkins Agent
+### Jenkins agent
 
-The Jenkins Agent application integrates with the main Jenkins controller and receives scheduled jobs
+The Jenkins agent application integrates with the main Jenkins controller and receives scheduled jobs
 to run. Once the agent receives registration token from the Jenkins integration, it will
 start downloading the compatible agent JNLP from the main Jenkins controller server and launch
 the agent application. The agent JAR is downloaded as `/var/lib/jenkins/agent.jar`.
