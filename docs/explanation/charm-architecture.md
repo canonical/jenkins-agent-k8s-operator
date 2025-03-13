@@ -1,26 +1,50 @@
 # Charm architecture
 
-At its core, [Jenkins agents](https://www.jenkins.io/doc/book/managing/nodes/#components-of-distributed-builds) are [Java](https://www.java.com/en/) applications executing the jobs on behalf of [Jenkins](https://www.jenkins.io/) itself.
+The jenkins-agent-k8s charm aims to provide core functionalities of
+[Jenkins agents](https://www.jenkins.io/doc/book/managing/nodes#components-of-distributed-builds),
+which are [Java](https://www.java.com/en/) applications executing the jobs on behalf of
+[Jenkins](https://www.jenkins.io/) itself.
 
-The charm design leverages the [sidecar](https://kubernetes.io/blog/2015/06/the-distributed-system-toolkit-patterns/#example-1-sidecar-containers) pattern to allow multiple containers in each pod with [Pebble](https://juju.is/docs/sdk/pebble) running as the workload container’s entrypoint.
+## Containers
 
-Pebble is a lightweight, API-driven process supervisor that is responsible for configuring processes to run in a container and controlling those processes throughout the workload lifecycle.
+The core component of jenkins-agent-k8s charm consists of a jenkins-agent-k8s main workload
+container. The Jenkins agent inside the container is driven by Pebble, a lightweight API-driven
+process supervisor that controls the lifecycle of a service. Learn more about Pebble and its layer
+configurations [in the Pebble documentation](https://github.com/canonical/pebble).
 
-Pebble `services` are configured through [layers](https://github.com/canonical/pebble#layer-specification), and the following containers represent each one a layer forming the effective Pebble configuration, or `plan`:
+```mermaid
+C4Context
+title Component diagram for Jenkins Agent K8s Charm
 
-1. An [Jenkins agent](https://www.jenkins.io/doc/book/managing/nodes/#components-of-distributed-builds) container, which manages the CI jobs.
+Container_Boundary(jenkins-agent-k8s, "Jenkins Agent") {
+  Component(jenkins-agent, "Jenkins agent application", "", "Jenkins agent application")
+  Component(pebble, "Pebble", "", "Starts the Jenkins agent start script")
 
+  Rel(pebble, jenkins-agent, "")
+}
 
-As a result, if you run a `kubectl get pods` on a namespace named for the Juju model you've deployed the Jenkins agent k8s charm into, you'll see something like the following:
-
-```bash
-NAME                             READY   STATUS            RESTARTS   AGE
-jenkins-agent-k8s-0              2/2     Running           0          2m2s
+Container_Boundary(charm, "Jenkins Agent Operator") {
+  Component(charm, "Jenkins Agent Operator", "", "Jenkins Agent Operator (charm)")
+  
+  Rel(pebble, charm, "")
+}
 ```
 
-This shows there are 2 containers - the Jenkins agent one and container for the charm code itself.
+### Jenkins agent
 
-If you run `kubectl describe pod jenkins-agent-k8s-0`, all the containers will have ```/charm/bin/pebble``` as the entrypoint command. That's because Pebble is responsible for the processes startup as explained above.
+The Jenkins agent application integrates with the main Jenkins controller and receives scheduled jobs
+to run. Once the agent receives registration token from the Jenkins integration, it will
+start downloading the compatible agent JNLP from the main Jenkins controller server and launch
+the agent application. The agent JAR is downloaded as `/var/lib/jenkins/agent.jar`.
+
+To indicate any startup failures, the `/var/lib/jenkins/agents.ready` file is created just before
+starting the agent application and removed if the agent was not able to start successfully.
+
+### Jenkins Agent Operator
+
+This container is the main point of contact with the Juju controller. It communicates with Juju to
+run necessary charm code defined by the main `src/charm.py`. The source code is copied to the
+`/var/lib/juju/agents/unit-UNIT_NAME/charm` directory.
 
 ## OCI images
 
@@ -29,15 +53,9 @@ The image is defined in the [Jenkins agent k8s rock](https://github.com/canonica
 They are published to [Charmhub](https://charmhub.io/), the official repository of charms.
 This is done by publishing a resource to Charmhub as described in the [Juju SDK How-to guides](https://juju.is/docs/sdk/publishing).
 
-## Containers
+### Jenkins agent K8s
 
-Configuration files for the containers can be found in the respective directories that define the rocks. See the section above.
-
-### Jenkins agent k8s
-
-This container manages the task execution on behalf of the Jenkins controller by using executors. It contains an agent, a small  Java client process that connects to a Jenkins controller and is assumed to be unreliable. Any tools required for building and testing get installed on this container, where the agent runs.
-
-The workload that this container is running is defined in the [Jenkins agent k8s rock](https://github.com/canonical/jenkins-agent-k8s-operator/blob/main/jenkins_agent_k8s_rock/).
+The [Jenkins agent K8s rock](https://github.com/canonical/jenkins-agent-k8s-operator/blob/main/jenkins_agent_k8s_rock/) defines the workload for the Jenkins agent K8s container. This container manages the task execution on behalf of the Jenkins controller by using executors. It contains an agent, a small  Java client process that connects to a Jenkins controller and is assumed to be unreliable. Any tools required for building and testing get installed on this container, where the agent runs.
 
 ## Integrations
 
@@ -46,8 +64,6 @@ The workload that this container is running is defined in the [Jenkins agent k8s
 The [Jenkins](https://charmhub.io/jenkins-k8s) controller, a CI server for which this agent charm will run tasks.
 
 ## Juju events
-
-According to the [Juju SDK](https://juju.is/docs/sdk/event): "an event is a data structure that encapsulates part of the execution context of a charm".
 
 For this charm, the following events are observed:
 
@@ -70,17 +86,17 @@ The `src/charm.py` is the default entry point for a charm and has the JenkinsAge
 
 CharmBase is the base class from which all Charms are formed, defined by [Ops](https://juju.is/docs/sdk/ops) (Python framework for developing charms).
 
-See more information in [Charm](https://juju.is/docs/sdk/constructs#heading--charm).
+See more information in [Charm](https://canonical-juju.readthedocs-hosted.com/en/3.6/user/reference/charm/).
 
 The `__init__` method guarantees that the charm observes all events relevant to its operation and handles them.
 
 Take, for example, when a configuration is changed by using the CLI.
 
-1. User runs the command
+1. User runs the command:
 ```bash
 juju config jenkins_agent_name=agent-one
 ```
-2. A `config-changed` event is emitted
+2. A `config-changed` event is emitted.
 3. In the `__init__` method is defined how to handle this event like this:
 ```python
 self.framework.observe(self.on.config_changed, self._on_config_changed)
