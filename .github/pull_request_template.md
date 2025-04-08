@@ -27,5 +27,5 @@ Applicable spec: <link>
 - [ ] The changes are compliant with [ISD054 - Managing Charm Complexity](https://discourse.charmhub.io/t/specification-isd014-managing-charm-complexity/11619)
 - [ ] The documentation for charmhub is updated.
 - [ ] The PR is tagged with appropriate label (`urgent`, `trivial`, `complex`)
-- [ ] The changelog `docs/changelog.md` is updated.
+- [ ] The [docs/changelog](https://github.com/canonical/jenkins-agent-k8s-operator/docs/changelog.md) is updated.
 <!-- Explanation for any unchecked items above -->
