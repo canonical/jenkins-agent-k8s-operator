@@ -44,15 +44,6 @@ Note that the [Jenkins agent k8s](jenkins_agent_k8s_rock/rockcraft.yaml) needs t
 * `tox -e unit`: Runs the unit tests.
 * `tox -e integration`: Runs the integration tests.
 
-### Generating src docs for every commit
-
-Run the following command:
-
-```bash
-echo -e "tox -e src-docs\ngit add src-docs\n" >> .git/hooks/pre-commit
-chmod +x .git/hooks/pre-commit
-```
-
 ## Build charm
 
 Build the charm in this git repository using:
