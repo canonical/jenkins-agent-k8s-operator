@@ -1,6 +1,1 @@
-config_changed
-upgrade_charm
-agent_relation_joined                 
-agent_relation_changed
-agent_relation_departed
 rebasing
