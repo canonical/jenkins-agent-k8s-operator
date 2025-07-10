@@ -1,4 +1,4 @@
-# Jenkins Agent K8s Operator
+# Jenkins agent K8s operator
 
 A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators) deploying and managing [Jenkins](https://www.jenkins.io/) agents on Kubernetes. This charm is configurable to use with a Jenkins charm deployed in another Juju model, or to connect to a standalone Jenkins instance.
 

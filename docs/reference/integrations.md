@@ -1,6 +1,7 @@
 # Integrations
-
+<!-- vale Canonical.007-Headings-sentence-case = off -->
 ### agent
+<!-- vale Canonical.007-Headings-sentence-case = on -->
 
 _Interface_: jenkins_agent_v0  
 _Supported charms_: [jenkins](https://charmhub.io/jenkins)
