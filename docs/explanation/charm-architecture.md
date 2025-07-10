@@ -67,17 +67,17 @@ The [Jenkins](https://charmhub.io/jenkins-k8s) controller, a CI server for which
 
 For this charm, the following events are observed:
 
-1. [jenkins_agent_k8s_pebble_ready](https://juju.is/docs/sdk/container-name-pebble-ready-event): fired on Kubernetes charms when the requested container is ready.
+1. [`jenkins_agent_k8s_pebble_ready`](https://juju.is/docs/sdk/container-name-pebble-ready-event): fired on Kubernetes charms when the requested container is ready.
 Action: wait for the integrations and configuration, download the JAR, configure the container and re-plan the service.
-2. [config_changed](https://juju.is/docs/sdk/config-changed-event): usually fired in response to a configuration change using the CLI.
+2. [`config_changed`](https://juju.is/docs/sdk/config-changed-event): usually fired in response to a configuration change using the CLI.
 Action: wait for the integrations and configuration, download the JAR, configure the container and re-plan the service.
-3. [upgrade_charm](https://juju.is/docs/sdk/upgrade-charm-event): fired when a charm upgrade is triggered.
+3. [`upgrade_charm`](https://juju.is/docs/sdk/upgrade-charm-event): fired when a charm upgrade is triggered.
 Action: wait for the integrations and configuration, download the JAR, configure the container and re-plan the service.
-4. [agent_relation_joined](https://juju.is/docs/sdk/relation-name-relation-joined-event): emitted when a unit joins the relation.
+4. [`agent_relation_joined`](https://juju.is/docs/sdk/relation-name-relation-joined-event): emitted when a unit joins the relation.
 Action: download the JAR, configure the container and re-plan the service.
-5. [agent_relation_changed](https://juju.is/docs/sdk/relation-name-relation-changed-event): triggered when another unit involved in the relation changed the data in the relation data bag.
+5. [`agent_relation_changed`](https://juju.is/docs/sdk/relation-name-relation-changed-event): triggered when another unit involved in the relation changed the data in the relation data bag.
 Action: download the JAR, configure the container and re-plan the service.
-6. [agent_relation_departed](https://juju.is/docs/sdk/relation-name-relation-departed-event): fired when a unit departs the relation.
+6. [`agent_relation_departed`](https://juju.is/docs/sdk/relation-name-relation-departed-event): fired when a unit departs the relation.
 Action: stop the service.
 
 ## Charm code overview
