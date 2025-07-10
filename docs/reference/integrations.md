@@ -1,5 +1,6 @@
 # Integrations
 <!-- vale Canonical.007-Headings-sentence-case = off -->
+<!-- this is the name of the integration and stylized lowercase>
 ### agent
 <!-- vale Canonical.007-Headings-sentence-case = on -->
 
