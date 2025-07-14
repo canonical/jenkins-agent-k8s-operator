@@ -1,6 +1,7 @@
 # Integrations
 
-### agent
+### `agent`
+
 
 _Interface_: jenkins_agent_v0  
 _Supported charms_: [jenkins](https://charmhub.io/jenkins)

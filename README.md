@@ -1,4 +1,4 @@
-# Jenkins-agent-k8s Operator
+# Jenkins-agent-k8s operator
 
 [![CharmHub Badge](https://charmhub.io/jenkins-agent-k8s/badge.svg)](https://charmhub.io/jenkins-agent-k8s)
 [![Publish to edge](https://github.com/canonical/jenkins-agent-k8s-operator/actions/workflows/publish_charm.yaml/badge.svg)](https://github.com/canonical/jenkins-agent-k8s-operator/actions/workflows/publish_charm.yaml)
