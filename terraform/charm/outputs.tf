@@ -8,6 +8,6 @@ output "app_name" {
 
 output "provides" {
   value = {
-    agent = "jenkins_agent_v0"
+    agent = "agent"
   }
 }
