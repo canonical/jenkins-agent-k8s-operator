@@ -3,7 +3,7 @@
 
 output "app_name" {
   description = "Name of the deployed application."
-  value       = juju_application.jenkins_k8s.name
+  value       = juju_application.jenkins_agent_k8s.name
 }
 
 output "provides" {
