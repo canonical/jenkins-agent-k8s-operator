@@ -42,3 +42,9 @@ variable "base" {
   type        = string
   default     = "ubuntu@22.04"
 }
+
+variable "units" {
+  description = "The number of units to deploy"
+  type        = number
+  default     = 3
+}
