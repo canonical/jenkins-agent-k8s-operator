@@ -97,4 +97,4 @@ class PebbleService:
         except ops.ModelError:
             return
         container.stop(self.state.jenkins_agent_service_name)
-        container.remove_path(str(server.AGENT_READY_PATH))
+        container.remove_path(str(server.AGENT_READY_PATH), recursive=True)
