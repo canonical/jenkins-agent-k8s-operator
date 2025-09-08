@@ -20,5 +20,3 @@ jobs:
       self-hosted-runner: true
       self-hosted-runner-label: "xlarge"
       microk8s-addons: "dns ingress rbac storage registry"
-      tmate-debug: true
-      tmate-timeout: 90
