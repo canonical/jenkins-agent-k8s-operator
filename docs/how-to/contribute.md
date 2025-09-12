@@ -34,7 +34,7 @@ source .tox/unit/bin/activate
 
 ### Testing
 
-Note that the [Jenkins agent k8s](jenkins_agent_k8s_rock/rockcraft.yaml) needs to be built and pushed to MicroK8s for the tests to run. It should be tagged as `localhost:32000/jenkins-agent-k8s:latest` so that Kubernetes knows how to pull them from the MicroK8s repository. Note that the MicroK8s registry needs to be enabled using `microk8s enable registry`. More details regarding the OCI images below. The following commands can then be used to run the tests:
+Note that the [Jenkins agent k8s](https://github.com/canonical/jenkins-agent-k8s-operator/blob/main/jenkins_agent_k8s_rock/rockcraft.yaml) needs to be built and pushed to MicroK8s for the tests to run. It should be tagged as `localhost:32000/jenkins-agent-k8s:latest` so that Kubernetes knows how to pull them from the MicroK8s repository. Note that the MicroK8s registry needs to be enabled using `microk8s enable registry`. More details regarding the OCI images below. The following commands can then be used to run the tests:
 
 * `tox`: Runs all of the basic checks (`lint`, `unit`, `static`, and `coverage-report`).
 * `tox -e fmt`: Runs formatting using `black` and `isort`.
