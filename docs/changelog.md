@@ -1,5 +1,9 @@
 # Changelog
 
+### 2025-09-15
+
+- chore: update charm base to Noble
+
 ### 2025-09-08
 
 - feat: add terraform module
