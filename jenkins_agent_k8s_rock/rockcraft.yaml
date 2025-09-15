@@ -5,8 +5,8 @@ name: jenkins-agent-k8s
 summary: Jenkins-agent-k8s rock
 description: Jenkins-agent-k8s OCI image for the Jenkins-agent-k8s charm
 version: "1.1"
-base: ubuntu@22.04
-build-base: ubuntu@22.04
+base: ubuntu@24.04
+build-base: ubuntu@24.04
 license: Apache-2.0
 platforms:
   amd64:

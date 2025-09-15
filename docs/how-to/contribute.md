@@ -68,7 +68,7 @@ juju add-model jenkins-agent-k8s-dev
 # Enable DEBUG logging
 juju model-config logging-config="<root>=INFO;unit=DEBUG"
 # Deploy the charm (assuming you're on amd64)
-juju deploy ./jenkins-agent-k8s_ubuntu-22.04-amd64.charm \
+juju deploy ./jenkins-agent-k8s_ubuntu-24.04-amd64.charm \
   --resource jenkins-agent-k8s-image=localhost:32000/jenkins-agent-k8s:latest
 ```
 

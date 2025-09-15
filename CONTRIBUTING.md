@@ -20,5 +20,5 @@ Deploy the charm:
 
 ```bash
 charmcraft pack
-juju deploy ./jenkins-agent-k8s_ubuntu-22.04-amd64.charm --resource jenkins-image=localhost:32000/jenkins-agent:1.0
+juju deploy ./jenkins-agent-k8s_ubuntu-24.04-amd64.charm --resource jenkins-image=localhost:32000/jenkins-agent:1.0
 ```
