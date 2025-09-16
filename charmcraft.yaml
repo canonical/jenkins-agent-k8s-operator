@@ -2,11 +2,87 @@
 # See LICENSE file for licensing details.
 # Learn more about charmcraft.yaml configuration at:
 # https://juju.is/docs/sdk/charmcraft-config
-type: "charm"
-bases:
-  - build-on:
-    - name: "ubuntu"
-      channel: "22.04"
-    run-on:
-    - name: "ubuntu"
-      channel: "22.04"
+name: jenkins-agent-k8s
+
+type: charm
+
+summary: Agent for Jenkins for Kubernetes.
+
+links:
+  contact: https://launchpad.net/~canonical-is-devops
+  documentation: https://discourse.charmhub.io/t/jenkins-agent-documentation-overview/3982
+  issues: https://github.com/canonical/jenkins-agent-k8s-operator/issues
+  source: https://github.com/canonical/jenkins-agent-k8s-operator
+
+description: |
+  A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators)
+  deploying and managing [Jenkins](https://www.jenkins.io/) agent on Kubernetes, 
+  configurable to use a Jenkins charm deployed in another Juju model, or to connect 
+  to a standalone Jenkins instance.
+
+  This charm simplifies initial deployment and "day N" operations of Jenkins agent
+  on Kubernetes. It allows for deployment on many different Kubernetes platforms, 
+  from [MicroK8s](https://microk8s.io) to [Charmed Kubernetes](https://ubuntu.com/kubernetes/charmed-k8s) 
+  and public cloud Kubernetes offerings.
+
+  As such, the charm makes it easy for those looking to take control of their own
+  agents whilst keeping operations simple, and gives them the freedom to deploy on 
+  the Kubernetes platform of their choice.
+
+  For DevOps or SRE teams this charm will make operating Jenkins agent simple and
+  straightforward through Juju's clean interface. It will allow easy deployment
+  into multiple environments for testing changes, and supports scaling out for
+  enterprise deployments.
+
+platforms:
+  ubuntu@24.04:amd64:
+  ubuntu@22.04:amd64:
+
+parts:
+  charm:
+    plugin: charm
+    source: .
+    charm-entrypoint: src/charm.py
+
+assumes:
+  - k8s-api
+containers:
+  jenkins-agent-k8s:
+    resource: jenkins-agent-k8s-image
+resources:
+  jenkins-agent-k8s-image:
+    type: oci-image
+    description: OCI image for Jenkins agent k8s
+provides:
+  agent:
+    interface: jenkins_agent_v0
+
+config:
+  options:
+    jenkins_url:
+      type: string
+      default: ""
+      description: |
+        Configure the agent to use an explicit Jenkins instead of using
+        the jenkins-agent relation. This allows the agent to connect to a Jenkins instance not
+        managed by Juju.
+    jenkins_agent_name:
+      type: string
+      default: ""
+      description: |
+        Agent name as configured in Jenkins. Multiple names can be input by using `:` as a separator.
+        Example: "agent-one:agent-two:agent-three"
+    jenkins_agent_token:
+      type: string
+      default: ""
+      description: |
+        Agent token provided by Jenkins. Can be found in your Jenkins instance at
+        ${JENKINS_URL}/computer/${AGENT_NAME}/. Multiple tokens can be input by
+        using `:` as a separator matching the order of the agents in `jenkins_agent_name`.
+        Example: "token-one:token-two:token-three"
+    jenkins_agent_labels:
+      type: string
+      default: ""
+      description: |
+        Comma-separated list of labels to be assigned to the agent in Jenkins. If not set it will
+        default to the agents hardware identifier, e.g.: 'x86_64'
