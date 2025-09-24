@@ -45,3 +45,4 @@ Thinking about using the jenkins-agent-k8s charm for your next project?
   1. [Integrations](reference/integrations.md)
 1. [Explanation](explanation)
   1. [Charm architecture](explanation/charm-architecture.md)
+1. [Changelog](changelog.md)
