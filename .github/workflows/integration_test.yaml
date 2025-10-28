@@ -20,3 +20,8 @@ jobs:
       self-hosted-runner: true
       self-hosted-runner-label: "xlarge"
       microk8s-addons: "dns ingress rbac storage registry"
+  allure-report:
+    if: always() && !cancelled()
+    needs:
+      - integration-tests
+    uses: canonical/operator-workflows/.github/workflows/allure_report.yaml@main
