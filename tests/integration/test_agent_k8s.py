@@ -3,7 +3,6 @@
 
 """Integration tests for jenkins-agent-k8s-operator charm with k8s server."""
 
-
 import logging
 
 import jenkinsapi.jenkins
