@@ -40,10 +40,10 @@ platforms:
 
 parts:
   charm:
-    plugin: charm
     source: .
-    charm-entrypoint: src/charm.py
-
+    plugin: uv
+    build-snaps:
+    - astral-uv
 assumes:
   - k8s-api
 containers:
