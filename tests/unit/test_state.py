@@ -37,7 +37,7 @@ def test__get_jenkins_unit():
 
     assert (
         state._get_jenkins_unit(
-            set((mock_agent_unit, mock_server_unit, mock_agent_unit_2)),
+            {mock_agent_unit, mock_server_unit, mock_agent_unit_2},
             current_app_name=agent_app_name,
         )
         == mock_server_unit
