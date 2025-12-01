@@ -73,7 +73,7 @@ class JenkinsConfig(BaseModel):
             return None
         agent_names = agent_name_config.split(":") if agent_name_config else []
         agent_tokens = agent_token_config.split(":") if agent_token_config else []
-        agent_name_token_pairs = list(zip(agent_names, agent_tokens))
+        agent_name_token_pairs = list(zip(agent_names, agent_tokens, strict=False))
         return cls(
             server_url_not_validated=tools.parse_obj_as(AnyHttpUrl, server_url) or "",
             agent_name_token_pairs=agent_name_token_pairs,
