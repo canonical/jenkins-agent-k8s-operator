@@ -63,9 +63,9 @@ def test_agent_relation_joined_agent_relation(harness: ops.testing.Harness):
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     relation_data = harness.get_relation_data(relation_id, jenkins_charm.unit.name)
-    assert "executors" in relation_data and relation_data["executors"]
-    assert "labels" in relation_data and relation_data["labels"]
-    assert "name" in relation_data and relation_data["name"]
+    assert relation_data.get("executors")
+    assert relation_data.get("labels")
+    assert relation_data.get("name")
 
 
 def test_agent_relation_changed_relation_config_priority(

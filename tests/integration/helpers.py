@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Helpers for Jenkins-agent-k8s-operator charm integration tests."""
+
 import asyncio
 import inspect
 import time
