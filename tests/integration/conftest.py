@@ -45,9 +45,9 @@ def model_fixture(ops_test: OpsTest) -> Model:
 def kube_config_fixture(request: FixtureRequest) -> str:
     """The kubernetes config file path."""
     kube_config = request.config.getoption("--kube-config")
-    assert (
-        kube_config
-    ), "--kube-confg argument is required which should contain the path to kube config."
+    assert kube_config, (
+        "--kube-confg argument is required which should contain the path to kube config."
+    )
     return kube_config
 
 
