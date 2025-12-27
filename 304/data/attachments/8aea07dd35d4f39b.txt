@@ -1,0 +1,45 @@
+[32mINFO    [0m root:test_agent_k8s.py:77 Enable plugins command: PEBBLE_SOCKET=/charm/containers/jenkins-agent-k8s/pebble.socket pebble exec --user=_daemon_ -- sudo -l
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model    Controller                Cloud/Region        Version  SLA          Timestamp
+testing  github-pr-ec063-microk8s  microk8s/localhost  3.6.12   unsupported  15:19:16Z
+
+App          Version  Status       Scale  Charm        Channel      Rev  Address         Exposed  Message
+jenkins-k8s           maintenance      1  jenkins-k8s  latest/edge  128  10.152.183.133  no       Installing Jenkins.
+
+Unit            Workload     Agent  Address     Ports  Message
+jenkins-k8s/0*  maintenance  idle   10.1.53.15         Installing Jenkins.
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+unit-jenkins-k8s-0: 15:19:00 ERROR unit.jenkins-k8s/0.juju-log Uncaught exception while in charm code:
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-jenkins-k8s-0/charm/./src/charm.py", line 207, in <module>
+    ops.main.main(JenkinsK8sOperatorCharm)
+  File "/var/lib/juju/agents/unit-jenkins-k8s-0/charm/venv/ops/main.py", line 553, in main
+    manager.run()
+  File "/var/lib/juju/agents/unit-jenkins-k8s-0/charm/venv/ops/main.py", line 529, in run
+    self._emit()
+  File "/var/lib/juju/agents/unit-jenkins-k8s-0/charm/venv/ops/main.py", line 518, in _emit
+    _emit_charm_event(self.charm, self.dispatcher.event_name, self._juju_context)
+  File "/var/lib/juju/agents/unit-jenkins-k8s-0/charm/venv/ops/main.py", line 139, in _emit_charm_event
+    event_to_emit.emit(*args, **kwargs)
+  File "/var/lib/juju/agents/unit-jenkins-k8s-0/charm/venv/ops/framework.py", line 347, in emit
+    framework._emit(event)
+  File "/var/lib/juju/agents/unit-jenkins-k8s-0/charm/venv/ops/framework.py", line 853, in _emit
+    self._reemit(event_path)
+  File "/var/lib/juju/agents/unit-jenkins-k8s-0/charm/venv/ops/framework.py", line 943, in _reemit
+    custom_handler(event)
+  File "/var/lib/juju/agents/unit-jenkins-k8s-0/charm/src/actions.py", line 44, in on_get_admin_password
+    credentials = jenkins.get_admin_credentials(container)
+  File "/var/lib/juju/agents/unit-jenkins-k8s-0/charm/src/jenkins.py", line 128, in get_admin_credentials
+    password_file_contents = str(container.pull(PASSWORD_FILE_PATH, encoding="utf-8").read())
+  File "/var/lib/juju/agents/unit-jenkins-k8s-0/charm/venv/ops/model.py", line 2418, in pull
+    return self._pebble.pull(str(path), encoding=encoding)
+  File "/var/lib/juju/agents/unit-jenkins-k8s-0/charm/venv/ops/pebble.py", line 2416, in pull
+    self._raise_on_path_error(resp, path)
+  File "/var/lib/juju/agents/unit-jenkins-k8s-0/charm/venv/ops/pebble.py", line 2441, in _raise_on_path_error
+    raise PathError(error['kind'], error['message'])
+ops.pebble.PathError: not-found - stat /var/lib/jenkins/secrets/initialAdminPassword: no such file or directory
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...
