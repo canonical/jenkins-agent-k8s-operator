@@ -3,7 +3,7 @@ name: Integration tests
 on:
   pull_request:
   schedule:
-  - cron: "0 15 * * SAT"
+    - cron: "0 15 * * SAT"
 
 jobs:
   integration-tests:
@@ -23,8 +23,10 @@ jobs:
       self-hosted-runner-label: "xlarge"
       microk8s-addons: "dns ingress rbac storage registry"
       with-uv: true
+      tmate-debug: true
+      tmate-timeout: 90
   allure-report:
     if: ${{ !cancelled() && github.event_name == 'schedule' }}
     needs:
-    - integration-tests
+      - integration-tests
     uses: canonical/operator-workflows/.github/workflows/allure_report.yaml@main
