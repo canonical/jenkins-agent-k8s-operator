@@ -83,9 +83,7 @@ async def application_fixture(
     resources = {"jenkins-agent-k8s-image": agent_image}
 
     # Deploy the charm and wait for blocked status
-    application = await model.deploy(
-        charm, resources=resources, num_units=num_agents
-    )
+    application = await model.deploy(charm, resources=resources, num_units=num_agents)
     await model.wait_for_idle(apps=[application.name], status="blocked")
 
     yield application

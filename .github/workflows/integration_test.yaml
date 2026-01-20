@@ -23,8 +23,6 @@ jobs:
       self-hosted-runner-label: "xlarge"
       microk8s-addons: "dns ingress rbac storage registry"
       with-uv: true
-      tmate-debug: true
-      tmate-timeout: 90
   allure-report:
     if: ${{ !cancelled() && github.event_name == 'schedule' }}
     needs:
