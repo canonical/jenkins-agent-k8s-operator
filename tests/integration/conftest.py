@@ -84,7 +84,7 @@ async def application_fixture(
 
     # Deploy the charm and wait for blocked status
     application = await model.deploy(
-        charm, resources=resources, series="jammy", num_units=num_agents
+        charm, resources=resources, num_units=num_agents
     )
     await model.wait_for_idle(apps=[application.name], status="blocked")
 
