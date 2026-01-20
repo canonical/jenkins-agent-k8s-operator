@@ -582,7 +582,7 @@ name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/50/79/66800aadf48771f6b62f7eb014e352e5d06856655206165d775e675a02c9/exceptiongroup-1.3.1.tar.gz", hash = "sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219", size = 30371, upload-time = "2025-11-21T23:01:54.787Z" }
 wheels = [
@@ -816,7 +816,7 @@ unit = [
 
 [package.metadata]
 requires-dist = [
-    { name = "ops", specifier = "==3.3.1" },
+    { name = "ops", specifier = "==3.5.0" },
     { name = "pydantic", specifier = "==1.10.24" },
     { name = "requests", specifier = "==2.32.5" },
 ]
@@ -1147,16 +1147,16 @@ wheels = [
 
 [[package]]
 name = "ops"
-version = "3.3.1"
+version = "3.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "opentelemetry-api" },
     { name = "pyyaml" },
     { name = "websocket-client" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3f/cd/bbd4263b53bb19e87f995b05ef93f565fa4edcb90bacacec615d47c56568/ops-3.3.1.tar.gz", hash = "sha256:8dec621c32a31365d040eaf05960c0e65a2ffbcdbfa91107e03b1ee9d4d26034", size = 541783, upload-time = "2025-10-16T01:46:25.431Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/65/0d/c351db0b13bb1872c9a8235c7529109dcee2a053439c76e6720444184238/ops-3.5.0.tar.gz", hash = "sha256:e3427889054285bd2711a3a297a77218384eacaf0d1001590ee4437cca115577", size = 575897, upload-time = "2025-12-18T02:26:31.119Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fd/97/c1e5447c3c0d86cab16cad802e1bb58613b2396b7184797af2e4484c2014/ops-3.3.1-py3-none-any.whl", hash = "sha256:38229bb1cc6d9c2aa4dff4495f3e33af928dbd1070e8c5d8b697dfb32dcd89a8", size = 191338, upload-time = "2025-10-16T01:46:20.038Z" },
+    { url = "https://files.pythonhosted.org/packages/1e/46/f3c6f4553a338e0551eb09464f0c93273f347b3fdf21cd26bda8a5d2fad6/ops-3.5.0-py3-none-any.whl", hash = "sha256:07b1d1dbc0f3ca59534d5fe5020a66ee95c528f2430e004922350274509420c6", size = 211356, upload-time = "2025-12-18T02:26:26.982Z" },
 ]
 
 [[package]]
