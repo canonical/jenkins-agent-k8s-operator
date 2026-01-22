@@ -45,9 +45,9 @@ def model_fixture(ops_test: OpsTest) -> Model:
 def kube_config_fixture(request: FixtureRequest) -> str:
     """The kubernetes config file path."""
     kube_config = request.config.getoption("--kube-config")
-    assert (
-        kube_config
-    ), "--kube-confg argument is required which should contain the path to kube config."
+    assert kube_config, (
+        "--kube-confg argument is required which should contain the path to kube config."
+    )
     return kube_config
 
 
@@ -83,9 +83,7 @@ async def application_fixture(
     resources = {"jenkins-agent-k8s-image": agent_image}
 
     # Deploy the charm and wait for blocked status
-    application = await model.deploy(
-        charm, resources=resources, series="jammy", num_units=num_agents
-    )
+    application = await model.deploy(charm, resources=resources, num_units=num_agents)
     await model.wait_for_idle(apps=[application.name], status="blocked")
 
     yield application
