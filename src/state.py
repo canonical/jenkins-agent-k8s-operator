@@ -52,7 +52,7 @@ class JenkinsConfig(BaseModel):
     @property
     def server_url(self) -> str:
         """Convert validated server_url to string."""
-        return str(self.server_url_not_validated)
+        return str(self.server_url_not_validated).rstrip("/")
 
     @classmethod
     def from_charm_config(cls, config: ops.ConfigData) -> typing.Optional["JenkinsConfig"]:
