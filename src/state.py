@@ -47,12 +47,12 @@ class JenkinsConfig(BaseModel):
 
     server_url_not_validated: AnyHttpUrl
 
-    agent_name_token_pairs: typing.List[typing.Tuple[str, str]] = Field(..., min_items=1)
+    agent_name_token_pairs: typing.List[typing.Tuple[str, str]] = Field(..., min_length=1)
 
     @property
     def server_url(self) -> str:
         """Convert validated server_url to string."""
-        return str(self.server_url_not_validated)
+        return str(self.server_url_not_validated).rstrip("/")
 
     @classmethod
     def from_charm_config(cls, config: ops.ConfigData) -> typing.Optional["JenkinsConfig"]:
