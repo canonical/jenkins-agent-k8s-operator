@@ -13,7 +13,7 @@ Confirm that all units are active and idle.
 
 ## Refresh to the latest revision
 
-To upgrade jenkins-agent-k8s to the latest revision from Charmhub:
+Upgrade jenkins-agent-k8s to the latest revision from Charmhub:
 
 ```bash
 juju refresh jenkins-agent-k8s
