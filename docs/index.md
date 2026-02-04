@@ -39,6 +39,7 @@ Thinking about using the jenkins-agent-k8s charm for your next project?
   1. [Quick guide](tutorial/getting-started.md)
 1. [How To](how-to)
   1. [Contribute](how-to/contribute.md)
+  1. [Upgrade](how-to/upgrade.md)
 1. [Reference](reference)
   1. [Actions](reference/actions.md)
   1. [Charm architecture](reference/charm-architecture.md)
