@@ -38,5 +38,11 @@
       "matchStringsStrategy": "any",
       "versioningTemplate": "ubuntu"
     }
-  ]
+  ],
+  "schedule": [
+    "* * * * 0,6"
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true
+  }
 }
