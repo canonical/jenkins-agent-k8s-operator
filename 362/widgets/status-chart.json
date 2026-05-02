@@ -1,0 +1,1 @@
+[{"uid":"41c19fb3aea4da4","name":"test_agent_recover","time":{"start":1777735807462,"stop":1777735853225,"duration":45763},"status":"passed","severity":"normal"},{"uid":"79a64fb722f31526","name":"test_agent_run_sudo","time":{"start":1777735853227,"stop":1777735854251,"duration":1024},"status":"passed","severity":"normal"}]
