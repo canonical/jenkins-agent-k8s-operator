@@ -107,25 +107,48 @@ def test_agent_relation_changed_container_not_ready(
     mock_event.defer.assert_called_once()
 
 
+@pytest.mark.parametrize(
+    "creds_changed,expect_active",
+    [
+        pytest.param(False, False, id="no_change"),
+        pytest.param(True, True, id="credentials_changed"),
+    ],
+)
 def test_agent_relation_changed_service_running(
     harness: ops.testing.Harness,
+    monkeypatch: pytest.MonkeyPatch,
     get_mock_relation_changed_event: typing.Callable[[str], unittest.mock.MagicMock],
+    creds_changed: bool,
+    expect_active: bool,
 ):
     """
     arrange: given a workload container with existing $JENKINS_HOME/agents/.ready file.
     act: when relation changed event is triggered.
-    assert: nothing happens since the agent is already registered.
+    assert: agent restarts only when credentials have changed.
     """
     mock_event = get_mock_relation_changed_event(state.AGENT_RELATION)
     harness.set_can_connect("jenkins-agent-k8s", True)
     container = harness.model.unit.get_container("jenkins-agent-k8s")
     container.push(server.AGENT_READY_PATH, "test", encoding="utf-8", make_dirs=True)
+    relation_id = harness.add_relation(state.AGENT_RELATION, "jenkins")
+    harness.add_relation_unit(relation_id, "jenkins/0")
+    harness.update_relation_data(
+        relation_id, "jenkins/0", {"url": "http://10.1.69.130:8080", "jenkins-agent-k8s-0_secret": "token123"}
+    )
+    monkeypatch.setattr(
+        pebble.PebbleService, "credentials_changed", lambda *_args, **_kwargs: creds_changed
+    )
+    monkeypatch.setattr(pebble.PebbleService, "stop_agent", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
     harness.begin()
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm.agent_observer._on_agent_relation_changed(mock_event)
 
-    mock_event.defer.assert_not_called()
+    if expect_active:
+        assert jenkins_charm.unit.status.name == ACTIVE_STATUS_NAME
+    else:
+        mock_event.defer.assert_not_called()
 
 
 def test_agent_relation_changed_incomplete_relation_data(

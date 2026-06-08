@@ -12,6 +12,7 @@ import unittest.mock
 
 import ops
 import ops.testing
+import pytest
 
 import pebble
 import server
@@ -99,3 +100,67 @@ def test_stop_agent():
 
     mock_container.stop.assert_called_once()
     mock_container.remove_path.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "plan_side_effect,services,server_url,agent_token,expected",
+    [
+        pytest.param(
+            ops.pebble.ConnectionError("not ready"),
+            None,
+            "http://new",
+            "token",
+            True,
+            id="no_plan",
+        ),
+        pytest.param(
+            None,
+            {},
+            "http://new",
+            "token",
+            True,
+            id="no_service",
+        ),
+        pytest.param(
+            None,
+            {"jenkins-agent-k8s": unittest.mock.MagicMock(
+                environment={"JENKINS_URL": "http://10.1.69.130:8080", "JENKINS_TOKEN": "secret123", "JENKINS_AGENT": "jenkins-agent-k8s-0"}
+            )},
+            "http://10.1.69.130:8080",
+            "secret123",
+            False,
+            id="same_credentials",
+        ),
+        pytest.param(
+            None,
+            {"jenkins-agent-k8s": unittest.mock.MagicMock(
+                environment={"JENKINS_URL": "http://10.1.69.130:8080", "JENKINS_TOKEN": "secret123", "JENKINS_AGENT": "jenkins-agent-k8s-0"}
+            )},
+            "http://10.1.69.153:8080",
+            "secret123",
+            True,
+            id="url_differs",
+        ),
+    ],
+)
+def test_credentials_changed(plan_side_effect, services, server_url, agent_token, expected):
+    """
+    arrange: given a container with varying pebble plan states.
+    act: when credentials_changed is called.
+    assert: returns expected result based on plan vs given credentials.
+    """
+    mock_state = unittest.mock.MagicMock(spec=state.State)
+    mock_state.jenkins_agent_service_name = "jenkins-agent-k8s"
+    mock_container = unittest.mock.MagicMock(spec=ops.Container)
+    if plan_side_effect:
+        mock_container.get_plan.side_effect = plan_side_effect
+    else:
+        mock_plan = unittest.mock.MagicMock()
+        mock_plan.services = services
+        mock_container.get_plan.return_value = mock_plan
+    pebble_service = pebble.PebbleService(state=mock_state)
+
+    result = pebble_service.credentials_changed(
+        container=mock_container, server_url=server_url, agent_token=agent_token
+    )
+    assert result is expected

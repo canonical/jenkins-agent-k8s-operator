@@ -81,17 +81,25 @@ class Observer(ops.Object):
             event.defer()
             return
 
-        # Check if the pebble service has started and set agent ready.
-        if container.exists(str(server.AGENT_READY_PATH)):
-            logger.warning("Given agent already registered. Skipping.")
-            return
-
         if not self.state.agent_relation_credentials:
             self.charm.unit.status = ops.WaitingStatus("Waiting for complete relation data.")
             logger.info("Waiting for complete relation data.")
             # The event needs to be retried after the agent credentials have been set.
             event.defer()
             return
+
+        # Check if the pebble service has started and set agent ready.
+        # If ready, verify the server URL hasn't changed (e.g. after server pod restart/upgrade).
+        if container.exists(str(server.AGENT_READY_PATH)):
+            if not self.pebble_service.credentials_changed(
+                container=container,
+                server_url=self.state.agent_relation_credentials.address,
+                agent_token=self.state.agent_relation_credentials.secret,
+            ):
+                logger.info("Agent registered with current credentials. No restart needed.")
+                return
+            logger.info("Server credentials changed. Restarting agent service.")
+            self.pebble_service.stop_agent(container=container)
 
         self.start_agent_from_relation(
             container=container,
