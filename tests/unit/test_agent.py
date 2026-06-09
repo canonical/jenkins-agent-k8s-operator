@@ -133,7 +133,9 @@ def test_agent_relation_changed_service_running(
     relation_id = harness.add_relation(state.AGENT_RELATION, "jenkins")
     harness.add_relation_unit(relation_id, "jenkins/0")
     harness.update_relation_data(
-        relation_id, "jenkins/0", {"url": "http://10.1.69.130:8080", "jenkins-agent-k8s-0_secret": "token123"}
+        relation_id,
+        "jenkins/0",
+        {"url": "http://10.1.69.130:8080", "jenkins-agent-k8s-0_secret": "token123"},
     )
     monkeypatch.setattr(
         pebble.PebbleService, "credentials_changed", lambda *_args, **_kwargs: creds_changed

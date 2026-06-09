@@ -3,6 +3,7 @@
 
 """Integration tests for jenkins-agent-k8s-operator charm with k8s server."""
 
+import contextlib
 import logging
 
 import jenkinsapi.custom_exceptions
@@ -98,7 +99,10 @@ def _agent_is_online(client: jenkinsapi.jenkins.Jenkins, agent_name: str) -> boo
     try:
         node = client.get_node(agent_name)
         return node.is_online()
-    except (jenkinsapi.custom_exceptions.JenkinsAPIException, requests.exceptions.RequestException):
+    except (
+        jenkinsapi.custom_exceptions.JenkinsAPIException,
+        requests.exceptions.RequestException,
+    ):
         return False
 
 
@@ -114,10 +118,8 @@ async def test_agent_reconnects_after_server_refresh(
     assert: the agent automatically reconnects and comes back online.
     """
     # Ensure relation exists (may already be established from test_agent_recover).
-    try:
+    with contextlib.suppress(JujuError):  # Relation already exists from earlier test.
         await model.relate(f"{application.name}:agent", f"{jenkins_k8s_server.name}:agent")
-    except JujuError:
-        pass  # Relation already exists from earlier test.
     await model.wait_for_idle(
         apps=[application.name, jenkins_k8s_server.name],
         wait_for_active=True,
@@ -135,7 +137,10 @@ async def test_agent_reconnects_after_server_refresh(
     logger.info("Refreshing jenkins-k8s server charm...")
     await jenkins_k8s_server.refresh(channel="latest/edge")
     await model.wait_for_idle(
-        apps=[jenkins_k8s_server.name], timeout=60 * 15, raise_on_error=False, idle_period=30
+        apps=[jenkins_k8s_server.name],
+        timeout=60 * 15,
+        raise_on_error=False,
+        idle_period=30,
     )
 
     # Get new Jenkins server address after refresh.
@@ -148,8 +153,10 @@ async def test_agent_reconnects_after_server_refresh(
     # Find new server IP.
     status = await model.get_status([jenkins_k8s_server.name])
     server_app_status = status.applications[jenkins_k8s_server.name]
+    assert server_app_status is not None, "Server application status not found."
     server_unit_status = next(iter(server_app_status.units.values()))
-    new_address = server_unit_status.address
+    assert server_unit_status is not None, "Server unit status not found."
+    new_address = str(server_unit_status.address)
     logger.info("Jenkins server new address after refresh: %s", new_address)
 
     new_client = jenkinsapi.jenkins.Jenkins(

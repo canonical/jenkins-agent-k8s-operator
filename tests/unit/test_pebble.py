@@ -123,9 +123,15 @@ def test_stop_agent():
         ),
         pytest.param(
             None,
-            {"jenkins-agent-k8s": unittest.mock.MagicMock(
-                environment={"JENKINS_URL": "http://10.1.69.130:8080", "JENKINS_TOKEN": "secret123", "JENKINS_AGENT": "jenkins-agent-k8s-0"}
-            )},
+            {
+                "jenkins-agent-k8s": unittest.mock.MagicMock(
+                    environment={
+                        "JENKINS_URL": "http://10.1.69.130:8080",
+                        "JENKINS_TOKEN": "secret123",
+                        "JENKINS_AGENT": "jenkins-agent-k8s-0",
+                    }
+                )
+            },
             "http://10.1.69.130:8080",
             "secret123",
             False,
@@ -133,9 +139,15 @@ def test_stop_agent():
         ),
         pytest.param(
             None,
-            {"jenkins-agent-k8s": unittest.mock.MagicMock(
-                environment={"JENKINS_URL": "http://10.1.69.130:8080", "JENKINS_TOKEN": "secret123", "JENKINS_AGENT": "jenkins-agent-k8s-0"}
-            )},
+            {
+                "jenkins-agent-k8s": unittest.mock.MagicMock(
+                    environment={
+                        "JENKINS_URL": "http://10.1.69.130:8080",
+                        "JENKINS_TOKEN": "secret123",
+                        "JENKINS_AGENT": "jenkins-agent-k8s-0",
+                    }
+                )
+            },
             "http://10.1.69.153:8080",
             "secret123",
             True,
