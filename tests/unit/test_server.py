@@ -48,9 +48,7 @@ def test_download_jenkins_agent_download_error(
         pytest.param(503, False, id="service_unavailable"),
     ],
 )
-def test_server_is_ready(
-    monkeypatch: pytest.MonkeyPatch, status_code: int, expected: bool
-):
+def test_server_is_ready(monkeypatch: pytest.MonkeyPatch, status_code: int, expected: bool):
     """
     arrange: given a monkeypatched requests.get that returns various status codes.
     act: when server_is_ready is called.

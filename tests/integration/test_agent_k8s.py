@@ -122,7 +122,7 @@ async def test_agent_reconnects_after_server_refresh(
         await model.relate(f"{application.name}:agent", f"{jenkins_k8s_server.name}:agent")
     await model.wait_for_idle(
         apps=[application.name, jenkins_k8s_server.name],
-        wait_for_active=True,
+        status="active",
         timeout=60 * 15,
     )
 
@@ -169,7 +169,7 @@ async def test_agent_reconnects_after_server_refresh(
     # Wait for the model to settle (agent charm should detect URL change and reconnect).
     await model.wait_for_idle(
         apps=[application.name, jenkins_k8s_server.name],
-        wait_for_active=True,
+        status="active",
         timeout=60 * 15,
         raise_on_error=False,
     )
