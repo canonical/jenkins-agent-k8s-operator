@@ -107,25 +107,85 @@ def test_agent_relation_changed_container_not_ready(
     mock_event.defer.assert_called_once()
 
 
+@pytest.mark.parametrize(
+    "creds_changed,expect_active",
+    [
+        pytest.param(False, False, id="no_change"),
+        pytest.param(True, True, id="credentials_changed"),
+    ],
+)
 def test_agent_relation_changed_service_running(
     harness: ops.testing.Harness,
+    monkeypatch: pytest.MonkeyPatch,
     get_mock_relation_changed_event: typing.Callable[[str], unittest.mock.MagicMock],
+    creds_changed: bool,
+    expect_active: bool,
 ):
     """
     arrange: given a workload container with existing $JENKINS_HOME/agents/.ready file.
     act: when relation changed event is triggered.
-    assert: nothing happens since the agent is already registered.
+    assert: agent restarts only when credentials have changed.
     """
     mock_event = get_mock_relation_changed_event(state.AGENT_RELATION)
     harness.set_can_connect("jenkins-agent-k8s", True)
     container = harness.model.unit.get_container("jenkins-agent-k8s")
     container.push(server.AGENT_READY_PATH, "test", encoding="utf-8", make_dirs=True)
+    relation_id = harness.add_relation(state.AGENT_RELATION, "jenkins")
+    harness.add_relation_unit(relation_id, "jenkins/0")
+    harness.update_relation_data(
+        relation_id,
+        "jenkins/0",
+        {"url": "http://10.1.69.130:8080", "jenkins-agent-k8s-0_secret": "token123"},
+    )
+    monkeypatch.setattr(
+        pebble.PebbleService, "credentials_changed", lambda *_args, **_kwargs: creds_changed
+    )
+    monkeypatch.setattr(pebble.PebbleService, "stop_agent", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(server, "server_is_ready", lambda *_args, **_kwargs: True)
     harness.begin()
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
     jenkins_charm.agent_observer._on_agent_relation_changed(mock_event)
 
-    mock_event.defer.assert_not_called()
+    if expect_active:
+        assert jenkins_charm.unit.status.name == ACTIVE_STATUS_NAME
+    else:
+        mock_event.defer.assert_not_called()
+
+
+def test_agent_relation_changed_server_not_ready(
+    harness: ops.testing.Harness,
+    monkeypatch: pytest.MonkeyPatch,
+    get_mock_relation_changed_event: typing.Callable[[str], unittest.mock.MagicMock],
+):
+    """
+    arrange: given an agent running with old credentials and server not reachable at new URL.
+    act: when relation changed event is triggered with new server URL.
+    assert: event is deferred and agent continues running on old credentials.
+    """
+    mock_event = get_mock_relation_changed_event(state.AGENT_RELATION)
+    harness.set_can_connect("jenkins-agent-k8s", True)
+    container = harness.model.unit.get_container("jenkins-agent-k8s")
+    container.push(server.AGENT_READY_PATH, "test", encoding="utf-8", make_dirs=True)
+    relation_id = harness.add_relation(state.AGENT_RELATION, "jenkins")
+    harness.add_relation_unit(relation_id, "jenkins/0")
+    harness.update_relation_data(
+        relation_id,
+        "jenkins/0",
+        {"url": "http://10.1.69.130:8080", "jenkins-agent-k8s-0_secret": "token123"},
+    )
+    monkeypatch.setattr(
+        pebble.PebbleService, "credentials_changed", lambda *_args, **_kwargs: True
+    )
+    monkeypatch.setattr(server, "server_is_ready", lambda *_args, **_kwargs: False)
+    harness.begin()
+
+    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
+    jenkins_charm.agent_observer._on_agent_relation_changed(mock_event)
+
+    assert jenkins_charm.unit.status.name == WAITING_STATUS_NAME
+    mock_event.defer.assert_called_once()
 
 
 def test_agent_relation_changed_incomplete_relation_data(
@@ -161,7 +221,7 @@ def test_agent_relation_changed_download_jenkins_agent_fail(
     """
     arrange: given a monkeypatched download_jenkins_agent that raises AgentJarDownloadError.
     act: when _on_agent_relation_changed is called.
-    assert: the unit falls into ErroredStatus.
+    assert: the event is deferred and unit enters WaitingStatus.
     """
     (mock_event, relation_data) = get_event_relation_data(state.AGENT_RELATION)
     # The monkeypatched attribute download_jenkins_agent is used across unit tests.
@@ -170,6 +230,7 @@ def test_agent_relation_changed_download_jenkins_agent_fail(
         "download_jenkins_agent",
         lambda *_args, **_kwargs: raise_exception(server.AgentJarDownloadError),
     )
+    monkeypatch.setattr(server, "server_is_ready", lambda *_args, **_kwargs: True)
     harness.set_can_connect("jenkins-agent-k8s", True)
     relation_id = harness.add_relation(state.AGENT_RELATION, "jenkins")
     harness.add_relation_unit(relation_id, "jenkins/0")
@@ -181,10 +242,10 @@ def test_agent_relation_changed_download_jenkins_agent_fail(
     harness.begin()
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    with pytest.raises(server.AgentJarDownloadError) as exc:
-        jenkins_charm.agent_observer._on_agent_relation_changed(mock_event)
+    jenkins_charm.agent_observer._on_agent_relation_changed(mock_event)
 
-        assert exc.value == "Failed to download Jenkins agent executable."
+    assert jenkins_charm.unit.status.name == WAITING_STATUS_NAME
+    mock_event.defer.assert_called_once()
 
 
 def test_agent_relation_changed(
@@ -202,6 +263,7 @@ def test_agent_relation_changed(
     (mock_event, relation_data) = get_event_relation_data(state.AGENT_RELATION)
     monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(server, "validate_credentials", lambda *_args, **_kwargs: True)
+    monkeypatch.setattr(server, "server_is_ready", lambda *_args, **_kwargs: True)
     harness.set_can_connect("jenkins-agent-k8s", True)
     relation_id = harness.add_relation(state.AGENT_RELATION, "jenkins")
     harness.add_relation_unit(relation_id, "jenkins/0")

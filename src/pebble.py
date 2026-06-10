@@ -84,6 +84,30 @@ class PebbleService:
         )
         container.replan()
 
+    def credentials_changed(
+        self, container: ops.Container, server_url: str, agent_token: str
+    ) -> bool:
+        """Check whether the pebble layer credentials differ from given values.
+
+        Args:
+            container: The agent workload container.
+            server_url: The Jenkins server URL to compare against.
+            agent_token: The agent secret token to compare against.
+
+        Returns:
+            True if the credentials have changed, False otherwise.
+        """
+        try:
+            plan = container.get_plan()
+        except (ops.pebble.ConnectionError, ops.ModelError):
+            return True
+        services = plan.services
+        agent_service = services.get(self.state.jenkins_agent_service_name)
+        if not agent_service:
+            return True
+        env = agent_service.environment or {}
+        return env.get("JENKINS_URL") != server_url or env.get("JENKINS_TOKEN") != agent_token
+
     def stop_agent(self, container: ops.Container) -> None:
         """Stop Jenkins agent.
 
