@@ -34,13 +34,16 @@ class JenkinsAgentCharm(ops.CharmBase):
         super().__init__(*args)
 
         # All events converge on the same reconcile handler.
-        self.framework.observe(self.on.config_changed, self._on_reconcile)
-        self.framework.observe(self.on.upgrade_charm, self._on_reconcile)
-        self.framework.observe(self.on.jenkins_agent_k8s_pebble_ready, self._on_reconcile)
+        for event in (
+            self.on.config_changed,
+            self.on.upgrade_charm,
+            self.on.jenkins_agent_k8s_pebble_ready,
+            self.on[AGENT_RELATION].relation_changed,
+        ):
+            self.framework.observe(event, self._on_reconcile)
         self.framework.observe(
             self.on[AGENT_RELATION].relation_joined, self._on_agent_relation_joined
         )
-        self.framework.observe(self.on[AGENT_RELATION].relation_changed, self._on_reconcile)
         self.framework.observe(
             self.on[AGENT_RELATION].relation_departed, self._on_agent_relation_departed
         )
