@@ -98,14 +98,31 @@ class Observer(ops.Object):
             ):
                 logger.info("Agent registered with current credentials. No restart needed.")
                 return
+            # Verify the new server is reachable before stopping the running agent.
+            # This prevents a window where the agent is down but the new server isn't ready.
+            if not server.server_is_ready(self.state.agent_relation_credentials.address):
+                logger.info(
+                    "Server at %s not yet reachable. Deferring.",
+                    self.state.agent_relation_credentials.address,
+                )
+                self.charm.unit.status = ops.WaitingStatus(
+                    "Waiting for new Jenkins server to become ready."
+                )
+                event.defer()
+                return
             logger.info("Server credentials changed. Restarting agent service.")
             self.pebble_service.stop_agent(container=container)
 
-        self.start_agent_from_relation(
-            container=container,
-            credentials=self.state.agent_relation_credentials,
-            agent_name=self.state.agent_meta.name,
-        )
+        try:
+            self.start_agent_from_relation(
+                container=container,
+                credentials=self.state.agent_relation_credentials,
+                agent_name=self.state.agent_meta.name,
+            )
+        except server.AgentJarDownloadError:
+            logger.warning("Failed to download agent.jar. Server may not be ready. Deferring.")
+            self.charm.unit.status = ops.WaitingStatus("Waiting for Jenkins server.")
+            event.defer()
 
     def start_agent_from_relation(
         self, container: ops.Container, credentials: server.Credentials, agent_name: str
