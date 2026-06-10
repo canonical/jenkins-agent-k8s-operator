@@ -12,14 +12,14 @@ import unittest.mock
 
 import ops
 import ops.testing
+import pytest
 
 import pebble
 import server
 import state
-from charm import JenkinsAgentCharm
 
 
-def test__get_pebble_layer(harness: ops.testing.Harness):
+def test__get_pebble_layer():
     """
     arrange: given a server url, and an agent_token pair.
     act: when _get_pebble_layer is called.
@@ -27,9 +27,11 @@ def test__get_pebble_layer(harness: ops.testing.Harness):
     """
     test_url = "http://test-url"
     test_agent_token_pair = ("agent-1", secrets.token_hex(16))
-    harness.begin()
-    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    layer = jenkins_charm.pebble_service._get_pebble_layer(
+    mock_state = unittest.mock.MagicMock(spec=state.State)
+    mock_state.jenkins_agent_service_name = state.State.jenkins_agent_service_name
+    pebble_service = pebble.PebbleService(state=mock_state)
+
+    layer = pebble_service._get_pebble_layer(
         server_url=test_url, agent_token_pair=test_agent_token_pair
     )
 
@@ -99,3 +101,56 @@ def test_stop_agent():
 
     mock_container.stop.assert_called_once()
     mock_container.remove_path.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "plan_env,expected",
+    [
+        pytest.param(None, True, id="no_plan"),
+        pytest.param({}, True, id="no_service"),
+        pytest.param(
+            {"JENKINS_URL": "http://old:8080", "JENKINS_TOKEN": "old_token"},
+            False,
+            id="same_credentials",
+        ),
+        pytest.param(
+            {"JENKINS_URL": "http://different:8080", "JENKINS_TOKEN": "old_token"},
+            True,
+            id="url_differs",
+        ),
+    ],
+)
+def test_credentials_changed(plan_env: typing.Optional[typing.Dict[str, str]], expected: bool):
+    """
+    arrange: given various pebble plan states.
+    act: when credentials_changed is called.
+    assert: returns True when credentials differ from desired.
+    """
+    mock_state = unittest.mock.MagicMock(spec=state.State)
+    mock_state.jenkins_agent_service_name = "jenkins-agent-k8s"
+    mock_container = unittest.mock.MagicMock(spec=ops.Container)
+
+    if plan_env is None:
+        # Simulate ConnectionError when reading plan
+        mock_container.get_plan.side_effect = ops.pebble.ConnectionError("not ready")
+    elif not plan_env:
+        # Empty plan with no services
+        mock_plan = unittest.mock.MagicMock()
+        mock_plan.services = {}
+        mock_container.get_plan.return_value = mock_plan
+    else:
+        # Plan with service and environment
+        mock_service = unittest.mock.MagicMock()
+        mock_service.environment = plan_env
+        mock_plan = unittest.mock.MagicMock()
+        mock_plan.services = {"jenkins-agent-k8s": mock_service}
+        mock_container.get_plan.return_value = mock_plan
+
+    pebble_service = pebble.PebbleService(state=mock_state)
+
+    result = pebble_service.credentials_changed(
+        container=mock_container,
+        server_url="http://old:8080",
+        agent_token="old_token",
+    )
+    assert result == expected

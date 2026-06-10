@@ -6,7 +6,6 @@
 # Need access to protected functions for testing
 # pylint:disable=protected-access
 
-import secrets
 import typing
 from unittest.mock import MagicMock
 
@@ -18,7 +17,7 @@ import server
 import state
 from charm import JenkinsAgentCharm
 
-from .constants import ACTIVE_STATUS_NAME, BLOCKED_STATUS_NAME
+from .constants import ACTIVE_STATUS_NAME, BLOCKED_STATUS_NAME, WAITING_STATUS_NAME
 
 
 def test___init___invalid_state(
@@ -43,10 +42,10 @@ def test___init___invalid_state(
     assert jenkins_charm.unit.status.message == invalid_state_message
 
 
-def test__register_agent_from_config_container_not_ready(harness: Harness):
+def test_reconcile_container_not_ready(harness: Harness):
     """
     arrange: given a charm with a workload container that is not ready yet.
-    act: when _register_agent_from_config is called.
+    act: when _on_reconcile is called.
     assert: the event is deferred.
     """
     harness.set_can_connect("jenkins-agent-k8s", False)
@@ -54,15 +53,15 @@ def test__register_agent_from_config_container_not_ready(harness: Harness):
     mock_event = MagicMock(spec=ops.HookEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm._on_config_changed(mock_event)
+    jenkins_charm._on_reconcile(mock_event)
 
     mock_event.defer.assert_called_once()
 
 
-def test__register_agent_from_config_no_config_state(harness: Harness):
+def test_reconcile_no_config_no_relation(harness: Harness):
     """
     arrange: given a charm with no configured state nor relation.
-    act: when _register_agent_from_config is called.
+    act: when _on_reconcile is called.
     assert: the unit falls into BlockedStatus.
     """
     harness.set_can_connect("jenkins-agent-k8s", True)
@@ -70,30 +69,32 @@ def test__register_agent_from_config_no_config_state(harness: Harness):
     mock_event = MagicMock(spec=ops.HookEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm._on_config_changed(mock_event)
+    jenkins_charm._on_reconcile(mock_event)
 
     assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
     assert jenkins_charm.unit.status.message == "Waiting for config/relation."
 
 
-def test__register_agent_from_config_use_relation(harness: Harness):
+def test_reconcile_config_with_relation_blocks(harness: Harness, config: typing.Dict[str, str]):
     """
-    arrange: given a charm with an agent relation but no configured state.
-    act: when _register_agent_from_config is called.
-    assert: the nothing happens since agent observer should be handling the relation.
+    arrange: given a charm with config values AND an agent relation present.
+    act: when _on_reconcile is called.
+    assert: the unit falls into BlockedStatus asking to remove relation.
     """
     harness.set_can_connect("jenkins-agent-k8s", True)
+    harness.update_config(config)
     harness.add_relation(state.AGENT_RELATION, "jenkins")
     harness.begin()
     mock_event = MagicMock(spec=ops.HookEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm._on_config_changed(mock_event)
+    jenkins_charm._on_reconcile(mock_event)
 
-    mock_event.defer.assert_not_called()
+    assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
+    assert jenkins_charm.unit.status.message == "Please remove and re-relate agent relation."
 
 
-def test__register_agent_from_config_download_agent_error(
+def test_reconcile_config_download_agent_error(
     monkeypatch: pytest.MonkeyPatch,
     raise_exception: typing.Callable,
     harness: Harness,
@@ -101,122 +102,105 @@ def test__register_agent_from_config_download_agent_error(
 ):
     """
     arrange: given a charm with monkeypatched download_jenkins_agent that raises an exception.
-    act: when _register_agent_from_config is called.
-    assert: unit falls into BlockedStatus.
+    act: when _on_reconcile is called.
+    assert: unit defers and enters WaitingStatus.
     """
     monkeypatch.setattr(
         server,
         "download_jenkins_agent",
         lambda *_args, **_kwargs: raise_exception(server.AgentJarDownloadError),
     )
+    monkeypatch.setattr(server, "server_is_ready", lambda *_args, **_kwargs: True)
     harness.set_can_connect("jenkins-agent-k8s", True)
     harness.update_config(config)
     harness.begin()
     mock_event = MagicMock(spec=ops.HookEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
+    jenkins_charm._on_reconcile(mock_event)
 
-    with pytest.raises(server.AgentJarDownloadError) as exc:
-        jenkins_charm._on_config_changed(mock_event)
-        assert exc.value == "Failed to download agent JAR executable."
+    assert jenkins_charm.unit.status.name == WAITING_STATUS_NAME
+    mock_event.defer.assert_called_once()
 
 
-def test__register_agent_from_config_no_valid_credentials(
+def test_reconcile_config_no_valid_credentials(
     monkeypatch: pytest.MonkeyPatch,
     harness: Harness,
     config: typing.Dict[str, str],
 ):
     """
     arrange: given a charm with monkeypatched validate_credentials that returns false.
-    act: when _on_config_changed is called.
+    act: when _on_reconcile is called.
     assert: unit falls into BlockedStatus.
     """
     monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(server, "validate_credentials", lambda *_args, **_kwargs: False)
+    monkeypatch.setattr(server, "server_is_ready", lambda *_args, **_kwargs: True)
     harness.set_can_connect("jenkins-agent-k8s", True)
     harness.update_config(config)
     harness.begin()
     mock_event = MagicMock(spec=ops.HookEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm._on_config_changed(mock_event)
+    jenkins_charm._on_reconcile(mock_event)
 
     assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
     assert jenkins_charm.unit.status.message == "Additional valid agent-token pairs required."
 
 
-def test__register_agent_from_config_fallback_relation_agent(
-    harness: Harness,
-):
-    """
-    arrange: given a charm with reset config values and a agent relation.
-    act: when _on_config_changed is called.
-    assert: unit falls into BlockedStatus, this should support fallback relation later.
-    """
-    harness.set_can_connect("jenkins-agent-k8s", True)
-    harness.update_config({})
-    harness.add_relation(state.AGENT_RELATION, "jenkins")
-    harness.begin()
-
-    mock_event = MagicMock(spec=ops.HookEvent)
-    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm._on_config_changed(mock_event)
-
-    assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
-    assert jenkins_charm.unit.status.message == "Please remove and re-relate agent relation."
-
-
-def test__register_agent_from_config(
+def test_reconcile_config_success(
     monkeypatch: pytest.MonkeyPatch,
     harness: Harness,
     config: typing.Dict[str, str],
 ):
     """
     arrange: given a charm with monkeypatched server functions that returns passing values.
-    act: when _register_agent_from_config is called.
+    act: when _on_reconcile is called.
     assert: unit falls into ActiveStatus.
     """
     monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(server, "validate_credentials", lambda *_args, **_kwargs: True)
+    monkeypatch.setattr(server, "server_is_ready", lambda *_args, **_kwargs: True)
     harness.set_can_connect("jenkins-agent-k8s", True)
     harness.update_config(config)
     harness.begin()
     mock_event = MagicMock(spec=ops.ConfigChangedEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm._on_config_changed(mock_event)
+    jenkins_charm._on_reconcile(mock_event)
 
     assert jenkins_charm.unit.status.name == ACTIVE_STATUS_NAME
 
 
-def test__on_upgrade_charm(
+def test_reconcile_upgrade_charm(
     monkeypatch: pytest.MonkeyPatch, harness: Harness, config: typing.Dict[str, str]
 ):
     """
     arrange: given a charm with monkeypatched server functions that returns passing values.
-    act: when _on_upgrade_charm is called.
+    act: when _on_reconcile is called via upgrade_charm event.
     assert: unit falls into ActiveStatus.
     """
     monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(server, "validate_credentials", lambda *_args, **_kwargs: True)
+    monkeypatch.setattr(server, "server_is_ready", lambda *_args, **_kwargs: True)
     harness.set_can_connect("jenkins-agent-k8s", True)
     harness.update_config(config)
     harness.begin()
     mock_event = MagicMock(spec=ops.UpgradeCharmEvent)
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm._on_upgrade_charm(mock_event)
+    jenkins_charm._on_reconcile(mock_event)
 
     assert jenkins_charm.unit.status.name == ACTIVE_STATUS_NAME
 
 
-def test__on_jenkins_agent_k8s_pebble_ready_container_not_ready(
+def test_reconcile_pebble_ready_container_not_ready(
     harness: Harness, monkeypatch: pytest.MonkeyPatch
 ):
     """
     arrange: given a charm container that is not yet connectable.
-    act: when _on_jenkins_agent_k8s_pebble_ready is called.
-    assert: the charm is not started.
+    act: when _on_reconcile is called via pebble_ready event.
+    assert: the event is deferred.
     """
     harness.begin()
     charm = typing.cast(JenkinsAgentCharm, harness.charm)
@@ -225,54 +209,57 @@ def test__on_jenkins_agent_k8s_pebble_ready_container_not_ready(
         "download_jenkins_agent",
         (mock_download_func := MagicMock(spec=server.download_jenkins_agent)),
     )
+    mock_event = MagicMock(spec=ops.PebbleReadyEvent)
 
-    charm._on_jenkins_agent_k8s_pebble_ready(MagicMock(spec=ops.PebbleReadyEvent))
+    charm._on_reconcile(mock_event)
 
     mock_download_func.assert_not_called()
+    mock_event.defer.assert_called_once()
 
 
-def test__on_jenkins_agent_k8s_pebble_ready_agent_download_error(
-    harness: Harness, monkeypatch: pytest.MonkeyPatch
-):
+def test_reconcile_pebble_ready_with_relation(harness: Harness, monkeypatch: pytest.MonkeyPatch):
     """
-    arrange: given a mocked server download that raises an error.
-    act: when _on_jenkins_agent_k8s_pebble_ready is called.
-    assert: RuntimeError is raised.
+    arrange: given a connected container and valid relation credentials.
+    act: when _on_reconcile is called via pebble_ready event.
+    assert: the charm downloads agent and enters ActiveStatus.
     """
-    harness.set_can_connect(state.State.jenkins_agent_service_name, True)
+    monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(server, "server_is_ready", lambda *_args, **_kwargs: True)
+    harness.set_can_connect("jenkins-agent-k8s", True)
+    relation_id = harness.add_relation(state.AGENT_RELATION, "jenkins")
+    harness.add_relation_unit(relation_id, "jenkins/0")
+    harness.update_relation_data(
+        relation_id,
+        "jenkins/0",
+        {"url": "http://10.1.69.130:8080", "jenkins-agent-k8s-0_secret": "token123"},
+    )
     harness.begin()
+    mock_event = MagicMock(spec=ops.PebbleReadyEvent)
+
     charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    charm.state.agent_relation_credentials = server.Credentials(
-        address="test", secret=secrets.token_hex(16)
-    )
-    monkeypatch.setattr(
-        server,
-        "download_jenkins_agent",
-        MagicMock(spec=server.download_jenkins_agent, side_effect=[server.AgentJarDownloadError]),
-    )
-
-    with pytest.raises(server.AgentJarDownloadError):
-        charm._on_jenkins_agent_k8s_pebble_ready(MagicMock(spec=ops.PebbleReadyEvent))
-
-
-def test__on_jenkins_agent_k8s_pebble_ready(harness: Harness, monkeypatch: pytest.MonkeyPatch):
-    """
-    arrange: given a mocked server functions.
-    act: when _on_jenkins_agent_k8s_pebble_ready is called.
-    assert: the charm is in ActiveStatus.
-    """
-    harness.set_can_connect(state.State.jenkins_agent_service_name, True)
-    harness.begin()
-    charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    charm.state.agent_relation_credentials = server.Credentials(
-        address="test", secret=secrets.token_hex(16)
-    )
-    monkeypatch.setattr(
-        server,
-        "download_jenkins_agent",
-        MagicMock(spec=server.download_jenkins_agent),
-    )
-
-    charm._on_jenkins_agent_k8s_pebble_ready(MagicMock(spec=ops.PebbleReadyEvent))
+    charm._on_reconcile(mock_event)
 
     assert charm.unit.status.name == ACTIVE_STATUS_NAME
+
+
+def test_reconcile_server_not_ready_config(
+    monkeypatch: pytest.MonkeyPatch,
+    harness: Harness,
+    config: typing.Dict[str, str],
+):
+    """
+    arrange: given a charm with config but server not reachable.
+    act: when _on_reconcile is called.
+    assert: event is deferred with WaitingStatus.
+    """
+    monkeypatch.setattr(server, "server_is_ready", lambda *_args, **_kwargs: False)
+    harness.set_can_connect("jenkins-agent-k8s", True)
+    harness.update_config(config)
+    harness.begin()
+    mock_event = MagicMock(spec=ops.HookEvent)
+
+    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
+    jenkins_charm._on_reconcile(mock_event)
+
+    assert jenkins_charm.unit.status.name == WAITING_STATUS_NAME
+    mock_event.defer.assert_called_once()

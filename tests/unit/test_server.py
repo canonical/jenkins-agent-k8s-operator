@@ -40,6 +40,47 @@ def test_download_jenkins_agent_download_error(
         server.download_jenkins_agent(server_url="http://test-url", container=mock_contaier)
 
 
+@pytest.mark.parametrize(
+    "status_code,expected",
+    [
+        pytest.param(200, True, id="login_ok"),
+        pytest.param(403, True, id="login_forbidden"),
+        pytest.param(503, False, id="service_unavailable"),
+    ],
+)
+def test_server_is_ready(monkeypatch: pytest.MonkeyPatch, status_code: int, expected: bool):
+    """
+    arrange: given a monkeypatched requests.get that returns various status codes.
+    act: when server_is_ready is called.
+    assert: returns True only for 200/403.
+    """
+    mock_response = unittest.mock.MagicMock(spec=requests.Response)
+    mock_response.status_code = status_code
+    monkeypatch.setattr(requests, "get", lambda *_args, **_kwargs: mock_response)
+
+    assert server.server_is_ready("http://test-url") == expected
+
+
+@pytest.mark.parametrize(
+    "exception",
+    [
+        pytest.param(requests.ConnectionError, id="ConnectionError"),
+        pytest.param(requests.Timeout, id="Timeout"),
+    ],
+)
+def test_server_is_ready_connection_failure(
+    monkeypatch: pytest.MonkeyPatch, raise_exception: typing.Callable, exception: Exception
+):
+    """
+    arrange: given a monkeypatched requests.get that raises connection errors.
+    act: when server_is_ready is called.
+    assert: returns False.
+    """
+    monkeypatch.setattr(requests, "get", lambda *_args, **_kwargs: raise_exception(exception))
+
+    assert server.server_is_ready("http://test-url") is False
+
+
 def test_download_jenkins_agent_download(
     monkeypatch: pytest.MonkeyPatch, harness: ops.testing.Harness
 ):

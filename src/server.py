@@ -43,6 +43,26 @@ class AgentJarDownloadError(ServerBaseError):
     """Represents an error downloading agent JAR executable."""
 
 
+def server_is_ready(server_url: str, timeout: int = 5) -> bool:
+    """Check if the Jenkins server is reachable.
+
+    Performs a lightweight probe to verify the server can accept connections
+    before attempting heavier operations like downloading agent.jar.
+
+    Args:
+        server_url: The Jenkins server URL address.
+        timeout: Connection timeout in seconds.
+
+    Returns:
+        True if the server is reachable, False otherwise.
+    """
+    try:
+        resp = requests.get(f"{server_url}/login", timeout=timeout, allow_redirects=False)
+        return resp.status_code in (200, 403)
+    except (requests.ConnectionError, requests.Timeout):
+        return False
+
+
 def download_jenkins_agent(server_url: str, container: ops.Container) -> None:
     """Download Jenkins agent JAR executable from server.
 

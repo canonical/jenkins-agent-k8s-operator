@@ -98,3 +98,40 @@ class PebbleService:
             return
         container.stop(self.state.jenkins_agent_service_name)
         container.remove_path(str(server.AGENT_READY_PATH), recursive=True)
+
+    def credentials_changed(
+        self, container: ops.Container, server_url: str, agent_token: str
+    ) -> bool:
+        """Check if the running agent's credentials differ from the desired ones.
+
+        Compares the pebble plan's environment variables against the provided
+        server URL and agent token.
+
+        Args:
+            container: The agent workload container.
+            server_url: The desired Jenkins server URL.
+            agent_token: The desired agent secret token.
+
+        Returns:
+            True if the credentials have changed and the agent needs a restart.
+        """
+        try:
+            plan = container.get_plan()
+        except (ops.pebble.ConnectionError, ops.ModelError):
+            logger.warning("Cannot read pebble plan — treating as changed.")
+            return True
+        services = plan.services
+        if not services or self.state.jenkins_agent_service_name not in services:
+            logger.info("No existing service in plan — treating as changed.")
+            return True
+        env = services[self.state.jenkins_agent_service_name].environment or {}
+        current_url = env.get("JENKINS_URL", "")
+        current_token = env.get("JENKINS_TOKEN", "")
+        changed = current_url != server_url or current_token != agent_token
+        if changed:
+            logger.info(
+                "Credentials changed: url_match=%s token_match=%s",
+                current_url == server_url,
+                current_token == agent_token,
+            )
+        return changed
