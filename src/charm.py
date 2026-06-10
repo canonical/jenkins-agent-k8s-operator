@@ -75,6 +75,11 @@ class JenkinsAgentCharm(ops.CharmBase):
             self._handle_no_credentials(pebble_service, container, source, event)
             return
 
+        # Guard: if both config and relation are present, block (ambiguous state).
+        if source == "config" and self.model.get_relation(AGENT_RELATION):
+            self.unit.status = ops.BlockedStatus("Please remove and re-relate agent relation.")
+            return
+
         # Ensure relation databag is populated (idempotent, covers relation-joined).
         if source == "relation":
             self._ensure_databag_published(state)
@@ -164,8 +169,7 @@ class JenkinsAgentCharm(ops.CharmBase):
             state: Current charm state.
         """
         relation = self.model.get_relation(AGENT_RELATION)
-        if not relation:
-            return
+        assert relation is not None  # nosec  # noqa: S101  # caller ensures source == "relation"
         expected = state.agent_meta.get_jenkins_agent_v0_interface_dict()
         current = dict(relation.data[self.unit])
         if current != expected:
@@ -226,11 +230,6 @@ class JenkinsAgentCharm(ops.CharmBase):
             event: The triggering event (for deferral).
         """
         assert state.jenkins_config is not None  # nosec  # noqa: S101
-
-        # If there's also an agent relation, config takes priority — block.
-        if self.model.get_relation(AGENT_RELATION):
-            self.unit.status = ops.BlockedStatus("Please remove and re-relate agent relation.")
-            return
 
         self.unit.status = ops.MaintenanceStatus("Downloading Jenkins agent executable.")
         try:

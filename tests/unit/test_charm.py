@@ -140,6 +140,7 @@ def test_reconcile_publishes_databag_on_join(harness: Harness, monkeypatch: pyte
 
     # Verify metadata was published.
     relation = harness.model.get_relation(state.AGENT_RELATION)
+    assert relation is not None
     unit_data = dict(relation.data[jenkins_charm.unit])
     assert "executors" in unit_data
     assert "name" in unit_data

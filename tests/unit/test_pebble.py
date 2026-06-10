@@ -18,6 +18,8 @@ import pebble
 import server
 import state
 
+_TEST_TOKEN = secrets.token_hex(16)
+
 
 def test__get_pebble_layer():
     """
@@ -109,12 +111,12 @@ def test_stop_agent():
         pytest.param(None, True, id="no_plan"),
         pytest.param({}, True, id="no_service"),
         pytest.param(
-            {"JENKINS_URL": "http://old:8080", "JENKINS_TOKEN": "old_token"},
+            {"JENKINS_URL": "http://old:8080", "JENKINS_TOKEN": _TEST_TOKEN},
             False,
             id="same_credentials",
         ),
         pytest.param(
-            {"JENKINS_URL": "http://different:8080", "JENKINS_TOKEN": "old_token"},
+            {"JENKINS_URL": "http://different:8080", "JENKINS_TOKEN": _TEST_TOKEN},
             True,
             id="url_differs",
         ),
@@ -151,6 +153,6 @@ def test_credentials_changed(plan_env: typing.Optional[typing.Dict[str, str]], e
     result = pebble_service.credentials_changed(
         container=mock_container,
         server_url="http://old:8080",
-        agent_token="old_token",
+        agent_token=_TEST_TOKEN,
     )
     assert result == expected
