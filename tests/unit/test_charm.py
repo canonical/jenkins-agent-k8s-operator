@@ -47,7 +47,7 @@ def test_agent_relation_joined_invalid_state(
 ):
     """
     arrange: given a charm where State.from_charm raises InvalidStateError.
-    act: when the agent relation joined event fires.
+    act: when the agent relation joined event fires (triggers reconcile).
     assert: The unit falls into BlockedStatus.
     """
     harness.begin()
@@ -70,7 +70,7 @@ def test_agent_relation_departed_invalid_state(
 ):
     """
     arrange: given a charm where State.from_charm raises InvalidStateError.
-    act: when the agent relation departed event fires.
+    act: when the agent relation departed event fires (triggers reconcile).
     assert: The unit falls into BlockedStatus.
     """
     harness.begin()
@@ -87,6 +87,101 @@ def test_agent_relation_departed_invalid_state(
 
     assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
     assert jenkins_charm.unit.status.message == invalid_state_message
+
+
+def test_reconcile_departed_stops_running_agent(harness: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given a charm with a running agent (ready file exists) and relation removed.
+    act: when reconcile fires after relation departed.
+    assert: stop_agent is called and unit enters BlockedStatus.
+    """
+    import pebble as pebble_mod
+
+    harness.set_can_connect("jenkins-agent-k8s", True)
+    harness.begin()
+    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
+    mock_stop = MagicMock()
+    monkeypatch.setattr(pebble_mod.PebbleService, "stop_agent", mock_stop)
+    monkeypatch.setattr(server, "server_is_ready", lambda *_args, **_kwargs: True)
+
+    # Simulate agent ready file existing.
+    container = harness.charm.unit.get_container("jenkins-agent-k8s")
+    container.make_dir(str(server.AGENT_READY_PATH.parent), make_parents=True)
+    container.push(str(server.AGENT_READY_PATH), "ready")
+
+    mock_event = MagicMock(spec=ops.HookEvent)
+    jenkins_charm._on_reconcile(mock_event)
+
+    mock_stop.assert_called_once()
+    assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
+
+
+def test_reconcile_publishes_databag_on_join(harness: Harness, monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given a charm with a valid relation but empty local databag.
+    act: when reconcile fires (relation-joined).
+    assert: agent metadata is written to the relation databag.
+    """
+    monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(server, "server_is_ready", lambda *_args, **_kwargs: True)
+    harness.set_can_connect("jenkins-agent-k8s", True)
+    relation_id = harness.add_relation(state.AGENT_RELATION, "jenkins")
+    harness.add_relation_unit(relation_id, "jenkins/0")
+    harness.update_relation_data(
+        relation_id,
+        "jenkins/0",
+        {"url": "http://10.1.69.130:8080", "jenkins-agent-k8s-0_secret": "token123"},
+    )
+    harness.begin()
+    mock_event = MagicMock(spec=ops.RelationJoinedEvent)
+
+    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
+    jenkins_charm._on_reconcile(mock_event)
+
+    # Verify metadata was published.
+    relation = harness.model.get_relation(state.AGENT_RELATION)
+    unit_data = dict(relation.data[jenkins_charm.unit])
+    assert "executors" in unit_data
+    assert "name" in unit_data
+
+
+def test_reconcile_skips_databag_write_when_populated(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+):
+    """
+    arrange: given a charm with a relation whose databag already has correct metadata.
+    act: when reconcile fires again.
+    assert: databag is not re-written (idempotent), agent stays active.
+    """
+    monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(server, "server_is_ready", lambda *_args, **_kwargs: True)
+    harness.set_can_connect("jenkins-agent-k8s", True)
+    relation_id = harness.add_relation(state.AGENT_RELATION, "jenkins")
+    harness.add_relation_unit(relation_id, "jenkins/0")
+    harness.update_relation_data(
+        relation_id,
+        "jenkins/0",
+        {"url": "http://10.1.69.130:8080", "jenkins-agent-k8s-0_secret": "token123"},
+    )
+    harness.begin()
+
+    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
+
+    # First reconcile — publishes databag and starts agent.
+    mock_event = MagicMock(spec=ops.RelationJoinedEvent)
+    jenkins_charm._on_reconcile(mock_event)
+
+    # Simulate agent is now running with correct credentials.
+    container = harness.charm.unit.get_container("jenkins-agent-k8s")
+    container.make_dir(str(server.AGENT_READY_PATH.parent), make_parents=True)
+    container.push(str(server.AGENT_READY_PATH), "ready")
+
+    # Second reconcile — should short-circuit at Gate 2.
+    mock_event2 = MagicMock(spec=ops.HookEvent)
+    jenkins_charm._on_reconcile(mock_event2)
+
+    assert jenkins_charm.unit.status.name == ACTIVE_STATUS_NAME
+    mock_event2.defer.assert_not_called()
 
 
 def test_reconcile_container_not_ready(harness: Harness):

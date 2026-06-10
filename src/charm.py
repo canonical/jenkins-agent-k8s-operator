@@ -38,60 +38,11 @@ class JenkinsAgentCharm(ops.CharmBase):
             self.on.config_changed,
             self.on.upgrade_charm,
             self.on.jenkins_agent_k8s_pebble_ready,
+            self.on[AGENT_RELATION].relation_joined,
             self.on[AGENT_RELATION].relation_changed,
+            self.on[AGENT_RELATION].relation_departed,
         ):
             self.framework.observe(event, self._on_reconcile)
-        self.framework.observe(
-            self.on[AGENT_RELATION].relation_joined, self._on_agent_relation_joined
-        )
-        self.framework.observe(
-            self.on[AGENT_RELATION].relation_departed, self._on_agent_relation_departed
-        )
-
-    def _on_agent_relation_joined(self, event: ops.RelationJoinedEvent) -> None:
-        """Publish agent metadata into the relation databag.
-
-        Args:
-            event: The event fired when an agent has joined the relation.
-        """
-        try:
-            state = State.from_charm(self)
-        except InvalidStateError as exc:
-            self.unit.status = ops.BlockedStatus(exc.msg)
-            return
-
-        if state.jenkins_config:
-            logger.warning(
-                "Jenkins configuration already exists. Ignoring %s relation.",
-                event.relation.name,
-            )
-            return
-
-        logger.info("%s relation joined.", event.relation.name)
-        self.unit.status = ops.MaintenanceStatus(f"Setting up '{event.relation.name}' relation.")
-        relation_data = state.agent_meta.get_jenkins_agent_v0_interface_dict()
-        logger.debug("Agent relation data set: %s", relation_data)
-        event.relation.data[self.unit].update(relation_data)
-
-    def _on_agent_relation_departed(self, event: ops.RelationDepartedEvent) -> None:
-        """Stop the agent when the relation is removed.
-
-        Args:
-            event: The event fired when the relation is departing.
-        """
-        try:
-            state = State.from_charm(self)
-        except InvalidStateError as exc:
-            self.unit.status = ops.BlockedStatus(exc.msg)
-            return
-
-        container = self.unit.get_container(state.jenkins_agent_service_name)
-        if not container.can_connect():
-            logger.warning("Relation departed before service ready.")
-            return
-        pebble_service = pebble.PebbleService(state)
-        pebble_service.stop_agent(container=container)
-        self.unit.status = ops.BlockedStatus("Waiting for config/relation.")
 
     def _on_reconcile(self, event: ops.EventBase) -> None:
         """Single reconciliation entry point for all state-convergence events.
@@ -119,23 +70,17 @@ class JenkinsAgentCharm(ops.CharmBase):
 
         # Determine the credentials source: config takes priority over relation.
         credentials, source = self._resolve_credentials(state, container)
-        if credentials is None and source == "blocked":
-            return  # Status already set
-        if credentials is None and source == "waiting":
-            event.defer()
+
+        if credentials is None:
+            self._handle_no_credentials(pebble_service, container, source, event)
             return
 
-        assert credentials is not None  # nosec  # noqa: S101
+        # Ensure relation databag is populated (idempotent, covers relation-joined).
+        if source == "relation":
+            self._ensure_databag_published(state)
 
         # Gate 2: if agent is already running with correct credentials, nothing to do.
-        if container.exists(
-            str(server.AGENT_READY_PATH)
-        ) and not pebble_service.credentials_changed(
-            container=container,
-            server_url=credentials.address,
-            agent_token=credentials.secret,
-        ):
-            logger.info("Agent registered with current credentials. No restart needed.")
+        if self._agent_up_to_date(pebble_service, container, credentials):
             self.unit.status = ops.ActiveStatus()
             return
 
@@ -159,6 +104,75 @@ class JenkinsAgentCharm(ops.CharmBase):
         self._start_agent(
             state, pebble_service, container, credentials, state.agent_meta.name, event
         )
+
+    def _agent_up_to_date(
+        self,
+        pebble_service: pebble.PebbleService,
+        container: ops.Container,
+        credentials: server.Credentials,
+    ) -> bool:
+        """Check whether the agent is already running with the given credentials.
+
+        Args:
+            pebble_service: The pebble service manager.
+            container: The workload container.
+            credentials: The desired credentials to compare against.
+
+        Returns:
+            True if the agent is running and credentials match (no restart needed).
+        """
+        if not container.exists(str(server.AGENT_READY_PATH)):
+            return False
+        if pebble_service.credentials_changed(
+            container=container,
+            server_url=credentials.address,
+            agent_token=credentials.secret,
+        ):
+            return False
+        logger.info("Agent registered with current credentials. No restart needed.")
+        return True
+
+    def _handle_no_credentials(
+        self,
+        pebble_service: pebble.PebbleService,
+        container: ops.Container,
+        source: str,
+        event: ops.EventBase,
+    ) -> None:
+        """Handle the case where no valid credentials are available.
+
+        Ensures any running agent is stopped and defers if data is expected soon.
+
+        Args:
+            pebble_service: The pebble service manager.
+            container: The workload container.
+            source: The credential source label ("blocked" or "waiting").
+            event: The triggering event (for deferral).
+        """
+        if container.exists(str(server.AGENT_READY_PATH)):
+            pebble_service.stop_agent(container=container)
+        if source == "waiting":
+            event.defer()
+
+    def _ensure_databag_published(self, state: State) -> None:
+        """Publish agent metadata to the relation databag if not already present.
+
+        This is idempotent — only writes when the databag content differs from
+        the expected metadata, preventing unnecessary relation-changed events.
+
+        Args:
+            state: Current charm state.
+        """
+        relation = self.model.get_relation(AGENT_RELATION)
+        if not relation:
+            return
+        expected = state.agent_meta.get_jenkins_agent_v0_interface_dict()
+        current = dict(relation.data[self.unit])
+        if current != expected:
+            logger.info("Publishing agent metadata to relation databag.")
+            relation.data[self.unit].update(expected)
+        else:
+            logger.debug("Relation databag already up to date.")
 
     def _resolve_credentials(
         self, state: State, container: ops.Container

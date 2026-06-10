@@ -25,43 +25,49 @@ def test_agent_relation_joined_config_priority(
     config: typing.Dict[str, str],
 ):
     """
-    arrange: given an agent.
-    act: when a agent relation joined event is triggered.
-    assert: the unit updates databag adhering to jenkins_agent_v0 interface.
+    arrange: given an agent with config set.
+    act: when a agent relation joined event is triggered (reconcile fires).
+    assert: config mode blocks; databag is not populated with agent metadata.
     """
+    harness.set_can_connect("jenkins-agent-k8s", True)
     relation_id = harness.add_relation(state.AGENT_RELATION, "jenkins")
     harness.add_relation_unit(relation_id, "jenkins/0")
     harness.update_config(config)
-    harness.begin_with_initial_hooks()
-    model_relation = harness.model.get_relation(state.AGENT_RELATION, relation_id)
-    assert model_relation, "Relation cannot be None"
-    jenkins_unit = next(iter(model_relation.units))
-    mock_relation_data_content = unittest.mock.MagicMock(spec=ops.RelationDataContent)
-    mock_relation_data = {jenkins_unit: mock_relation_data_content}
-    mock_relation = unittest.mock.MagicMock(spec=ops.Relation)
-    mock_relation.name = state.AGENT_RELATION
-    mock_relation.data = mock_relation_data
-    mock_relation_joined_event = unittest.mock.MagicMock(sepc=ops.RelationJoinedEvent)
-    mock_relation_joined_event.relation = mock_relation
+    harness.begin()
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm._on_agent_relation_joined(mock_relation_joined_event)
+    mock_event = unittest.mock.MagicMock(spec=ops.RelationJoinedEvent)
+    jenkins_charm._on_reconcile(mock_event)
 
-    mock_relation_data_content.update.assert_not_called()
+    # Config takes priority — relation databag should not have agent metadata.
+    relation_data = harness.get_relation_data(relation_id, jenkins_charm.unit.name)
+    assert "executors" not in relation_data
 
 
-def test_agent_relation_joined_agent_relation(harness: ops.testing.Harness):
+def test_agent_relation_joined_agent_relation(
+    harness: ops.testing.Harness, monkeypatch: pytest.MonkeyPatch
+):
     """
     arrange: given an agent.
-    act: when an agent relation joined event is triggered.
+    act: when an agent relation joined event is triggered (reconcile fires).
     assert: the unit updates databag adhering to jenkins_agent_v0 interface.
     """
+    monkeypatch.setattr(server, "download_jenkins_agent", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(server, "server_is_ready", lambda *_args, **_kwargs: True)
+    harness.set_can_connect("jenkins-agent-k8s", True)
     relation_id = harness.add_relation(state.AGENT_RELATION, "jenkins")
     harness.add_relation_unit(relation_id, "jenkins/0")
-
-    harness.begin_with_initial_hooks()
+    harness.update_relation_data(
+        relation_id,
+        "jenkins/0",
+        {"url": "http://10.1.69.130:8080", "jenkins-agent-k8s-0_secret": "token123"},
+    )
+    harness.begin()
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
+    mock_event = unittest.mock.MagicMock(spec=ops.RelationJoinedEvent)
+    jenkins_charm._on_reconcile(mock_event)
+
     relation_data = harness.get_relation_data(relation_id, jenkins_charm.unit.name)
     assert relation_data.get("executors")
     assert relation_data.get("labels")
@@ -287,8 +293,8 @@ def test_agent_relation_departed_container_not_ready(
 ):
     """
     arrange: given a container that is not ready and a monkeypatched pebble stop_agent.
-    act: when _on_agent_relation_departed is called.
-    assert: the unit falls into BlockedStatus.
+    act: when reconcile fires after relation departed.
+    assert: the event is deferred (container not ready), stop_agent not called.
     """
     mock_stop_agent = unittest.mock.MagicMock(spec=pebble.PebbleService.stop_agent)
     monkeypatch.setattr(pebble.PebbleService, "stop_agent", mock_stop_agent)
@@ -297,15 +303,16 @@ def test_agent_relation_departed_container_not_ready(
     harness.begin()
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm._on_agent_relation_departed(mock_event)
+    jenkins_charm._on_reconcile(mock_event)
 
     mock_stop_agent.assert_not_called()
+    mock_event.defer.assert_called_once()
 
 
 def test_agent_relation_departed(monkeypatch: pytest.MonkeyPatch, harness: ops.testing.Harness):
     """
     arrange: given a monkeypatched pebble service and an agent that is departing the relation.
-    act: when _on_agent_relation_departed is called.
+    act: when reconcile fires after relation departed (no relation present).
     assert: the unit falls into BlockedStatus.
     """
     monkeypatch.setattr(pebble.PebbleService, "stop_agent", lambda *_args, **_kwargs: None)
@@ -314,7 +321,7 @@ def test_agent_relation_departed(monkeypatch: pytest.MonkeyPatch, harness: ops.t
     harness.begin()
 
     jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
-    jenkins_charm._on_agent_relation_departed(mock_event)
+    jenkins_charm._on_reconcile(mock_event)
 
     assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
     assert jenkins_charm.unit.status.message == "Waiting for config/relation."
