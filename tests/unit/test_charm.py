@@ -42,6 +42,53 @@ def test___init___invalid_state(
     assert jenkins_charm.unit.status.message == invalid_state_message
 
 
+def test_agent_relation_joined_invalid_state(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch, raise_exception: typing.Callable
+):
+    """
+    arrange: given a charm where State.from_charm raises InvalidStateError.
+    act: when the agent relation joined event fires.
+    assert: The unit falls into BlockedStatus.
+    """
+    harness.begin()
+    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
+    invalid_state_message = "Invalid state on join"
+    monkeypatch.setattr(
+        state.State,
+        "from_charm",
+        lambda *_args, **_kwargs: raise_exception(state.InvalidStateError(invalid_state_message)),
+    )
+    relation_id = harness.add_relation("agent", "jenkins-k8s")
+    harness.add_relation_unit(relation_id, "jenkins-k8s/0")
+
+    assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
+    assert jenkins_charm.unit.status.message == invalid_state_message
+
+
+def test_agent_relation_departed_invalid_state(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch, raise_exception: typing.Callable
+):
+    """
+    arrange: given a charm where State.from_charm raises InvalidStateError.
+    act: when the agent relation departed event fires.
+    assert: The unit falls into BlockedStatus.
+    """
+    harness.begin()
+    jenkins_charm = typing.cast(JenkinsAgentCharm, harness.charm)
+    relation_id = harness.add_relation("agent", "jenkins-k8s")
+    harness.add_relation_unit(relation_id, "jenkins-k8s/0")
+    invalid_state_message = "Invalid state on depart"
+    monkeypatch.setattr(
+        state.State,
+        "from_charm",
+        lambda *_args, **_kwargs: raise_exception(state.InvalidStateError(invalid_state_message)),
+    )
+    harness.remove_relation(relation_id)
+
+    assert jenkins_charm.unit.status.name == BLOCKED_STATUS_NAME
+    assert jenkins_charm.unit.status.message == invalid_state_message
+
+
 def test_reconcile_container_not_ready(harness: Harness):
     """
     arrange: given a charm with a workload container that is not ready yet.
