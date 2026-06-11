@@ -128,10 +128,9 @@ class PebbleService:
         current_url = env.get("JENKINS_URL", "")
         current_token = env.get("JENKINS_TOKEN", "")
         changed = current_url != server_url or current_token != agent_token
-        if changed:
-            logger.info(
-                "Credentials changed: url_match=%s token_match=%s",
-                current_url == server_url,
-                current_token == agent_token,
-            )
+        logger.info(
+            "Credentials change status: url_match=%s token_match=%s",
+            current_url == server_url,
+            current_token == agent_token,
+        )
         return changed
