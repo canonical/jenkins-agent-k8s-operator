@@ -53,6 +53,7 @@ class JenkinsAgentCharm(ops.CharmBase):
         Args:
             event: Any event that should trigger reconciliation.
         """
+        self.unit.status = ops.MaintenanceStatus(f"Reconciling agent state {event}.")
         try:
             state = State.from_charm(self)
         except InvalidStateError as exc:
@@ -65,6 +66,7 @@ class JenkinsAgentCharm(ops.CharmBase):
         container = self.unit.get_container(state.jenkins_agent_service_name)
         if not container.can_connect():
             logger.info("Container not yet ready. Wait for the next event.")
+            self.unit.status = ops.WaitingStatus("Waiting for workload container to be ready.")
             return
 
         # Determine the credentials source: config takes priority over relation.
@@ -91,7 +93,7 @@ class JenkinsAgentCharm(ops.CharmBase):
         # Config mode skipped: credentials.secret is empty placeholder and token resolution
         # happens inside _reconcile_from_config(), so up-to-date check is invalid here.
         if source != "config" and self._agent_up_to_date(pebble_service, container, credentials):
-            self.unit.status = ops.ActiveStatus()
+            self.unit.status = ops.ActiveStatus("Agent up to date.")
             return
 
         # Gate 3: verify server is reachable before making changes.
