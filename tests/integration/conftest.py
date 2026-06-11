@@ -77,7 +77,7 @@ def num_agents_fixture() -> int:
 
 @pytest_asyncio.fixture(scope="module", name="application")
 async def application_fixture(
-    model: Model, charm: str, agent_image: str, num_agents: int
+    request: pytest.FixtureRequest, model: Model, charm: str, agent_image: str, num_agents: int
 ) -> typing.AsyncGenerator[Application, None]:
     """Build and deploy the charm."""
     resources = {"jenkins-agent-k8s-image": agent_image}
@@ -88,7 +88,8 @@ async def application_fixture(
 
     yield application
 
-    await model.remove_application(application.name, block_until_done=True, force=True)
+    if not request.config.option.keep_models:
+        await model.remove_application(application.name, block_until_done=True, force=True)
 
 
 @pytest_asyncio.fixture(scope="module", name="machine_controller")
