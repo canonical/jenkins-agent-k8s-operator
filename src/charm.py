@@ -71,12 +71,14 @@ class JenkinsAgentCharm(ops.CharmBase):
         credentials, source = self._resolve_credentials(state, container)
 
         if credentials is None:
-            self._handle_no_credentials(pebble_service, container)
+            self.unit.status = ops.BlockedStatus("Credentials not available from config or relation.")
             return
 
         # Guard: if both config and relation are present, block (ambiguous state).
         if source == "config" and self.model.get_relation(AGENT_RELATION):
-            self.unit.status = ops.BlockedStatus("Please remove either configuration or agent relation.")
+            self.unit.status = ops.BlockedStatus(
+                "Please remove either configuration or agent relation."
+            )
             return
 
         # Ensure relation databag is populated (idempotent, covers relation-joined).
@@ -134,22 +136,6 @@ class JenkinsAgentCharm(ops.CharmBase):
         logger.info("Agent registered with current credentials. No restart needed.")
         return True
 
-    def _handle_no_credentials(
-        self,
-        pebble_service: pebble.PebbleService,
-        container: ops.Container
-    ) -> None:
-        """Handle the case where no valid credentials are available.
-
-        Ensures any running agent is stopped.
-
-        Args:
-            pebble_service: The pebble service manager.
-            container: The workload container.
-        """
-        if container.exists(str(server.AGENT_READY_PATH)):
-            pebble_service.stop_agent(container=container)
-
     def _ensure_databag_published(self, state: State) -> None:
         """Publish agent metadata to the relation databag if not already present.
 
@@ -163,7 +149,9 @@ class JenkinsAgentCharm(ops.CharmBase):
         if relation is None:
             # This should not happen as caller ensures source == "relation"
             logger.error("Relation %s missing in _ensure_databag_published", AGENT_RELATION)
-            raise RuntimeError(f"Relation {AGENT_RELATION} not found when ensuring databag published.")
+            raise RuntimeError(
+                f"Relation {AGENT_RELATION} not found when ensuring databag published."
+            )
         expected = state.agent_meta.get_jenkins_agent_v0_interface_dict()
         current = dict(relation.data[self.unit])
         if current != expected:
