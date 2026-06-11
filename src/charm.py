@@ -21,7 +21,7 @@ logger = logging.getLogger()
 class JenkinsAgentCharm(ops.CharmBase):
     """Charm Jenkins agent k8s.
 
-    Uses a reconciliation pattern: all events funnel to _reconcile() which
+    Uses a reconciliation pattern: all events funnel to _on_reconcile() which
     computes the desired state from current reality and applies it idempotently.
     """
 
@@ -85,7 +85,9 @@ class JenkinsAgentCharm(ops.CharmBase):
             self._ensure_databag_published(state)
 
         # Gate 2: if agent is already running with correct credentials, nothing to do.
-        if self._agent_up_to_date(pebble_service, container, credentials):
+        # Config mode skipped: credentials.secret is empty placeholder and token resolution
+        # happens inside _reconcile_from_config(), so up-to-date check is invalid here.
+        if source != "config" and self._agent_up_to_date(pebble_service, container, credentials):
             self.unit.status = ops.ActiveStatus()
             return
 
@@ -171,7 +173,8 @@ class JenkinsAgentCharm(ops.CharmBase):
         relation = self.model.get_relation(AGENT_RELATION)
         assert relation is not None  # nosec  # noqa: S101  # caller ensures source == "relation"
         expected = state.agent_meta.get_jenkins_agent_v0_interface_dict()
-        current = dict(relation.data[self.unit])
+        # Only compare keys this charm owns to avoid churn from extra keys.
+        current = {k: relation.data[self.unit].get(k) for k in expected}
         if current != expected:
             logger.info("Publishing agent metadata to relation databag.")
             relation.data[self.unit].update(expected)
@@ -229,7 +232,10 @@ class JenkinsAgentCharm(ops.CharmBase):
             container: The workload container.
             event: The triggering event (for deferral).
         """
-        assert state.jenkins_config is not None  # nosec  # noqa: S101
+        if state.jenkins_config is None:
+            logger.error("Jenkins config missing in config reconciliation path.")
+            self.unit.status = ops.BlockedStatus("Internal error: config state missing.")
+            return
 
         self.unit.status = ops.MaintenanceStatus("Downloading Jenkins agent executable.")
         try:
