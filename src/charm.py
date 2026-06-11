@@ -77,7 +77,7 @@ class JenkinsAgentCharm(ops.CharmBase):
 
         # Guard: if both config and relation are present, block (ambiguous state).
         if source == "config" and self.model.get_relation(AGENT_RELATION):
-            self.unit.status = ops.BlockedStatus("Please remove and re-relate agent relation.")
+            self.unit.status = ops.BlockedStatus("Please remove either configuration or agent relation.")
             return
 
         # Ensure relation databag is populated (idempotent, covers relation-joined).
@@ -171,12 +171,14 @@ class JenkinsAgentCharm(ops.CharmBase):
             state: Current charm state.
         """
         relation = self.model.get_relation(AGENT_RELATION)
-        assert relation is not None  # nosec  # noqa: S101  # caller ensures source == "relation"
+        if relation is None:
+            # This should not happen as caller ensures source == "relation"
+            logger.error("Relation %s missing in _ensure_databag_published", AGENT_RELATION)
+            raise RuntimeError(f"Relation {AGENT_RELATION} not found when ensuring databag published.")
         expected = state.agent_meta.get_jenkins_agent_v0_interface_dict()
-        # Only compare keys this charm owns to avoid churn from extra keys.
-        current = {k: relation.data[self.unit].get(k) for k in expected}
+        current = dict(relation.data[self.unit])
         if current != expected:
-            logger.info("Publishing agent metadata to relation databag.")
+            logger.info("Syncing relation databag to match expected metadata.")
             relation.data[self.unit].update(expected)
         else:
             logger.debug("Relation databag already up to date.")
