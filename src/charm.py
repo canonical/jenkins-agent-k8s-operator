@@ -68,7 +68,11 @@ class JenkinsAgentCharm(ops.CharmBase):
             return
 
         # Determine the credentials source: config takes priority over relation.
-        credentials, source = self._resolve_credentials(state, container)
+        credentials, source = self._resolve_credentials(state)
+
+        # Ensure relation databag is populated (idempotent, covers relation-joined).
+        if source in ("relation", "waiting"):
+            self._ensure_databag_published(state)
 
         if credentials is None:
             self.unit.status = ops.BlockedStatus(
@@ -82,10 +86,6 @@ class JenkinsAgentCharm(ops.CharmBase):
                 "Please remove either configuration or agent relation."
             )
             return
-
-        # Ensure relation databag is populated (idempotent, covers relation-joined).
-        if source == "relation":
-            self._ensure_databag_published(state)
 
         # Gate 2: if agent is already running with correct credentials, nothing to do.
         # Config mode skipped: credentials.secret is empty placeholder and token resolution
@@ -163,13 +163,12 @@ class JenkinsAgentCharm(ops.CharmBase):
             logger.debug("Relation databag already up to date.")
 
     def _resolve_credentials(
-        self, state: State, container: ops.Container
+        self, state: State
     ) -> typing.Tuple[typing.Optional[server.Credentials], str]:
         """Determine the credential source.
 
         Args:
             state: Current charm state.
-            container: The workload container.
 
         Returns:
             Tuple of (credentials or None, source label). Source is one of:
