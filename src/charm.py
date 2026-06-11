@@ -71,7 +71,9 @@ class JenkinsAgentCharm(ops.CharmBase):
         credentials, source = self._resolve_credentials(state, container)
 
         if credentials is None:
-            self.unit.status = ops.BlockedStatus("Credentials not available from config or relation.")
+            self.unit.status = ops.BlockedStatus(
+                "Credentials not available from config or relation."
+            )
             return
 
         # Guard: if both config and relation are present, block (ambiguous state).
