@@ -64,15 +64,14 @@ class JenkinsAgentCharm(ops.CharmBase):
         # Gate 1: container must be connected.
         container = self.unit.get_container(state.jenkins_agent_service_name)
         if not container.can_connect():
-            logger.info("Container not yet ready. Deferring.")
-            event.defer()
+            logger.info("Container not yet ready. Wait for the next event.")
             return
 
         # Determine the credentials source: config takes priority over relation.
         credentials, source = self._resolve_credentials(state, container)
 
         if credentials is None:
-            self._handle_no_credentials(pebble_service, container, source, event)
+            self._handle_no_credentials(pebble_service, container)
             return
 
         # Guard: if both config and relation are present, block (ambiguous state).
@@ -93,14 +92,12 @@ class JenkinsAgentCharm(ops.CharmBase):
 
         # Gate 3: verify server is reachable before making changes.
         if not server.server_is_ready(credentials.address):
-            logger.info("Server at %s not yet reachable. Deferring.", credentials.address)
-            self.unit.status = ops.WaitingStatus("Waiting for Jenkins server to become ready.")
-            event.defer()
-            return
+            logger.info("Server at %s not yet reachable.", credentials.address)
+            raise RuntimeError(f"Server at {credentials.address} not reachable.")
 
         # Gate 4 (config mode only): validate agent credentials against server.
         if source == "config":
-            self._reconcile_from_config(state, pebble_service, container, event)
+            self._reconcile_from_config(state, pebble_service, container)
             return
 
         # Apply: stop existing agent (if running) and start with new credentials.
@@ -108,9 +105,7 @@ class JenkinsAgentCharm(ops.CharmBase):
             logger.info("Credentials changed. Stopping current agent.")
             pebble_service.stop_agent(container=container)
 
-        self._start_agent(
-            state, pebble_service, container, credentials, state.agent_meta.name, event
-        )
+        self._start_agent(pebble_service, container, credentials, state.agent_meta.name)
 
     def _agent_up_to_date(
         self,
@@ -142,24 +137,18 @@ class JenkinsAgentCharm(ops.CharmBase):
     def _handle_no_credentials(
         self,
         pebble_service: pebble.PebbleService,
-        container: ops.Container,
-        source: str,
-        event: ops.EventBase,
+        container: ops.Container
     ) -> None:
         """Handle the case where no valid credentials are available.
 
-        Ensures any running agent is stopped and defers if data is expected soon.
+        Ensures any running agent is stopped.
 
         Args:
             pebble_service: The pebble service manager.
             container: The workload container.
-            source: The credential source label ("blocked" or "waiting").
-            event: The triggering event (for deferral).
         """
         if container.exists(str(server.AGENT_READY_PATH)):
             pebble_service.stop_agent(container=container)
-        if source == "waiting":
-            event.defer()
 
     def _ensure_databag_published(self, state: State) -> None:
         """Publish agent metadata to the relation databag if not already present.
@@ -224,7 +213,6 @@ class JenkinsAgentCharm(ops.CharmBase):
         state: State,
         pebble_service: pebble.PebbleService,
         container: ops.Container,
-        event: ops.EventBase,
     ) -> None:
         """Handle the config-based registration path.
 
@@ -232,7 +220,6 @@ class JenkinsAgentCharm(ops.CharmBase):
             state: Current charm state.
             pebble_service: The pebble service manager.
             container: The workload container.
-            event: The triggering event (for deferral).
         """
         if state.jenkins_config is None:
             logger.error("Jenkins config missing in config reconciliation path.")
@@ -246,10 +233,8 @@ class JenkinsAgentCharm(ops.CharmBase):
                 container=container,
             )
         except server.AgentJarDownloadError:
-            logger.warning("Failed to download agent.jar from config URL. Deferring.")
-            self.unit.status = ops.WaitingStatus("Waiting for Jenkins server.")
-            event.defer()
-            return
+            logger.error("Failed to download agent.jar from config URL. Server may not be ready.")
+            raise
 
         valid_agent_token = server.find_valid_credentials(
             agent_name_token_pairs=state.jenkins_config.agent_name_token_pairs,
@@ -271,12 +256,10 @@ class JenkinsAgentCharm(ops.CharmBase):
 
     def _start_agent(
         self,
-        state: State,
         pebble_service: pebble.PebbleService,
         container: ops.Container,
         credentials: server.Credentials,
         agent_name: str,
-        event: ops.EventBase,
     ) -> None:
         """Download agent.jar and start the pebble service.
 
@@ -286,16 +269,13 @@ class JenkinsAgentCharm(ops.CharmBase):
             container: The workload container.
             credentials: Server credentials for registration.
             agent_name: The agent name to register as.
-            event: The triggering event (for deferral on failure).
         """
         self.unit.status = ops.MaintenanceStatus("Downloading Jenkins agent executable.")
         try:
             server.download_jenkins_agent(server_url=credentials.address, container=container)
         except server.AgentJarDownloadError:
-            logger.warning("Failed to download agent.jar. Server may not be ready. Deferring.")
-            self.unit.status = ops.WaitingStatus("Waiting for Jenkins server.")
-            event.defer()
-            return
+            logger.error("Failed to download agent.jar. Server may not be ready.")
+            raise
 
         self.unit.status = ops.MaintenanceStatus("Starting agent pebble service.")
         pebble_service.reconcile(
