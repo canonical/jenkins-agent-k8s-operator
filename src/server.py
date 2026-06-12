@@ -11,6 +11,7 @@ from pathlib import Path
 
 import ops
 import requests
+import tenacity
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,12 @@ class AgentJarDownloadError(ServerBaseError):
     """Represents an error downloading agent JAR executable."""
 
 
+@tenacity.retry(
+    stop=tenacity.stop_after_attempt(5),
+    wait=tenacity.wait_exponential(multiplier=2, min=5, max=30),
+    retry=tenacity.retry_if_result(lambda result: result is False),
+    before_sleep=tenacity.before_sleep_log(logger, logging.WARNING),
+)
 def server_is_ready(server_url: str, timeout: int = 5) -> bool:
     """Check if the Jenkins server is reachable.
 
@@ -63,6 +70,12 @@ def server_is_ready(server_url: str, timeout: int = 5) -> bool:
         return False
 
 
+@tenacity.retry(
+    stop=tenacity.stop_after_attempt(5),
+    wait=tenacity.wait_exponential(multiplier=2, min=5, max=30),
+    retry=tenacity.retry_if_exception(AgentJarDownloadError),
+    before_sleep=tenacity.before_sleep_log(logger, logging.WARNING),
+)
 def download_jenkins_agent(server_url: str, container: ops.Container) -> None:
     """Download Jenkins agent JAR executable from server.
 
