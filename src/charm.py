@@ -11,7 +11,6 @@ import typing
 import ops
 from ops.main import main
 
-import agent
 import pebble
 import server
 from state import AGENT_RELATION, InvalidStateError, State
@@ -20,7 +19,11 @@ logger = logging.getLogger()
 
 
 class JenkinsAgentCharm(ops.CharmBase):
-    """Charm Jenkins agent k8s."""
+    """Charm Jenkins agent k8s.
+
+    Uses a reconciliation pattern: all events funnel to _on_reconcile() which
+    computes the desired state from current reality and applies it idempotently.
+    """
 
     def __init__(self, *args: typing.Any):
         """Initialize the charm and register event handlers.
@@ -29,112 +32,249 @@ class JenkinsAgentCharm(ops.CharmBase):
             args: Arguments to initialize the charm base.
         """
         super().__init__(*args)
+
+        # All events converge on the same reconcile handler.
+        for event in (
+            self.on.config_changed,
+            self.on.upgrade_charm,
+            self.on.jenkins_agent_k8s_pebble_ready,
+            self.on[AGENT_RELATION].relation_joined,
+            self.on[AGENT_RELATION].relation_changed,
+            self.on[AGENT_RELATION].relation_departed,
+        ):
+            self.framework.observe(event, self._on_reconcile)
+
+    def _on_reconcile(self, event: ops.EventBase) -> None:
+        """Single reconciliation entry point for all state-convergence events.
+
+        Computes the desired agent state from current reality (config, relation
+        data, container readiness) and drives towards it idempotently.
+
+        Args:
+            event: Any event that should trigger reconciliation.
+        """
+        self.unit.status = ops.MaintenanceStatus(f"Reconciling agent state {event}.")
         try:
-            self.state = State.from_charm(self)
+            state = State.from_charm(self)
         except InvalidStateError as exc:
             self.unit.status = ops.BlockedStatus(exc.msg)
             return
 
-        self.pebble_service = pebble.PebbleService(self.state)
-        self.agent_observer = agent.Observer(self, self.state, self.pebble_service)
+        pebble_service = pebble.PebbleService(state)
 
-        self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(self.on.upgrade_charm, self._on_upgrade_charm)
+        # Gate 1: container must be connected.
+        container = self.unit.get_container(state.jenkins_agent_service_name)
+        if not container.can_connect():
+            logger.info("Container not yet ready. Wait for the next event.")
+            self.unit.status = ops.WaitingStatus("Waiting for workload container to be ready.")
+            return
 
-        self.framework.observe(
-            self.on.jenkins_agent_k8s_pebble_ready, self._on_jenkins_agent_k8s_pebble_ready
-        )
+        # Determine the credentials source: config takes priority over relation.
+        credentials, source = self._resolve_credentials(state)
 
-    def _register_via_config(
-        self, event: typing.Union[ops.ConfigChangedEvent, ops.UpgradeCharmEvent]
-    ) -> None:
-        """Register the agent to server from configuration values.
+        # Ensure relation databag is populated (idempotent, covers relation-joined).
+        if source in ("relation", "waiting"):
+            self._ensure_databag_published(state)
+
+        if credentials is None:
+            self.unit.status = ops.BlockedStatus(
+                "Credentials not available from config or relation."
+            )
+            return
+
+        # Guard: if both config and relation are present, block (ambiguous state).
+        if source == "config" and self.model.get_relation(AGENT_RELATION):
+            self.unit.status = ops.BlockedStatus(
+                "Please remove either configuration or agent relation."
+            )
+            return
+
+        # Gate 2: if agent is already running with correct credentials, nothing to do.
+        # Config mode skipped: credentials.secret is empty placeholder and token resolution
+        # happens inside _reconcile_from_config(), so up-to-date check is invalid here.
+        if source != "config" and self._agent_up_to_date(pebble_service, container, credentials):
+            self.unit.status = ops.ActiveStatus("Agent up to date.")
+            return
+
+        # Gate 3: verify server is reachable before making changes.
+        if not server.server_is_ready(credentials.address):
+            logger.info("Server at %s not yet reachable.", credentials.address)
+            raise RuntimeError(f"Server at {credentials.address} not reachable.")
+
+        # Gate 4 (config mode only): validate agent credentials against server.
+        if source == "config":
+            self._reconcile_from_config(state, pebble_service, container)
+            return
+
+        # Apply: stop existing agent (if running) and start with new credentials.
+        if container.exists(str(server.AGENT_READY_PATH)):
+            logger.info("Credentials changed. Stopping current agent.")
+            pebble_service.stop_agent(container=container)
+
+        self._start_agent(pebble_service, container, credentials, state.agent_meta.name)
+
+    def _agent_up_to_date(
+        self,
+        pebble_service: pebble.PebbleService,
+        container: ops.Container,
+        credentials: server.Credentials,
+    ) -> bool:
+        """Check whether the agent is already running with the given credentials.
 
         Args:
-            event: The event fired on config changed or upgrade charm.
+            pebble_service: The pebble service manager.
+            container: The workload container.
+            credentials: The desired credentials to compare against.
 
-        Raises:
-            AgentJarDownloadError: if the Jenkins agent failed to download.
+        Returns:
+            True if the agent is running and credentials match (no restart needed).
         """
-        container = self.unit.get_container(self.state.jenkins_agent_service_name)
-        if not container.can_connect():
-            logger.warning("Jenkins agent container not yet ready. Deferring.")
-            event.defer()
-            return
+        if not container.exists(str(server.AGENT_READY_PATH)):
+            return False
+        if pebble_service.credentials_changed(
+            container=container,
+            server_url=credentials.address,
+            agent_token=credentials.secret,
+        ):
+            return False
+        logger.info("Agent registered with current credentials. No restart needed.")
+        return True
 
-        if not self.state.jenkins_config and not self.model.get_relation(AGENT_RELATION):
-            self.model.unit.status = ops.BlockedStatus("Waiting for config/relation.")
-            return
+    def _ensure_databag_published(self, state: State) -> None:
+        """Publish agent metadata to the relation databag if not already present.
 
-        if not self.state.jenkins_config:
-            self.model.unit.status = ops.BlockedStatus(
-                "Please remove and re-relate agent relation."
+        This is idempotent — only writes when the databag content differs from
+        the expected metadata, preventing unnecessary relation-changed events.
+
+        Args:
+            state: Current charm state.
+        """
+        relation = self.model.get_relation(AGENT_RELATION)
+        if relation is None:
+            # This should not happen as caller ensures source == "relation"
+            logger.error("Relation %s missing in _ensure_databag_published", AGENT_RELATION)
+            raise RuntimeError(
+                f"Relation {AGENT_RELATION} not found when ensuring databag published."
             )
+        expected = state.agent_meta.get_jenkins_agent_v0_interface_dict()
+        current = dict(relation.data[self.unit])
+        if current != expected:
+            logger.info("Syncing relation databag to match expected metadata.")
+            relation.data[self.unit].update(expected)
+        else:
+            logger.debug("Relation databag already up to date.")
+
+    def _resolve_credentials(
+        self, state: State
+    ) -> typing.Tuple[typing.Optional[server.Credentials], str]:
+        """Determine the credential source.
+
+        Args:
+            state: Current charm state.
+
+        Returns:
+            Tuple of (credentials or None, source label). Source is one of:
+            "config", "relation", "blocked", "waiting".
+        """
+        if state.jenkins_config:
+            # Config mode — credentials come from juju config.
+            # Secret is not used in config mode; server_url is sufficient.
+            config_secret = ""  # nosec: B105
+            return (
+                server.Credentials(
+                    address=state.jenkins_config.server_url,
+                    secret=config_secret,
+                ),
+                "config",
+            )
+
+        if not self.model.get_relation(AGENT_RELATION):
+            self.unit.status = ops.BlockedStatus("Waiting for config/relation.")
+            return None, "blocked"
+
+        if not state.agent_relation_credentials:
+            self.unit.status = ops.WaitingStatus("Waiting for complete relation data.")
+            logger.info("Waiting for complete relation data.")
+            return None, "waiting"
+
+        return state.agent_relation_credentials, "relation"
+
+    def _reconcile_from_config(
+        self,
+        state: State,
+        pebble_service: pebble.PebbleService,
+        container: ops.Container,
+    ) -> None:
+        """Handle the config-based registration path.
+
+        Args:
+            state: Current charm state.
+            pebble_service: The pebble service manager.
+            container: The workload container.
+        """
+        if state.jenkins_config is None:
+            logger.error("Jenkins config missing in config reconciliation path.")
+            self.unit.status = ops.BlockedStatus("Internal error: config state missing.")
             return
 
+        self.unit.status = ops.MaintenanceStatus("Downloading Jenkins agent executable.")
         try:
             server.download_jenkins_agent(
-                server_url=self.state.jenkins_config.server_url,
+                server_url=state.jenkins_config.server_url,
                 container=container,
             )
-        except server.AgentJarDownloadError as exc:
-            logger.error("Failed to download agent JAR executable, %s", exc)
+        except server.AgentJarDownloadError:
+            logger.error("Failed to download agent.jar from config URL. Server may not be ready.")
             raise
 
         valid_agent_token = server.find_valid_credentials(
-            agent_name_token_pairs=self.state.jenkins_config.agent_name_token_pairs,
-            server_url=self.state.jenkins_config.server_url,
+            agent_name_token_pairs=state.jenkins_config.agent_name_token_pairs,
+            server_url=state.jenkins_config.server_url,
             container=container,
         )
         if not valid_agent_token:
             logger.error("No valid agent-token pair found.")
-            self.model.unit.status = ops.BlockedStatus(
-                "Additional valid agent-token pairs required."
-            )
+            self.unit.status = ops.BlockedStatus("Additional valid agent-token pairs required.")
             return
 
-        self.model.unit.status = ops.MaintenanceStatus("Starting agent pebble service.")
-        self.pebble_service.reconcile(
-            server_url=self.state.jenkins_config.server_url,
+        self.unit.status = ops.MaintenanceStatus("Starting agent pebble service.")
+        pebble_service.reconcile(
+            server_url=state.jenkins_config.server_url,
             agent_token_pair=valid_agent_token,
             container=container,
         )
-        self.model.unit.status = ops.ActiveStatus()
+        self.unit.status = ops.ActiveStatus()
 
-    def _on_config_changed(self, event: ops.ConfigChangedEvent) -> None:
-        """Handle config changed event.
-
-        Args:
-            event: The event fired on configuration change.
-        """
-        self._register_via_config(event)
-
-    def _on_upgrade_charm(self, event: ops.UpgradeCharmEvent) -> None:
-        """Handle upgrade charm event.
+    def _start_agent(
+        self,
+        pebble_service: pebble.PebbleService,
+        container: ops.Container,
+        credentials: server.Credentials,
+        agent_name: str,
+    ) -> None:
+        """Download agent.jar and start the pebble service.
 
         Args:
-            event: The event fired on upgrade charm.
+            state: Current charm state.
+            pebble_service: The pebble service manager.
+            container: The workload container.
+            credentials: Server credentials for registration.
+            agent_name: The agent name to register as.
         """
-        self._register_via_config(event)
+        self.unit.status = ops.MaintenanceStatus("Downloading Jenkins agent executable.")
+        try:
+            server.download_jenkins_agent(server_url=credentials.address, container=container)
+        except server.AgentJarDownloadError:
+            logger.error("Failed to download agent.jar. Server may not be ready.")
+            raise
 
-    def _on_jenkins_agent_k8s_pebble_ready(self, _: ops.PebbleReadyEvent) -> None:
-        """Handle pebble ready event.
-
-        Pebble ready is fired
-            1. during initial charm launch.
-            2. when the container has restarted for various reasons.
-        It is necessary to handle case 2 for recovery cases.
-        """
-        container = self.unit.get_container(self.state.jenkins_agent_service_name)
-        if not container.can_connect() or not self.state.agent_relation_credentials:
-            logger.warning("Preconditions not ready.")
-            return
-
-        self.agent_observer.start_agent_from_relation(
+        self.unit.status = ops.MaintenanceStatus("Starting agent pebble service.")
+        pebble_service.reconcile(
+            server_url=credentials.address,
+            agent_token_pair=(agent_name, credentials.secret),
             container=container,
-            credentials=self.state.agent_relation_credentials,
-            agent_name=self.state.agent_meta.name,
         )
+        self.unit.status = ops.ActiveStatus()
 
 
 if __name__ == "__main__":  # pragma: no cover

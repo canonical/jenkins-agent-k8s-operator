@@ -171,7 +171,6 @@ async def test_agent_reconnects_after_server_refresh(
         apps=[application.name, jenkins_k8s_server.name],
         status="active",
         timeout=60 * 15,
-        raise_on_error=False,
     )
 
     # Wait for agent to come back online on the new Jenkins instance.
