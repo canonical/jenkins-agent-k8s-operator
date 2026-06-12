@@ -184,3 +184,24 @@ INFO: Connected
 def jenkins_terminated_connection_log_fixture(jenkins_connection_log: str):
     """The logs produced by Jenkins on terminated connection."""
     return jenkins_connection_log + "INFO: Terminated"
+
+
+@pytest.fixture(autouse=True)
+def disable_tenacity_retry(monkeypatch):
+    """Disable tenacity retry for testing."""
+    for retry_class in (
+        "retry_if_exception",
+        "retry_if_exception_type",
+        "retry_if_not_exception_type",
+        "retry_unless_exception_type",
+        "retry_if_exception_cause_type",
+        "retry_if_result",
+        "retry_if_not_result",
+        "retry_if_exception_message",
+        "retry_if_not_exception_message",
+        "retry_any",
+        "retry_all",
+        "retry_always",
+        "retry_never",
+    ):
+        monkeypatch.setattr(f"tenacity.{retry_class}.__call__", lambda *args, **kwargs: False)

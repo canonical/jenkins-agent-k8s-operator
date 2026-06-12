@@ -58,7 +58,7 @@ def test_server_is_ready(monkeypatch: pytest.MonkeyPatch, status_code: int, expe
     mock_response.status_code = status_code
     monkeypatch.setattr(requests, "get", lambda *_args, **_kwargs: mock_response)
 
-    assert server.server_is_ready("http://test-url") is expected
+    assert server.server_is_ready("http://test-url") == expected
 
 
 @pytest.mark.parametrize(
@@ -72,7 +72,7 @@ def test_server_is_ready_connection_failure(
     monkeypatch: pytest.MonkeyPatch, raise_exception: typing.Callable, exception: Exception
 ):
     """
-    arrange: given a monkeypatched requests.get that raises a connection error.
+    arrange: given a monkeypatched requests.get that raises connection errors.
     act: when server_is_ready is called.
     assert: returns False.
     """
