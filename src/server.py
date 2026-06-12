@@ -73,8 +73,9 @@ def server_is_ready(server_url: str, timeout: int = 5) -> bool:
 @tenacity.retry(
     stop=tenacity.stop_after_attempt(5),
     wait=tenacity.wait_exponential(multiplier=2, min=5, max=30),
-    retry=tenacity.retry_if_exception(AgentJarDownloadError),
+    retry=tenacity.retry_if_exception_type(AgentJarDownloadError),
     before_sleep=tenacity.before_sleep_log(logger, logging.WARNING),
+    reraise=True,
 )
 def download_jenkins_agent(server_url: str, container: ops.Container) -> None:
     """Download Jenkins agent JAR executable from server.
