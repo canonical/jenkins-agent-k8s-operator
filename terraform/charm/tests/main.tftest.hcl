@@ -22,7 +22,7 @@ run "basic_deploy" {
   }
 
   assert {
-    condition     = output.provides.value.endpoint == "agent"
-    error_message = "jenkins-agent-k8s module should provide 'provides.value' output"
+    condition     = output.provides.agent.endpoint == "agent"
+    error_message = "jenkins-agent-k8s module should provide 'provides.agent' output"
   }
 }
