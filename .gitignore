@@ -11,6 +11,8 @@ lib/ops-*.dist-info
 .vscode
 venv
 *.rock
+**/.terraform/
+**/.terraform.lock.hcl
 
 # BEGIN VALE WORKFLOW IGNORE
 .vale/styles/*
