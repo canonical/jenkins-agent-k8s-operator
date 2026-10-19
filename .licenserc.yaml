@@ -38,4 +38,5 @@ header:
     - "zap_rules.tsv"
     - "lib/**"
     - "uv.lock"
+    - "**/MAJOR_VERSION"
   comment: on-failure
