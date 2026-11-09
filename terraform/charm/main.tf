@@ -2,8 +2,8 @@
 # See LICENSE file for licensing details.
 
 resource "juju_application" "jenkins_agent_k8s" {
-  name  = var.app_name
-  model = var.model
+  name       = var.app_name
+  model_uuid = var.model_uuid
 
   charm {
     name     = "jenkins-agent-k8s"
@@ -14,5 +14,6 @@ resource "juju_application" "jenkins_agent_k8s" {
 
   config      = var.config
   constraints = var.constraints
+  resources   = var.resources
   units       = var.units
 }
