@@ -18,6 +18,6 @@ on:
 
 jobs:
   terraform-release:
-    uses: canonical/operator-workflows/.github/workflows/terraform_modules_release.yaml@030c5b20a0bb880dcf1ed326bff0fc16b6eb6ac1  # main
+    uses: canonical/operator-workflows/.github/workflows/terraform_modules_release.yaml@5dbf925ede6288e3b7759114da363bcadada5f1f  # main
     permissions:
       contents: write
