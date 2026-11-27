@@ -826,7 +826,7 @@ unit = [
 
 [package.metadata]
 requires-dist = [
-    { name = "ops", specifier = "==3.7.0" },
+    { name = "ops", specifier = "==3.10.0" },
     { name = "pydantic", specifier = "==2.14.4" },
     { name = "requests", specifier = "==2.34.2" },
     { name = "tenacity", specifier = "==9.2.1" },
@@ -1158,16 +1158,16 @@ wheels = [
 
 [[package]]
 name = "ops"
-version = "3.7.0"
+version = "3.10.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "opentelemetry-api" },
     { name = "pyyaml" },
     { name = "websocket-client" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7b/af/57895c8b7c23bf98e07d6306d24d2775a1e89fc2a4c8c1bd934dba3acdc2/ops-3.7.0.tar.gz", hash = "sha256:15f04b2fcf1d8bc966cd4405b68a2c71fa24c06f234d5003e89cc4f18ee51a45", size = 580141, upload-time = "2026-03-30T05:17:16.285Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5f/00/20efda08eae1900457e841054b5ae663b3ae858c700d0f3493244ccc97ce/ops-3.10.0.tar.gz", hash = "sha256:f7cc8fc426bab5c76b29589c3385936f2d37b8701ab7ae65dd47b0f31fa54364", size = 436231, upload-time = "2026-11-20T05:52:52.8Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/35/b0/19722b4b51696fbca41d3454f3dd3a73e89951303487b47280c6f3e277d4/ops-3.7.0-py3-none-any.whl", hash = "sha256:7050d5e629ac17de9d443e64f4ad09857e8012c9012c8ba66c9e765899d50bd1", size = 211865, upload-time = "2026-03-30T05:17:11.644Z" },
+    { url = "https://files.pythonhosted.org/packages/78/b9/4a3abd0f12873f32d15a9202d555a19062877aa96f50ab81eab9070ec8c4/ops-3.10.0-py3-none-any.whl", hash = "sha256:4bc09721235c9ef3a1a4e258e67dc6129e0ed633236dbcfa63fb8470aaaa999c", size = 225157, upload-time = "2026-11-20T05:52:49.375Z" },
 ]
 
 [[package]]
